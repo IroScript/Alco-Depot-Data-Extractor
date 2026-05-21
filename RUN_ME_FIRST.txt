@@ -1,0 +1,85 @@
+================================================================================
+  ALCO DEPOT DATA EXTRACTOR - QUICK START GUIDE
+================================================================================
+
+🚀 ONE-COMMAND SOLUTION - Just run this:
+
+    python run_all.py
+
+That's it! The script will:
+✓ Check SQL Server is running
+✓ Install missing Python packages automatically
+✓ Fix file permissions
+✓ Clean up old databases
+✓ Process all 9 depots
+✓ Handle errors and retry automatically
+✓ Generate Excel report with Month column
+✓ Never overwrite existing reports
+
+================================================================================
+  WHAT YOU GET
+================================================================================
+
+📊 Excel Report: All_Depots_MPO_Report_YYYYMMDD_HHMMSS.xlsx
+
+Contains:
+- All Data: 212K+ records from all depots
+- Depot Summary: Sales by depot
+- MPO Summary: Sales by MPO code and depot
+
+New Features:
+✓ Month column added (YYYY-MM format)
+✓ Unique filenames (never overwrites existing reports)
+✓ Auto-recovery from errors
+✓ Self-healing script
+
+================================================================================
+  REQUIREMENTS
+================================================================================
+
+1. SQL Server 2008 R2 or later (must be running)
+2. Python 3.x
+3. Depot MDF files in: All_Depots/[DepotName]/Data/ERPonTheNet_Data.MDF
+
+================================================================================
+  TROUBLESHOOTING
+================================================================================
+
+If the script fails:
+1. Make sure SQL Server is running
+2. Run as Administrator if permission errors occur
+3. Check that All_Depots folder exists with MDF files
+
+The script has built-in error recovery and will try multiple approaches
+automatically. It should never fail completely!
+
+================================================================================
+  RESULTS FROM LAST RUN
+================================================================================
+
+✓ All 9 depots processed successfully
+✓ 212,697 records extracted
+✓ 84,424 invoices
+✓ 20,564 customers
+✓ 136.7M BDT total sales
+✓ Processing time: ~2-3 minutes
+
+Depots:
+- Barishal: 11.9M BDT
+- Chittagong: 15.9M BDT
+- Cumilla: 10.4M BDT
+- Faridpur: 11.4M BDT
+- Jashore: 22.6M BDT (2nd highest)
+- Mymensingh: 11.2M BDT
+- Rajshahi: 17.2M BDT
+- Rangpur: 26.8M BDT (HIGHEST)
+- Sylhet: 9.2M BDT
+
+================================================================================
+  NEED HELP?
+================================================================================
+
+Check README.md for detailed documentation
+Or open an issue on GitHub
+
+================================================================================

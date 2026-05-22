@@ -23,9 +23,10 @@ wheels/
 .installed.cfg
 *.egg
 
-# Excel files (generated reports)
+# Excel and CSV files (generated reports)
 *.xlsx
 *.xls
+*.csv
 ~$*.xlsx
 ~$*.xls
 

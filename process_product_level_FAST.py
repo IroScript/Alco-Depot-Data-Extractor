@@ -1,6 +1,13 @@
 # FAST Product-Level Net Sales Calculation
 # Uses CSV for speed, then converts to Excel
 
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='backslashreplace')
+    except:
+        pass
+
 import pyodbc
 import pandas as pd
 import os
@@ -60,15 +67,15 @@ def cleanup_existing_databases():
                     # Set to single user mode and detach
                     cursor.execute(f"ALTER DATABASE [{db_name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE")
                     cursor.execute(f"EXEC sp_detach_db '{db_name}', 'true'")
-                    print(f"  ✓ Detached: {db_name}")
+                    print(f"  [OK] Detached: {db_name}")
                     
                 except Exception as e:
                     # If detach fails, try to drop the database instead
                     try:
                         cursor.execute(f"DROP DATABASE [{db_name}]")
-                        print(f"  ✓ Dropped: {db_name}")
+                        print(f"  [OK] Dropped: {db_name}")
                     except:
-                        print(f"  ✗ Could not remove {db_name}: {e}")
+                        print(f"  [ERROR] Could not remove {db_name}: {e}")
         
         conn.close()
         
@@ -353,7 +360,7 @@ def find_all_depots(depot_folders):
                     'data_folder': data_folder,
                     'mdf_file': erp_mdf
                 })
-                print(f"  ✓ {depot_name}")
+                print(f"  [OK] {depot_name}")
     
     return depots
 
@@ -425,7 +432,7 @@ def attach_database(depot_name, mdf_path):
         return db_name
         
     except Exception as e:
-        print(f"    ✗ Error attaching: {e}")
+        print(f"    [ERROR] Error attaching: {e}")
         return None
 
 def extract_sales_data(depot_name, db_name):
@@ -467,7 +474,7 @@ def extract_sales_data(depot_name, db_name):
         return df
         
     except Exception as e:
-        print(f"    ✗ Error extracting data: {e}")
+        print(f"    [ERROR] Error extracting data: {e}")
         return pd.DataFrame()
 
 def process_all_depots():

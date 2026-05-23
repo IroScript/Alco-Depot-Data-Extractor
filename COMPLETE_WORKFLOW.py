@@ -30,6 +30,13 @@ Date: 2026-05-23
 ================================================================================
 """
 
+import sys
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='backslashreplace')
+    except:
+        pass
+
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -126,7 +133,7 @@ with pd.ExcelWriter(achievement_pivot_file, engine='openpyxl') as writer:
     april_summary.to_excel(writer, sheet_name='April_Achievement', index=False)
     df_sales.to_excel(writer, sheet_name='Data_With_Concatenations', index=False)
 
-print(f"\n✓ Achievement pivot saved: {achievement_pivot_file}")
+print(f"\n[OK] Achievement pivot saved: {achievement_pivot_file}")
 
 # ============================================================================
 # STEP 2: EXTRACT TARGET DATA WITH PRODUCT NAMES
@@ -141,36 +148,36 @@ df_raw = pd.read_excel(TARGET_FILE, header=None)
 product_names_row = df_raw.iloc[2]
 
 product_names = []
-for i in range(8, len(product_names_row)):
+# There are 17 unique products starting at index 8 (columns 8 to 24)
+for i in range(8, 25):
     prod_name = product_names_row.iloc[i]
     if pd.notna(prod_name):
         product_names.append(str(prod_name).strip())
     else:
         product_names.append(f"Product_{i}")
 
-print(f"  - Total product columns found: {len(product_names)}")
+print(f"  - Total unique product columns: {len(product_names)}")
 
-print("\n2.2: Reading data with proper headers...")
+print("\n2.2: Reading data and combining General Party and Type-1 & PP targets...")
 df_target_raw = pd.read_excel(TARGET_FILE, header=1)
 
-# Assign column names
+# Assign metadata columns
 df_target_raw.columns.values[0] = 'Sl_No'
 df_target_raw.columns.values[1] = 'Name'
 df_target_raw.columns.values[2] = 'Designation'
 df_target_raw.columns.values[3] = 'Market'
 
-# Assign product names with duplicate handling
-product_name_counts = {}
-for i, prod_name in enumerate(product_names):
-    col_idx = 8 + i
-    if col_idx < len(df_target_raw.columns):
-        if prod_name in product_name_counts:
-            product_name_counts[prod_name] += 1
-            unique_name = f"{prod_name}_Group{product_name_counts[prod_name]}"
-        else:
-            product_name_counts[prod_name] = 1
-            unique_name = prod_name
-        df_target_raw.columns.values[col_idx] = unique_name
+# Sum column i (General Party) and column i + 18 (Type-1 & PP) for each of the 17 products
+for i in range(8, 25):
+    prod_name = product_names[i - 8]
+    val_gp = pd.to_numeric(df_target_raw.iloc[:, i], errors='coerce').fillna(0)
+    val_t1 = pd.to_numeric(df_target_raw.iloc[:, i + 18], errors='coerce').fillna(0)
+    # Sum both to get total target for MPO/SMPO
+    df_target_raw.iloc[:, i] = (val_gp + val_t1).round(0).astype(int)
+    df_target_raw.columns.values[i] = prod_name
+
+# Keep only columns 0 to 24 (inclusive) which are metadata + the 17 combined target columns
+df_target_raw = df_target_raw.iloc[:, :25].copy()
 
 print("\n2.3: Filtering valid designations...")
 VALID_DESIGNATIONS = [
@@ -202,11 +209,7 @@ df_target_filtered['Zone'] = df_target_filtered['Market'].map(zones_dict)
 print(f"  - Unique zones found: {df_target_filtered['Zone'].nunique()}")
 
 print("\n2.5: Processing product targets...")
-product_cols = []
-for i in range(8, len(df_target_filtered.columns)):
-    col_name = df_target_filtered.columns[i]
-    if col_name and not str(col_name).startswith('Unnamed') and not str(col_name).startswith('Product_'):
-        product_cols.append(col_name)
+product_cols = product_names.copy()
 
 for col in product_cols:
     if col in df_target_filtered.columns:
@@ -224,7 +227,7 @@ with pd.ExcelWriter(target_data_file, engine='openpyxl') as writer:
     df_target_filtered[['Zone', 'Market', 'Designation', 'Total_Target']].to_excel(writer, sheet_name='Summary', index=False)
     df_target_filtered.to_excel(writer, sheet_name='Full_Data', index=False)
 
-print(f"\n✓ Target data saved: {target_data_file}")
+print(f"\n[OK] Target data saved: {target_data_file}")
 
 # ============================================================================
 # STEP 3: MERGE TARGETS INTO MPO FIELD DATA
@@ -392,7 +395,7 @@ with pd.ExcelWriter(mpo_field_targets_file, engine='openpyxl') as writer:
         })
         unused_df.to_excel(writer, sheet_name='Target_Markets_Not_Used', index=False)
 
-print(f"\n✓ MPO field with targets saved: {mpo_field_targets_file}")
+print(f"\n[OK] MPO field with targets saved: {mpo_field_targets_file}")
 print(f"  - Sheet 1: MPO_Field_Targets (full data)")
 print(f"  - Sheet 2: Summary (without products)")
 print(f"  - Sheet 3: Match_Report (all matches)")
@@ -519,7 +522,7 @@ for excel_col_idx, col_name in enumerate(df_final.columns, start=1):
             depot_mpo_cell = "$F"
             
             for row_idx in range(4, len(df_final) + 2):
-                formula = f'=IFERROR(VLOOKUP(UPPER({depot_mpo_cell}{row_idx}&"_"&{product_code_cell}),[{achievement_pivot_file}]April_Achievement!$A:$H,8,FALSE),0)'
+                formula = f'=IFERROR(VLOOKUP(UPPER({depot_mpo_cell}{row_idx}&"_"&{product_code_cell}),\'[{achievement_pivot_file}]April_Achievement\'!$A:$H,8,FALSE),0)'
                 ws[f"{col_letter}{row_idx}"] = formula
 
 wb.save(output_file)
@@ -553,8 +556,8 @@ for new_col, (orig_col, col_type) in new_col_mapping.items():
 values_file = f"MPO_Target_vs_Achievement_Values_{timestamp}.xlsx"
 df_with_values.to_excel(values_file, sheet_name='Target_vs_Achievement', index=False)
 
-print(f"\n✓ Target vs Achievement saved: {output_file}")
-print(f"✓ Values version saved: {values_file}")
+print(f"\n[OK] Target vs Achievement saved: {output_file}")
+print(f"[OK] Values version saved: {values_file}")
 
 # ============================================================================
 # FINAL SUMMARY
@@ -567,7 +570,7 @@ print("=" * 80)
 print(f"\nFILES CREATED:")
 print(f"  1. {achievement_pivot_file}")
 print(f"  2. {target_data_file}")
-print(f"  3. {mpo_field_targets_file} ⭐ (with verification sheets)")
+print(f"  3. {mpo_field_targets_file} * (with verification sheets)")
 print(f"  4. {output_file} (FINAL - with VLOOKUP formulas)")
 print(f"  5. {values_file} (FINAL - with calculated values)")
 
@@ -585,7 +588,7 @@ print(f"  - No matches (ZERO targets): {len(no_matches)} ({len(no_matches)/len(d
 print(f"  - Total matched: {len(matches) + len(fuzzy_matches)} ({(len(matches) + len(fuzzy_matches))/len(df_mpo)*100:.1f}%)")
 
 if no_matches:
-    print(f"\n⚠ MARKETS WITH ZERO TARGETS (first 10):")
+    print(f"\n[WARNING] MARKETS WITH ZERO TARGETS (first 10):")
     for market, score in no_matches[:10]:
         print(f"    - {market} (best score: {score:.2f})")
     if len(no_matches) > 10:
@@ -595,9 +598,9 @@ print("\n" + "=" * 80)
 print(f"Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 print("=" * 80)
 print("\nVERIFICATION SHEETS:")
-print(f"  ✓ Open '{mpo_field_targets_file}'")
-print(f"  ✓ Check 'Markets_Taken' sheet - All successfully matched markets")
-print(f"  ✓ Check 'Markets_Skipped' sheet - Markets with ZERO targets")
-print(f"  ✓ Check 'Target_Markets_Not_Used' sheet - Target markets not matched to any MPO")
-print(f"  ✓ Check 'Match_Report' sheet - Detailed matching information")
+print(f"  [OK] Open '{mpo_field_targets_file}'")
+print(f"  [OK] Check 'Markets_Taken' sheet - All successfully matched markets")
+print(f"  [OK] Check 'Markets_Skipped' sheet - Markets with ZERO targets")
+print(f"  [OK] Check 'Target_Markets_Not_Used' sheet - Target markets not matched to any MPO")
+print(f"  [OK] Check 'Match_Report' sheet - Detailed matching information")
 print("\n" + "=" * 80)

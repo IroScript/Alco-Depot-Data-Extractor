@@ -174,7 +174,7 @@ for i, prod_name in enumerate(product_names):
 
 print("\n2.3: Filtering valid designations...")
 VALID_DESIGNATIONS = [
-    'AFM(MMO)', 'AM(AFM)', 'AM(Self)', 'DA', 'FM(MPO)', 'FM(Self)',
+    'AFM(MMO)', 'AFM', 'AM(AFM)', 'AM(Self)', 'DA', 'FM(MPO)', 'FM(Self)',
     'MMO', 'MPO', 'MR', 'Self', 'SMMO', 'SMPO',
     'Sr.DA', 'Sr.FM(Self)', 'Sr.RSM(Self)'
 ]
@@ -244,77 +244,94 @@ df_mpo['MPO CODE'] = df_mpo['MPO CODE'].astype(str)
 df_mpo['DEPOT_MPO_CODE'] = df_mpo['DEPOT'] + '_' + df_mpo['MPO CODE']
 print(f"  - Added DEPOT_MPO_CODE")
 
-print("\n3.3: Normalizing market names for fuzzy matching...")
+print("\n3.3: Normalizing market names for matching...")
 
-def normalize_market(name):
+def strip_depot_code(name):
+    """Remove trailing depot codes like (BARI), (DK.B), (CTG.A), (RNG) etc."""
+    import re
+    cleaned = re.sub(r'\s*\([A-Z]{2,5}(?:[\.\-][A-Z0-9])?\)\s*$', '', name.strip().upper())
+    return cleaned.strip()
+
+def normalize_core(name):
+    """Normalize keeping numbers and hyphens - removes only depot suffix"""
     if pd.isna(name):
         return ""
-    name = str(name).upper().strip()
-    name = name.replace(',', '').replace('.', '').replace('-', ' ')
-    name = name.replace('(', '').replace(')', '').replace('+', ' ')
-    name = ' '.join(name.split())
-    return name
+    n = strip_depot_code(str(name))
+    n = re.sub(r'\s*-\s*', '-', n)
+    n = re.sub(r'\s*\+\s*', '+', n)
+    return ' '.join(n.split())
 
-def fuzzy_match_score(str1, str2):
-    return SequenceMatcher(None, str1, str2).ratio()
+def remove_all_parens(n):
+    """Strip ALL parentheticals for fuzzy matching"""
+    return ' '.join(re.sub(r'\s*\([^)]*\)\s*', ' ', n).split())
 
-def find_best_match(target_market, mpo_markets, threshold=0.75):
-    target_norm = normalize_market(target_market)
-    if not target_norm:
-        return None, 0
-    
-    best_match = None
-    best_score = 0
-    
-    for mpo_market in mpo_markets:
-        mpo_norm = normalize_market(mpo_market)
-        score = fuzzy_match_score(target_norm, mpo_norm)
-        if score > best_score:
-            best_score = score
-            best_match = mpo_market
-    
-    if best_score >= threshold:
-        return best_match, best_score
-    else:
-        return None, best_score
+# Build target lookups
+target_norm_map = {normalize_core(t): t for t in df_target_filtered['Market'].unique()}
+target_no_paren_map = {remove_all_parens(normalize_core(t)): t for t in df_target_filtered['Market'].unique()}
 
-df_mpo['Market_Normalized'] = df_mpo['MARKET'].apply(normalize_market)
-df_target_filtered['Market_Normalized'] = df_target_filtered['Market'].apply(normalize_market)
+print("\n3.4: Matching markets (two-pass: exact first, then fuzzy)...")
 
-print("\n3.4: Matching markets and merging data...")
+# Target product data lookup
 target_market_data = {}
 for idx, row in df_target_filtered.iterrows():
-    market_norm = row['Market_Normalized']
-    if market_norm:
-        product_data = {}
-        for col in product_cols:
-            product_data[col] = row[col]
-        target_market_data[market_norm] = product_data
+    market = row['Market']
+    if market:
+        target_market_data[market] = {col: row[col] for col in product_cols}
 
-matches = []
+used_target_markets = set()
+matches = []      # (mpo_market, target_market, score)
 fuzzy_matches = []
 no_matches = []
 
+# PASS 1: Exact matches for ALL markets (no ordering bias)
 for idx, row in df_mpo.iterrows():
     mpo_market = row['MARKET']
-    mpo_market_norm = row['Market_Normalized']
+    norm = normalize_core(mpo_market)
+    no_paren = remove_all_parens(norm)
     
-    if mpo_market_norm in target_market_data:
-        matches.append((mpo_market, mpo_market, 1.0))
-        for col in product_cols:
-            df_mpo.at[idx, col] = target_market_data[mpo_market_norm].get(col, 0)
+    if norm in target_norm_map and target_norm_map[norm] not in used_target_markets:
+        t = target_norm_map[norm]
+        matches.append((mpo_market, t, 1.0))
+        used_target_markets.add(t)
+        df_mpo.at[idx, '_matched_to'] = t
+    elif no_paren in target_no_paren_map and target_no_paren_map[no_paren] not in used_target_markets:
+        t = target_no_paren_map[no_paren]
+        matches.append((mpo_market, t, 1.0))
+        used_target_markets.add(t)
+        df_mpo.at[idx, '_matched_to'] = t
     else:
-        best_match, score = find_best_match(mpo_market, df_target_filtered['Market'].unique(), threshold=0.75)
-        if best_match:
-            fuzzy_matches.append((mpo_market, best_match, score))
-            best_match_norm = normalize_market(best_match)
-            if best_match_norm in target_market_data:
-                for col in product_cols:
-                    df_mpo.at[idx, col] = target_market_data[best_match_norm].get(col, 0)
-        else:
-            no_matches.append((mpo_market, score))
-            for col in product_cols:
-                df_mpo.at[idx, col] = 0
+        df_mpo.at[idx, '_matched_to'] = None
+
+# PASS 2: Fuzzy matches for unmatched markets
+for idx, row in df_mpo.iterrows():
+    if pd.notna(row.get('_matched_to')):
+        continue
+    mpo_market = row['MARKET']
+    no_paren = remove_all_parens(normalize_core(mpo_market))
+    best_t, best_s = None, 0
+    for t_key, t_orig in target_no_paren_map.items():
+        if t_orig in used_target_markets:
+            continue
+        s = SequenceMatcher(None, no_paren, t_key).ratio()
+        if s > best_s:
+            best_s = s
+            best_t = t_orig
+    if best_s >= 0.83 and best_t:
+        fuzzy_matches.append((mpo_market, best_t, best_s))
+        used_target_markets.add(best_t)
+        df_mpo.at[idx, '_matched_to'] = best_t
+    else:
+        no_matches.append((mpo_market, best_s))
+
+# Apply product data from matches
+for idx, row in df_mpo.iterrows():
+    matched_to = row.get('_matched_to')
+    if pd.notna(matched_to) and matched_to in target_market_data:
+        for col in product_cols:
+            df_mpo.at[idx, col] = target_market_data[matched_to].get(col, 0)
+    else:
+        for col in product_cols:
+            df_mpo.at[idx, col] = 0
 
 print(f"  - Exact matches: {len(matches)}")
 print(f"  - Fuzzy matches: {len(fuzzy_matches)}")
@@ -329,8 +346,60 @@ mpo_field_targets_file = f"MPO_Field_With_Targets_{timestamp}.xlsx"
 with pd.ExcelWriter(mpo_field_targets_file, engine='openpyxl') as writer:
     df_mpo_final.to_excel(writer, sheet_name='MPO_Field_Targets', index=False)
     df_mpo_final[base_cols + ['Total_Target']].to_excel(writer, sheet_name='Summary', index=False)
+    
+    # Match Report
+    match_report = pd.DataFrame({
+        'MPO_Market': [m[0] for m in matches] + [m[0] for m in fuzzy_matches] + [m[0] for m in no_matches],
+        'Target_Market': [m[1] for m in matches] + [m[1] for m in fuzzy_matches] + ['NO MATCH'] * len(no_matches),
+        'Match_Score': [m[2] for m in matches] + [m[2] for m in fuzzy_matches] + [m[1] for m in no_matches],
+        'Match_Type': ['Exact'] * len(matches) + ['Fuzzy'] * len(fuzzy_matches) + ['No Match'] * len(no_matches),
+        'MPO_Normalized': [normalize_core(m[0]) for m in matches] + [normalize_core(m[0]) for m in fuzzy_matches] + [normalize_core(m[0]) for m in no_matches],
+        'Target_Normalized': [normalize_core(m[1]) for m in matches] + [normalize_core(m[1]) for m in fuzzy_matches] + [''] * len(no_matches)
+    })
+    match_report.to_excel(writer, sheet_name='Match_Report', index=False)
+    
+    # Markets Taken (Successfully Matched)
+    markets_taken = pd.DataFrame({
+        'Market': [m[0] for m in matches] + [m[0] for m in fuzzy_matches],
+        'Matched_To': [m[1] for m in matches] + [m[1] for m in fuzzy_matches],
+        'Match_Type': ['Exact'] * len(matches) + ['Fuzzy'] * len(fuzzy_matches),
+        'Match_Score': [m[2] for m in matches] + [m[2] for m in fuzzy_matches],
+        'Total_Target': [df_mpo_final[df_mpo_final['MARKET'] == m[0]]['Total_Target'].iloc[0] if len(df_mpo_final[df_mpo_final['MARKET'] == m[0]]) > 0 else 0 for m in matches + fuzzy_matches]
+    })
+    markets_taken = markets_taken.sort_values('Market')
+    markets_taken.to_excel(writer, sheet_name='Markets_Taken', index=False)
+    
+    # Markets Skipped (No Match Found)
+    markets_skipped = pd.DataFrame({
+        'Market': [m[0] for m in no_matches],
+        'Best_Score': [m[1] for m in no_matches],
+        'Reason': ['No match found (score < 0.83)'] * len(no_matches),
+        'MPO_Normalized': [normalize_core(m[0]) for m in no_matches]
+    })
+    markets_skipped = markets_skipped.sort_values('Market')
+    markets_skipped.to_excel(writer, sheet_name='Markets_Skipped', index=False)
+    
+    # Target Markets Not Used
+    used_target_markets = set([m[1] for m in matches] + [m[1] for m in fuzzy_matches])
+    all_target_markets = set(df_target_filtered['Market'].unique())
+    unused_target_markets = all_target_markets - used_target_markets
+    
+    if unused_target_markets:
+        unused_df = pd.DataFrame({
+            'Target_Market': sorted(list(unused_target_markets)),
+            'Reason': ['Not matched to any MPO market'] * len(unused_target_markets),
+            'Target_Normalized': [normalize_core(m) for m in sorted(list(unused_target_markets))]
+        })
+        unused_df.to_excel(writer, sheet_name='Target_Markets_Not_Used', index=False)
 
 print(f"\n✓ MPO field with targets saved: {mpo_field_targets_file}")
+print(f"  - Sheet 1: MPO_Field_Targets (full data)")
+print(f"  - Sheet 2: Summary (without products)")
+print(f"  - Sheet 3: Match_Report (all matches)")
+print(f"  - Sheet 4: Markets_Taken ({len(matches) + len(fuzzy_matches)} markets)")
+print(f"  - Sheet 5: Markets_Skipped ({len(no_matches)} markets)")
+if unused_target_markets:
+    print(f"  - Sheet 6: Target_Markets_Not_Used ({len(unused_target_markets)} markets)")
 
 # ============================================================================
 # STEP 4: CREATE FINAL TARGET VS ACHIEVEMENT REPORT
@@ -498,7 +567,7 @@ print("=" * 80)
 print(f"\nFILES CREATED:")
 print(f"  1. {achievement_pivot_file}")
 print(f"  2. {target_data_file}")
-print(f"  3. {mpo_field_targets_file}")
+print(f"  3. {mpo_field_targets_file} ⭐ (with verification sheets)")
 print(f"  4. {output_file} (FINAL - with VLOOKUP formulas)")
 print(f"  5. {values_file} (FINAL - with calculated values)")
 
@@ -512,13 +581,23 @@ print(f"  - Total achievement: {april_summary['April_Achievement'].sum():,.0f}")
 print(f"\nMARKET MATCHING:")
 print(f"  - Exact matches: {len(matches)} ({len(matches)/len(df_mpo)*100:.1f}%)")
 print(f"  - Fuzzy matches: {len(fuzzy_matches)} ({len(fuzzy_matches)/len(df_mpo)*100:.1f}%)")
-print(f"  - No matches: {len(no_matches)} ({len(no_matches)/len(df_mpo)*100:.1f}%)")
+print(f"  - No matches (ZERO targets): {len(no_matches)} ({len(no_matches)/len(df_mpo)*100:.1f}%)")
+print(f"  - Total matched: {len(matches) + len(fuzzy_matches)} ({(len(matches) + len(fuzzy_matches))/len(df_mpo)*100:.1f}%)")
+
+if no_matches:
+    print(f"\n⚠ MARKETS WITH ZERO TARGETS (first 10):")
+    for market, score in no_matches[:10]:
+        print(f"    - {market} (best score: {score:.2f})")
+    if len(no_matches) > 10:
+        print(f"    ... and {len(no_matches) - 10} more (see Markets_Skipped sheet)")
 
 print("\n" + "=" * 80)
 print(f"Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 print("=" * 80)
-print("\nNEXT STEPS:")
-print("  1. Open the FINAL output files to review the results")
-print("  2. The file with formulas will auto-update if achievement data changes")
-print("  3. The values file shows current calculated achievements")
+print("\nVERIFICATION SHEETS:")
+print(f"  ✓ Open '{mpo_field_targets_file}'")
+print(f"  ✓ Check 'Markets_Taken' sheet - All successfully matched markets")
+print(f"  ✓ Check 'Markets_Skipped' sheet - Markets with ZERO targets")
+print(f"  ✓ Check 'Target_Markets_Not_Used' sheet - Target markets not matched to any MPO")
+print(f"  ✓ Check 'Match_Report' sheet - Detailed matching information")
 print("\n" + "=" * 80)

@@ -12,69 +12,6 @@ import threading
 # Configuration
 SQL_SERVER = r'.\SQLEXPRESS'
 
-def cleanup_existing_databases():
-    """Detach all existing depot databases for fresh start"""
-    try:
-        conn_str = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABASE=master;Trusted_Connection=yes;'
-        conn = pyodbc.connect(conn_str)
-        conn.autocommit = True
-        cursor = conn.cursor()
-        
-        # Find all databases ending with _DB (exclude system databases)
-        cursor.execute("""
-            SELECT name 
-            FROM sys.databases 
-            WHERE name LIKE '%_DB'
-            AND name NOT IN ('master', 'model', 'msdb', 'tempdb')
-        """)
-        
-        databases = [row[0] for row in cursor.fetchall()]
-        
-        if databases:
-            print(f"\nCleaning up {len(databases)} existing database(s)...")
-            
-            for db_name in databases:
-                try:
-                    # Kill all connections using sp_who (compatible with older SQL Server)
-                    cursor.execute(f"""
-                        DECLARE @spid INT
-                        DECLARE @sql VARCHAR(1000)
-                        DECLARE spid_cursor CURSOR FOR
-                        SELECT spid FROM master..sysprocesses 
-                        WHERE dbid = DB_ID('{db_name}')
-                        
-                        OPEN spid_cursor
-                        FETCH NEXT FROM spid_cursor INTO @spid
-                        
-                        WHILE @@FETCH_STATUS = 0
-                        BEGIN
-                            SET @sql = 'KILL ' + CAST(@spid AS VARCHAR(10))
-                            EXEC(@sql)
-                            FETCH NEXT FROM spid_cursor INTO @spid
-                        END
-                        
-                        CLOSE spid_cursor
-                        DEALLOCATE spid_cursor
-                    """)
-                    
-                    # Set to single user mode and detach
-                    cursor.execute(f"ALTER DATABASE [{db_name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE")
-                    cursor.execute(f"EXEC sp_detach_db '{db_name}', 'true'")
-                    print(f"  ✓ Detached: {db_name}")
-                    
-                except Exception as e:
-                    # If detach fails, try to drop the database instead
-                    try:
-                        cursor.execute(f"DROP DATABASE [{db_name}]")
-                        print(f"  ✓ Dropped: {db_name}")
-                    except:
-                        print(f"  ✗ Could not remove {db_name}: {e}")
-        
-        conn.close()
-        
-    except Exception as e:
-        print(f"  Note: Cleanup skipped - {e}")
-
 def select_folders_gui():
     """GUI to select All_Depots folder and output directory"""
     
@@ -357,37 +294,10 @@ def find_all_depots(depot_folders):
     
     return depots
 
-def grant_sql_server_permissions(folder_path):
-    """Grant SQL Server service account read/write permissions to folder"""
-    try:
-        import subprocess
-        # Grant permissions to SQL Server service accounts
-        # This covers most common SQL Server service account names
-        accounts = [
-            'NT SERVICE\\MSSQL$SQLEXPRESS',
-            'NT SERVICE\\MSSQLSERVER',
-            'NT AUTHORITY\\NETWORK SERVICE',
-            'NT AUTHORITY\\SYSTEM'
-        ]
-        
-        for account in accounts:
-            try:
-                # Use icacls to grant permissions (Windows command)
-                cmd = f'icacls "{folder_path}" /grant "{account}:(OI)(CI)F" /T /Q'
-                subprocess.run(cmd, shell=True, capture_output=True, timeout=10)
-            except:
-                pass  # Silently continue if one fails
-                
-    except Exception as e:
-        pass  # Permissions might already be set
-
 def attach_database(depot_name, mdf_path):
     """Attach MDF file to SQL Server"""
     try:
         mdf_dir = os.path.dirname(mdf_path)
-        
-        # Grant SQL Server permissions to the Data folder
-        grant_sql_server_permissions(mdf_dir)
         
         ldf_path = None
         for file in os.listdir(mdf_dir):
@@ -395,18 +305,19 @@ def attach_database(depot_name, mdf_path):
                 ldf_path = os.path.join(mdf_dir, file)
                 break
         
-        db_name = f"{depot_name.upper()}_DB"
+        db_name = f"{depot_name}_DB"
         
         conn_str = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABASE=master;Trusted_Connection=yes;'
         conn = pyodbc.connect(conn_str)
         conn.autocommit = True
         cursor = conn.cursor()
         
-        # Normalize paths - use backslashes for Windows
-        mdf_path = os.path.normpath(mdf_path)
+        cursor.execute(f"SELECT name FROM sys.databases WHERE name = '{db_name}'")
+        if cursor.fetchone():
+            conn.close()
+            return db_name
         
         if ldf_path and os.path.exists(ldf_path):
-            ldf_path = os.path.normpath(ldf_path)
             attach_query = f"""
             CREATE DATABASE [{db_name}] ON 
             (FILENAME = N'{mdf_path}'),
@@ -475,9 +386,6 @@ def process_all_depots():
     print("=" * 80)
     print("FAST Product-Level Net Sales Calculator")
     print("=" * 80)
-    
-    # Clean up any existing databases for fresh start
-    cleanup_existing_databases()
     
     # Show GUI to select folders
     gui = select_folders_gui()

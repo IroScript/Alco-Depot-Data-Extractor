@@ -50,12 +50,64 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # ============================================================================
-# CONFIGURATION
+# CONFIGURATION & PRE-PROCESSING
 # ============================================================================
 
 # Input files
 MPO_FIELD_FILE = r"C:\Users\Irak\Desktop\Barishal April Data\MPO_CODE_AND_FIELD.xlsx"
 TARGET_FILE = r"C:\Users\Irak\Desktop\Barishal April Data\Unit Target of April-2026 (2).xlsx"
+
+def clean_excel_file_inplace(filepath):
+    """
+    Permanently cleans the Excel file in-place:
+    1. Replaces CHAR(160) non-breaking spaces with normal spaces.
+    2. Removes all control/non-printable characters (ASCII 0-31 and 127-159).
+    3. Trims leading/trailing spaces and collapses multiple spaces.
+    Only touches text/string cells, preserving formulas, numbers, dates, styles, and sheet structure.
+    """
+    if not os.path.exists(filepath):
+        print(f"WARNING: File {filepath} not found for cleaning.")
+        return
+    
+    print(f"Permanently cleaning '{os.path.basename(filepath)}' in-place...")
+    try:
+        wb = load_workbook(filepath)
+        cleaned_cells_count = 0
+        for sheet_name in wb.sheetnames:
+            ws = wb[sheet_name]
+            for row in ws.iter_rows():
+                for cell in row:
+                    if cell.value is not None and isinstance(cell.value, str):
+                        orig_val = cell.value
+                        # Replace CHAR(160) (non-breaking spaces) with normal space
+                        val = orig_val.replace('\xa0', ' ')
+                        # CLEAN: Remove control/non-printable characters
+                        val = re.sub(r'[\x00-\x1F\x7F-\x9F]', '', val)
+                        # TRIM: Strip and collapse multiple spaces
+                        val = ' '.join(val.strip().split())
+                        
+                        if val != orig_val:
+                            cell.value = val
+                            cleaned_cells_count += 1
+        if cleaned_cells_count > 0:
+            wb.save(filepath)
+            print(f"  [OK] Cleaned {cleaned_cells_count} text cells in '{os.path.basename(filepath)}'.")
+        else:
+            print(f"  [OK] '{os.path.basename(filepath)}' was already 100% clean.")
+        wb.close()
+    except PermissionError:
+        print(f"\nERROR: Permission denied while writing to '{os.path.basename(filepath)}'.")
+        print("Please close the file if it is open in Excel and run this script again!")
+        sys.exit(1)
+    except Exception as e:
+        print(f"WARNING: Failed to clean '{os.path.basename(filepath)}' in-place. Error: {e}")
+
+print("=" * 80)
+print("PERMANENT IN-PLACE DATA CLEANING")
+print("=" * 80)
+clean_excel_file_inplace(MPO_FIELD_FILE)
+clean_excel_file_inplace(TARGET_FILE)
+print("=" * 80 + "\n")
 
 # Find the latest Product_Level_Net_Sales CSV
 csv_files = glob.glob(r"C:\Users\Irak\Desktop\Barishal April Data\Product_Level_Net_Sales_*.csv")
@@ -166,13 +218,11 @@ df_target_raw.columns.values[1] = 'Name'
 df_target_raw.columns.values[2] = 'Designation'
 df_target_raw.columns.values[3] = 'Market'
 
-# Sum column i (General Party) and column i + 18 (Type-1 & PP) for each of the 17 products
+# Extract target for MPO/SMPO (General Party) only, completely skipping FM/AM (Type-1 & PP) Targets in columns AA to AQ (index 26 to 42)
 for i in range(8, 25):
     prod_name = product_names[i - 8]
     val_gp = pd.to_numeric(df_target_raw.iloc[:, i], errors='coerce').fillna(0)
-    val_t1 = pd.to_numeric(df_target_raw.iloc[:, i + 18], errors='coerce').fillna(0)
-    # Sum both to get total target for MPO/SMPO
-    df_target_raw.iloc[:, i] = (val_gp + val_t1).round(0).astype(int)
+    df_target_raw.iloc[:, i] = val_gp.round(0).astype(int)
     df_target_raw.columns.values[i] = prod_name
 
 # Keep only columns 0 to 24 (inclusive) which are metadata + the 17 combined target columns
@@ -338,39 +388,6 @@ for idx, row in df_mpo.iterrows():
         else:
             whole_match_row = candidates[0]
             
-    # Fuzzy whole-name fallback with zone-aware preference
-    if whole_match_row is None:
-        best_s = 0
-        best_cand = None
-        
-        # Pass 1: Try to find a fuzzy match that matches the zone
-        for t_key, cands in target_norm_dict.items():
-            zone_cands = [c for c in cands if zone_matches(mpo_zone, c['Zone'])]
-            if zone_cands:
-                s = SequenceMatcher(None, no_paren, t_key).ratio()
-                if s > best_s:
-                    best_s = s
-                    best_cand = zone_cands[0]
-                    
-        # If found in same zone with >= 0.70, use it!
-        if best_s >= 0.70 and best_cand is not None:
-            whole_match_row = best_cand
-            whole_score = best_s
-            whole_match_type = 'Fuzzy'
-        else:
-            # Pass 2: Global search fallback with standard >= 0.83 threshold
-            best_s = 0
-            best_cand = None
-            for t_key, cands in target_norm_dict.items():
-                s = SequenceMatcher(None, no_paren, t_key).ratio()
-                if s > best_s:
-                    best_s = s
-                    best_cand = cands[0]
-            if best_s >= 0.83 and best_cand is not None:
-                whole_match_row = best_cand
-                whole_score = best_s
-                whole_match_type = 'Fuzzy'
-            
     if whole_match_row is not None:
         matches.append((mpo_market, whole_match_row['Market'], whole_score, whole_match_type))
         df_mpo.at[idx, '_matched_to'] = whole_match_row['Market']
@@ -394,38 +411,11 @@ for idx, row in df_mpo.iterrows():
                 part_cands = target_norm_dict[part_no_paren]
                 zone_cands = [c for c in part_cands if zone_matches(mpo_zone, c['Zone'])]
                 best_t_row = zone_cands[0] if zone_cands else part_cands[0]
-                
-            # Fuzzy match fallback for part
-            if best_t_row is None:
-                best_s = 0
-                best_cand = None
-                
-                # Pass 1: Zone-matched fuzzy part
-                for t_key, cands in target_norm_dict.items():
-                    zone_cands = [c for c in cands if zone_matches(mpo_zone, c['Zone'])]
-                    if zone_cands:
-                        s = SequenceMatcher(None, part_no_paren, t_key).ratio()
-                        if s > best_s:
-                            best_s = s
-                            best_cand = zone_cands[0]
-                if best_s >= 0.70 and best_cand is not None:
-                    best_t_row = best_cand
-                else:
-                    # Pass 2: Global fuzzy part
-                    best_s = 0
-                    best_cand = None
-                    for t_key, cands in target_norm_dict.items():
-                        s = SequenceMatcher(None, part_no_paren, t_key).ratio()
-                        if s > best_s:
-                            best_s = s
-                            best_cand = cands[0]
-                    if best_s >= 0.83 and best_cand is not None:
-                        best_t_row = best_cand
                     
             if best_t_row is not None:
                 matched_rows_for_parts.append(best_t_row)
                 
-        if matched_rows_for_parts:
+        if len(matched_rows_for_parts) == len(parts):
             combined_target_name = ' + '.join([str(r['Market']) for r in matched_rows_for_parts])
             matches.append((mpo_market, combined_target_name, 1.0, 'Combined'))
             df_mpo.at[idx, '_matched_to'] = combined_target_name
@@ -450,7 +440,9 @@ print(f"  - No matches: {len(no_matches)}")
 
 base_cols = ['DEPOT', 'ZONE', 'FM/AM, ZONE', 'MARKET', 'MPO CODE', 'DEPOT_MPO_CODE']
 final_cols = base_cols + product_cols
-df_mpo_final = df_mpo[final_cols].copy()
+# Filter df_mpo to only keep matched rows (exclude unmatched markets from Master Target sheet and final report)
+df_mpo_matched = df_mpo[df_mpo['_matched_to'].notna()].copy()
+df_mpo_final = df_mpo_matched[final_cols].copy()
 df_mpo_final['Total_Target'] = df_mpo_final[product_cols].sum(axis=1)
 
 mpo_field_targets_file = f"MPO_Field_With_Targets_{timestamp}.xlsx"

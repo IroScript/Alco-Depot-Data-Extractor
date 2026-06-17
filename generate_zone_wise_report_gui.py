@@ -102,14 +102,31 @@ class ScrollableFrame(tk.Frame):
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
         
-        # Mousewheel support
+        # Bind mousewheel when mouse enters/leaves the scroll region
+        self.canvas.bind("<Enter>", self._bind_all_wheel)
+        self.canvas.bind("<Leave>", self._unbind_all_wheel)
+        self.scrollable_frame.bind("<Enter>", self._bind_all_wheel)
+        self.scrollable_frame.bind("<Leave>", self._unbind_all_wheel)
+
+    def _bind_all_wheel(self, event):
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+
+    def _unbind_all_wheel(self, event):
+        self.canvas.unbind_all("<MouseWheel>")
 
     def _on_canvas_configure(self, event):
         self.canvas.itemconfig(self.canvas_window, width=event.width)
 
     def _on_mousewheel(self, event):
         self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+    def bind_widget_scroll(self, widget):
+        """Recursively bind mousewheel event to a widget and all its children so scrolling works over Entry, Checkbutton, etc."""
+        widget.bind("<MouseWheel>", self._on_mousewheel)
+        widget.bind("<Enter>", self._bind_all_wheel)
+        widget.bind("<Leave>", self._unbind_all_wheel)
+        for child in widget.winfo_children():
+            self.bind_widget_scroll(child)
 
 # ══════════════════════════════════════════════════════════════════
 #  Main GUI Application Class
@@ -520,6 +537,9 @@ class ZoneReportApp:
                     'row_frame': row_frame
                 })
 
+                # Bind scroll recursively for this row
+                self.prod_scroll.bind_widget_scroll(row_frame)
+
                 # Trace changes to update selected summary automatically
                 var_select.trace_add("write", lambda *args: self.update_selected_summary())
                 var_name.trace_add("write", lambda *args: self.update_selected_summary())
@@ -568,6 +588,7 @@ class ZoneReportApp:
                 lbl_h = tk.Label(self.selected_scroll.scrollable_frame, text=f"■ {grp_name}",
                                  font=('Courier New', 8, 'bold'), fg=_C['cyan'], bg=_C['void'])
                 lbl_h.pack(anchor="w", padx=10, pady=(5, 2))
+                self.selected_scroll.bind_widget_scroll(lbl_h)
                 
                 for p in groups[grp_name]:
                     item_frame = tk.Frame(self.selected_scroll.scrollable_frame, bg=_C['void'])
@@ -578,6 +599,7 @@ class ZoneReportApp:
                     
                     lbl_n = tk.Label(item_frame, textvariable=p['var_name'], font=('Segoe UI', 8), fg=_C['text'], bg=_C['void'])
                     lbl_n.pack(side="left", fill="x", expand=True, padx=5, anchor="w")
+                    self.selected_scroll.bind_widget_scroll(item_frame)
 
         elif self.opt_group_subgroup.get():
             # Group by Sub-Group
@@ -598,6 +620,7 @@ class ZoneReportApp:
                 lbl_h = tk.Label(self.selected_scroll.scrollable_frame, text=f"⧉ {grp_name}",
                                  font=('Courier New', 8, 'bold'), fg=_C['cyan'], bg=_C['void'])
                 lbl_h.pack(anchor="w", padx=10, pady=(5, 2))
+                self.selected_scroll.bind_widget_scroll(lbl_h)
                 
                 for p in groups[grp_name]:
                     item_frame = tk.Frame(self.selected_scroll.scrollable_frame, bg=_C['void'])
@@ -608,12 +631,14 @@ class ZoneReportApp:
                     
                     lbl_n = tk.Label(item_frame, textvariable=p['var_name'], font=('Segoe UI', 8), fg=_C['text'], bg=_C['void'])
                     lbl_n.pack(side="left", fill="x", expand=True, padx=5, anchor="w")
+                    self.selected_scroll.bind_widget_scroll(item_frame)
             
             # Draw ungrouped ones
             if ungrouped:
                 lbl_h = tk.Label(self.selected_scroll.scrollable_frame, text="⧉ [UNGROUPED]",
                                  font=('Courier New', 8, 'bold'), fg=_C['mag'], bg=_C['void'])
                 lbl_h.pack(anchor="w", padx=10, pady=(5, 2))
+                self.selected_scroll.bind_widget_scroll(lbl_h)
                 
                 for p in ungrouped:
                     item_frame = tk.Frame(self.selected_scroll.scrollable_frame, bg=_C['void'])
@@ -624,6 +649,7 @@ class ZoneReportApp:
                     
                     lbl_n = tk.Label(item_frame, textvariable=p['var_name'], font=('Segoe UI', 8), fg=_C['text'], bg=_C['void'])
                     lbl_n.pack(side="left", fill="x", expand=True, padx=5, anchor="w")
+                    self.selected_scroll.bind_widget_scroll(item_frame)
         else:
             # Individual list
             for p in checked:
@@ -635,6 +661,7 @@ class ZoneReportApp:
 
                 lbl_n = tk.Label(item_frame, textvariable=p['var_name'], font=('Segoe UI', 8), fg=_C['text'], bg=_C['void'], anchor="w", justify="left")
                 lbl_n.pack(side="left", fill="x", expand=True, padx=8)
+                self.selected_scroll.bind_widget_scroll(item_frame)
 
     # ── Select / Deselect All ──────────────────────────────────────────
     def select_all_products(self):

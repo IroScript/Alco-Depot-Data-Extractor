@@ -81,8 +81,23 @@ def get_subgroup_name(name):
 class ScrollableFrame(tk.Frame):
     def __init__(self, container, *args, **kwargs):
         super().__init__(container, *args, **kwargs)
+        # Configure scrollbar style to match theme
+        style = ttk.Style()
+        try:
+            style.theme_use('clam')
+        except:
+            pass
+        style.configure("Vertical.TScrollbar",
+                        gripcount=0,
+                        background=_C['hot'],
+                        troughcolor=_C['void'],
+                        bordercolor=_C['border'],
+                        arrowcolor=_C['cyan'],
+                        lightcolor=_C['hot'],
+                        darkcolor=_C['hot'])
+
         self.canvas = tk.Canvas(self, bg=_C['void'], highlightthickness=0)
-        self.scrollbar = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
+        self.scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview, style="Vertical.TScrollbar")
         self.scrollable_frame = tk.Frame(self.canvas, bg=_C['void'])
 
         self.scrollable_frame.bind(
@@ -473,6 +488,7 @@ class ZoneReportApp:
         self.search_var.set("") # Reset search query
 
         try:
+            self._updating_batch = True
             df = pd.read_csv(csv_path)
             if 'Product_Code' not in df.columns or 'Product_Name' not in df.columns:
                 messagebox.showerror("Format Error", "CSV file must contain 'Product_Code' and 'Product_Name' columns.")
@@ -546,6 +562,7 @@ class ZoneReportApp:
                 var_subgroup.trace_add("write", lambda *args: self.update_selected_summary())
                 var_is_subgrouped.trace_add("write", lambda *args: self.update_selected_summary())
                 
+            self._updating_batch = False
             self.update_selected_summary()
 
         except Exception as e:
@@ -565,6 +582,8 @@ class ZoneReportApp:
 
     # ── Update Selected Summary at a Glance ────────────────────────────
     def update_selected_summary(self):
+        if getattr(self, '_updating_batch', False):
+            return
         # Clear selected summary container
         for widget in self.selected_scroll.scrollable_frame.winfo_children():
             widget.destroy()
@@ -665,17 +684,21 @@ class ZoneReportApp:
 
     # ── Select / Deselect All ──────────────────────────────────────────
     def select_all_products(self):
+        self._updating_batch = True
         for p in self.products_data:
             # Only affect visible products to align with user filters
             if p['row_frame'].winfo_manager() == 'pack':
                 p['var_select'].set(True)
+        self._updating_batch = False
         self.update_selected_summary()
 
     def deselect_all_products(self):
+        self._updating_batch = True
         for p in self.products_data:
             # Only affect visible products to align with user filters
             if p['row_frame'].winfo_manager() == 'pack':
                 p['var_select'].set(False)
+        self._updating_batch = False
         self.update_selected_summary()
 
     # ── Progress setter ────────────────────────────────────────────────

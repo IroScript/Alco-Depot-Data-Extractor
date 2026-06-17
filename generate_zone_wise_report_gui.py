@@ -46,6 +46,35 @@ def get_brand_name(name):
         return match.group(1).upper()
     return n.upper()
 
+def get_subgroup_name(name):
+    """Clean name by stripping parentheticals, common dosage suffixes, and strengths"""
+    n = name.strip()
+    # Remove parentheses and brackets content (e.g. (F), (B), (NEW), [A])
+    n = re.sub(r'\s*\([^)]*\)', '', n)
+    n = re.sub(r'\s*\[[^\]]*\]', '', n)
+    
+    # Suffixes to strip
+    suffixes = [
+        r'\btab(?:let)?s?\b',
+        r'\bcap(?:sule)?s?\b',
+        r'\bsyrup\b',
+        r'\bsusp(?:ension)?\b',
+        r'\bpfs\b',
+        r'\binj(?:ection)?\b',
+        r'\bcream\b',
+        r'\boint(?:ment)?\b',
+        r'\bgel\b',
+        r'\bmg\b',
+        r'\bmcg\b',
+        r'\bml\b'
+    ]
+    for suffix in suffixes:
+        n = re.sub(suffix, '', n, flags=re.IGNORECASE).strip()
+    
+    # Normalize spaces
+    n = re.sub(r'\s+', ' ', n).strip()
+    return n
+
 # ══════════════════════════════════════════════════════════════════
 #  Tkinter Scrollable Frame Component
 # ══════════════════════════════════════════════════════════════════
@@ -99,10 +128,11 @@ class ZoneReportApp:
         self.search_var = tk.StringVar()
         
         self.opt_group_brand = tk.BooleanVar(value=True)
+        self.opt_group_subgroup = tk.BooleanVar(value=False)
         self.opt_summary_end = tk.BooleanVar(value=True)
         self.opt_only_summary = tk.BooleanVar(value=False)
         
-        self.products_data = [] # List of dicts: {'code': str, 'default_name': str, 'var_select': BooleanVar, 'var_name': StringVar, 'row_frame': Frame}
+        self.products_data = [] # List of dicts: {'code': str, 'default_name': str, 'var_select': BooleanVar, 'var_name': StringVar, 'var_subgroup': StringVar, 'var_is_subgrouped': BooleanVar, 'row_frame': Frame}
         self.unique_months = []
         
         self._t = 0.0
@@ -214,19 +244,27 @@ class ZoneReportApp:
                                        variable=self.opt_group_brand, onvalue=True, offvalue=False,
                                        font=('Courier New', 8), fg=_C['text'], bg=_C['panel'],
                                        activebackground=_C['panel'], activeforeground=_C['cyan'],
-                                       selectcolor=_C['void'], command=self.update_switch_states)
+                                       selectcolor=_C['void'], command=lambda: self.toggle_grouping_mode('brand'))
         self.cb_group.pack(anchor="w", padx=20, pady=4)
 
+        # Checkbox 1b: Group by Sub-Group
+        self.cb_subgroup = tk.Checkbutton(self.left_frame, text="Group by Sub-Group (Sum Values)",
+                                          variable=self.opt_group_subgroup, onvalue=True, offvalue=False,
+                                          font=('Courier New', 8), fg=_C['text'], bg=_C['panel'],
+                                          activebackground=_C['panel'], activeforeground=_C['cyan'],
+                                          selectcolor=_C['void'], command=lambda: self.toggle_grouping_mode('subgroup'))
+        self.cb_subgroup.pack(anchor="w", padx=20, pady=4)
+
         # Checkbox 2: Summary Column at the End
-        self.cb_end = tk.Checkbutton(self.left_frame, text="Add Brand Summary Column at End",
+        self.cb_end = tk.Checkbutton(self.left_frame, text="Add Group Summary Column at End",
                                      variable=self.opt_summary_end, onvalue=True, offvalue=False,
                                      font=('Courier New', 8), fg=_C['text'], bg=_C['panel'],
                                      activebackground=_C['panel'], activeforeground=_C['cyan'],
                                      selectcolor=_C['void'])
         self.cb_end.pack(anchor="w", padx=20, pady=4)
 
-        # Checkbox 3: Show Only Summarized Brand Columns
-        self.cb_only = tk.Checkbutton(self.left_frame, text="Show ONLY Summarized Brand Columns",
+        # Checkbox 3: Show Only Summarized Columns
+        self.cb_only = tk.Checkbutton(self.left_frame, text="Show ONLY Summarized Group Columns",
                                       variable=self.opt_only_summary, onvalue=True, offvalue=False,
                                       font=('Courier New', 8), fg=_C['text'], bg=_C['panel'],
                                       activebackground=_C['panel'], activeforeground=_C['cyan'],
@@ -283,10 +321,14 @@ class ZoneReportApp:
         # Column Labels
         labels_frame = tk.Frame(self.middle_frame, bg=_C['panel'])
         labels_frame.pack(fill="x", padx=15, pady=(5, 2))
-        lbl_c = tk.Label(labels_frame, text="CODE", font=('Courier New', 7, 'bold'), fg=_C['muted'], bg=_C['panel'])
-        lbl_c.pack(side="left", padx=20)
-        lbl_n = tk.Label(labels_frame, text="STANDARD NAME (EDITABLE)", font=('Courier New', 7, 'bold'), fg=_C['muted'], bg=_C['panel'])
-        lbl_n.pack(side="left", padx=35)
+        lbl_c = tk.Label(labels_frame, text="CODE", font=('Courier New', 7, 'bold'), fg=_C['muted'], bg=_C['panel'], width=10, anchor='w')
+        lbl_c.pack(side="left", padx=(5, 2))
+        lbl_n = tk.Label(labels_frame, text="NAME", font=('Courier New', 7, 'bold'), fg=_C['muted'], bg=_C['panel'], width=18, anchor='w')
+        lbl_n.pack(side="left", padx=5)
+        lbl_s = tk.Label(labels_frame, text="SUB-GROUP", font=('Courier New', 7, 'bold'), fg=_C['muted'], bg=_C['panel'], width=12, anchor='w')
+        lbl_s.pack(side="left", padx=5)
+        lbl_g = tk.Label(labels_frame, text="GRP?", font=('Courier New', 7, 'bold'), fg=_C['muted'], bg=_C['panel'], width=5, anchor='w')
+        lbl_g.pack(side="left", padx=(2, 5))
 
         # Scrollable Product Container
         self.prod_scroll = ScrollableFrame(self.middle_frame)
@@ -302,8 +344,9 @@ class ZoneReportApp:
         self.selected_scroll.pack(fill="both", expand=True, padx=15, pady=(0, 15))
 
     def update_switch_states(self):
-        """Enable/Disable sub-options based on Brand Grouping switch"""
-        if self.opt_group_brand.get():
+        """Enable/Disable sub-options based on Grouping switches"""
+        is_grouped = self.opt_group_brand.get() or self.opt_group_subgroup.get()
+        if is_grouped:
             self.cb_end.configure(state='normal')
             self.cb_only.configure(state='normal')
         else:
@@ -311,6 +354,16 @@ class ZoneReportApp:
             self.cb_only.configure(state='disabled')
             self.opt_summary_end.set(False)
             self.opt_only_summary.set(False)
+
+    def toggle_grouping_mode(self, mode):
+        if mode == 'brand':
+            if self.opt_group_brand.get():
+                self.opt_group_subgroup.set(False)
+        elif mode == 'subgroup':
+            if self.opt_group_subgroup.get():
+                self.opt_group_brand.set(False)
+        self.update_switch_states()
+        self.update_selected_summary()
 
     # ── Background styling ───────────────────────────────────────────
     def _paint_gradient(self, W, H):
@@ -426,6 +479,8 @@ class ZoneReportApp:
                 
                 var_select = tk.BooleanVar(value=True) # Selected by default
                 var_name = tk.StringVar(value=def_name)
+                var_subgroup = tk.StringVar(value=get_subgroup_name(def_name))
+                var_is_subgrouped = tk.BooleanVar(value=True)
                 
                 # Draw row frame (hidden by default until packed)
                 row_frame = tk.Frame(self.prod_scroll.scrollable_frame, bg=_C['void'])
@@ -435,25 +490,41 @@ class ZoneReportApp:
                                     font=('Courier New', 8, 'bold'), fg=_C['cyan'], bg=_C['void'],
                                     activebackground=_C['void'], activeforeground=_C['cyan'],
                                     selectcolor=_C['panel'])
-                cb.pack(side="left", padx=5)
+                cb.pack(side="left", padx=(5, 2))
                 
-                ent = tk.Entry(row_frame, textvariable=var_name, font=('Segoe UI', 9),
+                ent_name = tk.Entry(row_frame, textvariable=var_name, font=('Segoe UI', 8), width=18,
                                bg=_C['panel'], fg=_C['text'], insertbackground=_C['cyan'],
                                relief='flat', bd=1, highlightthickness=1, highlightcolor=_C['border'],
                                highlightbackground='#09182C')
-                ent.pack(side="right", fill="x", expand=True, padx=(10, 5), pady=1)
+                ent_name.pack(side="left", padx=5, pady=1)
+
+                ent_sub = tk.Entry(row_frame, textvariable=var_subgroup, font=('Segoe UI', 8), width=12,
+                               bg=_C['panel'], fg=_C['text'], insertbackground=_C['cyan'],
+                               relief='flat', bd=1, highlightthickness=1, highlightcolor=_C['border'],
+                               highlightbackground='#09182C')
+                ent_sub.pack(side="left", padx=5, pady=1)
+
+                cb_grp = tk.Checkbutton(row_frame, text="Grp", variable=var_is_subgrouped,
+                                        font=('Courier New', 7), fg=_C['muted'], bg=_C['void'],
+                                        activebackground=_C['void'], activeforeground=_C['cyan'],
+                                        selectcolor=_C['panel'])
+                cb_grp.pack(side="left", padx=(2, 5))
 
                 self.products_data.append({
                     'code': code,
                     'default_name': def_name,
                     'var_select': var_select,
                     'var_name': var_name,
+                    'var_subgroup': var_subgroup,
+                    'var_is_subgrouped': var_is_subgrouped,
                     'row_frame': row_frame
                 })
 
                 # Trace changes to update selected summary automatically
                 var_select.trace_add("write", lambda *args: self.update_selected_summary())
                 var_name.trace_add("write", lambda *args: self.update_selected_summary())
+                var_subgroup.trace_add("write", lambda *args: self.update_selected_summary())
+                var_is_subgrouped.trace_add("write", lambda *args: self.update_selected_summary())
                 
             self.update_selected_summary()
 
@@ -466,7 +537,8 @@ class ZoneReportApp:
         for item in self.products_data:
             code = item['code'].lower()
             name = item['var_name'].get().lower()
-            if not query or query in code or query in name:
+            subgroup = item['var_subgroup'].get().lower()
+            if not query or query in code or query in name or query in subgroup:
                 item['row_frame'].pack(fill="x", pady=2, padx=5)
             else:
                 item['row_frame'].pack_forget()
@@ -483,15 +555,86 @@ class ZoneReportApp:
                              font=('Courier New', 8, 'bold'), fg=_C['green'], bg=_C['void'])
         lbl_total.pack(anchor="w", padx=10, pady=(5, 10))
 
-        for p in checked:
-            item_frame = tk.Frame(self.selected_scroll.scrollable_frame, bg=_C['void'])
-            item_frame.pack(fill="x", pady=1, padx=10)
+        if self.opt_group_brand.get():
+            # Group by Brand Family
+            from collections import defaultdict
+            groups = defaultdict(list)
+            for p in checked:
+                brand = get_brand_name(p['var_name'].get())
+                groups[brand].append(p)
+                
+            for grp_name in sorted(groups.keys()):
+                # Draw group header
+                lbl_h = tk.Label(self.selected_scroll.scrollable_frame, text=f"■ {grp_name}",
+                                 font=('Courier New', 8, 'bold'), fg=_C['cyan'], bg=_C['void'])
+                lbl_h.pack(anchor="w", padx=10, pady=(5, 2))
+                
+                for p in groups[grp_name]:
+                    item_frame = tk.Frame(self.selected_scroll.scrollable_frame, bg=_C['void'])
+                    item_frame.pack(fill="x", pady=1, padx=20)
+                    
+                    lbl_c = tk.Label(item_frame, text=f"{p['code']}:", font=('Courier New', 8), fg=_C['muted'], bg=_C['void'])
+                    lbl_c.pack(side="left")
+                    
+                    lbl_n = tk.Label(item_frame, textvariable=p['var_name'], font=('Segoe UI', 8), fg=_C['text'], bg=_C['void'])
+                    lbl_n.pack(side="left", fill="x", expand=True, padx=5, anchor="w")
 
-            lbl_c = tk.Label(item_frame, text=f"[{p['code']}]", font=('Courier New', 8, 'bold'), fg=_C['cyan'], bg=_C['void'])
-            lbl_c.pack(side="left")
+        elif self.opt_group_subgroup.get():
+            # Group by Sub-Group
+            from collections import defaultdict
+            groups = defaultdict(list)
+            ungrouped = []
+            for p in checked:
+                if p['var_is_subgrouped'].get():
+                    sub_name = p['var_subgroup'].get().strip().upper()
+                    if not sub_name:
+                        sub_name = "UNNAMED SUBGROUP"
+                    groups[sub_name].append(p)
+                else:
+                    ungrouped.append(p)
+            
+            # Draw grouped ones
+            for grp_name in sorted(groups.keys()):
+                lbl_h = tk.Label(self.selected_scroll.scrollable_frame, text=f"⧉ {grp_name}",
+                                 font=('Courier New', 8, 'bold'), fg=_C['cyan'], bg=_C['void'])
+                lbl_h.pack(anchor="w", padx=10, pady=(5, 2))
+                
+                for p in groups[grp_name]:
+                    item_frame = tk.Frame(self.selected_scroll.scrollable_frame, bg=_C['void'])
+                    item_frame.pack(fill="x", pady=1, padx=20)
+                    
+                    lbl_c = tk.Label(item_frame, text=f"{p['code']}:", font=('Courier New', 8), fg=_C['muted'], bg=_C['void'])
+                    lbl_c.pack(side="left")
+                    
+                    lbl_n = tk.Label(item_frame, textvariable=p['var_name'], font=('Segoe UI', 8), fg=_C['text'], bg=_C['void'])
+                    lbl_n.pack(side="left", fill="x", expand=True, padx=5, anchor="w")
+            
+            # Draw ungrouped ones
+            if ungrouped:
+                lbl_h = tk.Label(self.selected_scroll.scrollable_frame, text="⧉ [UNGROUPED]",
+                                 font=('Courier New', 8, 'bold'), fg=_C['mag'], bg=_C['void'])
+                lbl_h.pack(anchor="w", padx=10, pady=(5, 2))
+                
+                for p in ungrouped:
+                    item_frame = tk.Frame(self.selected_scroll.scrollable_frame, bg=_C['void'])
+                    item_frame.pack(fill="x", pady=1, padx=20)
+                    
+                    lbl_c = tk.Label(item_frame, text=f"{p['code']}:", font=('Courier New', 8), fg=_C['muted'], bg=_C['void'])
+                    lbl_c.pack(side="left")
+                    
+                    lbl_n = tk.Label(item_frame, textvariable=p['var_name'], font=('Segoe UI', 8), fg=_C['text'], bg=_C['void'])
+                    lbl_n.pack(side="left", fill="x", expand=True, padx=5, anchor="w")
+        else:
+            # Individual list
+            for p in checked:
+                item_frame = tk.Frame(self.selected_scroll.scrollable_frame, bg=_C['void'])
+                item_frame.pack(fill="x", pady=1, padx=10)
 
-            lbl_n = tk.Label(item_frame, textvariable=p['var_name'], font=('Segoe UI', 8), fg=_C['text'], bg=_C['void'], anchor="w", justify="left")
-            lbl_n.pack(side="left", fill="x", expand=True, padx=8)
+                lbl_c = tk.Label(item_frame, text=f"[{p['code']}]", font=('Courier New', 8, 'bold'), fg=_C['cyan'], bg=_C['void'])
+                lbl_c.pack(side="left")
+
+                lbl_n = tk.Label(item_frame, textvariable=p['var_name'], font=('Segoe UI', 8), fg=_C['text'], bg=_C['void'], anchor="w", justify="left")
+                lbl_n.pack(side="left", fill="x", expand=True, padx=8)
 
     # ── Select / Deselect All ──────────────────────────────────────────
     def select_all_products(self):
@@ -709,53 +852,76 @@ class ZoneReportApp:
                 month_mapping = {'2026-01': 'Jan', '2026-02': 'Feb', '2026-03': 'Mar', '2026-04': 'Apr', '2026-05': 'May', '2026-06': 'Jun'}
                 month_headers = [month_mapping.get(m, m) for m in unique_months]
 
-                # Map custom names from user inputs
+                # Map custom names and subgroup names from user inputs
                 custom_names = {}
+                subgroup_names = {}
+                is_subgrouped = {}
                 for p in selected_prods:
                     custom_names[p['code']] = p['var_name'].get().strip()
+                    subgroup_names[p['code']] = p['var_subgroup'].get().strip()
+                    is_subgrouped[p['code']] = p['var_is_subgrouped'].get()
 
-                # Group product codes by brand
+                # Determine groups
                 from collections import defaultdict
-                brand_groups = defaultdict(list)
-                for p in selected_prods:
-                    brand = get_brand_name(custom_names[p['code']])
-                    brand_groups[brand].append(p['code'])
-
-                # Switches values
+                groups = defaultdict(list)
+                
                 group_brand = self.opt_group_brand.get()
+                group_subgroup = self.opt_group_subgroup.get()
                 summary_end = self.opt_summary_end.get()
                 only_summary = self.opt_only_summary.get()
 
+                if group_brand:
+                    for p in selected_prods:
+                        grp = get_brand_name(custom_names[p['code']])
+                        groups[grp].append(p['code'])
+                elif group_subgroup:
+                    for p in selected_prods:
+                        if is_subgrouped[p['code']]:
+                            grp = subgroup_names[p['code']].upper()
+                            if not grp:
+                                grp = "UNNAMED SUBGROUP"
+                        else:
+                            grp = f"INDIVIDUAL_{p['code']}"
+                        groups[grp].append(p['code'])
+                else:
+                    for p in selected_prods:
+                        groups[p['code']].append(p['code'])
+
                 # Build column structure
-                column_items = [] # list of dict: {'type': 'individual'|'summary', 'code': str, 'name': str, 'brand': str}
-                for brand in sorted(brand_groups.keys()):
-                    codes_in_brand = brand_groups[brand]
+                column_items = [] # list of dict: {'type': 'individual'|'summary', 'code': str, 'name': str, 'group_key': str, 'group_label': str}
+                for grp in sorted(groups.keys()):
+                    codes_in_group = groups[grp]
                     
-                    if group_brand and only_summary:
-                        # Only summarized brand column
+                    if grp.startswith("INDIVIDUAL_"):
+                        grp_label = custom_names[codes_in_group[0]]
+                    else:
+                        grp_label = grp
+                    
+                    if (group_brand or group_subgroup) and only_summary:
                         column_items.append({
                             'type': 'summary',
                             'code': '',
-                            'name': f"{brand} TOTAL",
-                            'brand': brand
+                            'name': f"{grp_label} TOTAL",
+                            'group_key': grp,
+                            'group_label': grp_label
                         })
                     else:
-                        # Individual columns
-                        for code in codes_in_brand:
+                        for code in codes_in_group:
                             column_items.append({
                                 'type': 'individual',
                                 'code': code,
                                 'name': custom_names[code],
-                                'brand': brand
+                                'group_key': grp,
+                                'group_label': grp_label
                             })
                         
-                        # Add summary column at the end
-                        if group_brand and summary_end and len(codes_in_brand) > 1:
+                        if (group_brand or group_subgroup) and summary_end and len(codes_in_group) > 1:
                             column_items.append({
                                 'type': 'summary',
                                 'code': '',
-                                'name': f"{brand} TOTAL",
-                                'brand': brand
+                                'name': f"{grp_label} TOTAL",
+                                'group_key': grp,
+                                'group_label': grp_label
                             })
 
                 self.root.after(0, lambda: self.set_progress(60, 'MAPPING SALES'))
@@ -820,7 +986,7 @@ class ZoneReportApp:
                     ws_out.merge_cells(start_row=2, start_column=start_col, end_row=2, end_column=end_col)
                     
                     # Row 1 value: Code or "SUM" label
-                    row1_val = item['code'] if item['type'] == 'individual' else f"{item['brand']} (SUM)"
+                    row1_val = item['code'] if item['type'] == 'individual' else f"{item['group_label']} (SUM)"
                     cell_r1 = ws_out.cell(row=1, column=start_col, value=row1_val)
                     cell_r1.font = font_title
                     cell_r1.fill = header_fill
@@ -887,8 +1053,8 @@ class ZoneReportApp:
                                 if qty == 0 and dream_code:
                                     qty = sales_lookup.get((depot, dream_code, c, m), 0)
                             else:
-                                # Lookup brand family sum
-                                for c in brand_groups[item['brand']]:
+                                # Lookup group sum
+                                for c in groups[item['group_key']]:
                                     val = 0
                                     if app_code:
                                         val = sales_lookup.get((depot, app_code, c, m), 0)

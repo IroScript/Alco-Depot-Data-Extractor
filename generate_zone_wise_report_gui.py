@@ -55,6 +55,8 @@ def get_subgroup_name(name):
     
     # Suffixes to strip
     suffixes = [
+        r"'s\b",
+        r"’s\b",
         r'\btab(?:let)?s?\b',
         r'\bcap(?:sule)?s?\b',
         r'\bsyrup\b',
@@ -66,7 +68,9 @@ def get_subgroup_name(name):
         r'\bgel\b',
         r'\bmg\b',
         r'\bmcg\b',
-        r'\bml\b'
+        r'\bml\b',
+        r'\bgm\b',
+        r'\bg\b'
     ]
     for suffix in suffixes:
         n = re.sub(suffix, '', n, flags=re.IGNORECASE).strip()
@@ -87,25 +91,9 @@ def clean_subgroup_key(s):
 class ScrollableFrame(tk.Frame):
     def __init__(self, container, *args, **kwargs):
         super().__init__(container, *args, **kwargs)
-        # Configure scrollbar style to match theme
-        style = ttk.Style()
-        try:
-            style.theme_use('clam')
-        except:
-            pass
-        style.configure("Vertical.TScrollbar",
-                        gripcount=0,
-                        background=_C['cyan'],
-                        troughcolor='#0D1F38',
-                        bordercolor=_C['border'],
-                        arrowcolor=_C['cyan'],
-                        lightcolor=_C['cyan'],
-                        darkcolor=_C['cyan'])
-        style.map("Vertical.TScrollbar",
-                  background=[('pressed', _C['mag']), ('active', _C['cyan'])])
 
         self.canvas = tk.Canvas(self, bg=_C['void'], highlightthickness=0)
-        self.scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview, style="Vertical.TScrollbar")
+        self.scrollbar = tk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.scrollable_frame = tk.Frame(self.canvas, bg=_C['void'])
 
         self.scrollable_frame.bind(

@@ -883,7 +883,19 @@ class ZoneReportApp:
                 df_sheet['FM/AM'] = df_sheet['FM/AM'].str.strip().str.upper().fillna('VACANT')
                 df_sheet['MARKET'] = df_sheet['MARKET'].str.strip().str.upper()
                 df_sheet['MPO NAME, JUN\'26'] = df_sheet["MPO NAME, JUN'26"].str.strip().str.upper().fillna('VACANT')
-                df_sheet['APP CODE (FINAL)'] = df_sheet['APP CODE (FINAL)'].str.strip().str.upper()
+                
+                # Check if there is a VACANT column and filter
+                vacant_col = None
+                for col in df_sheet.columns:
+                    if 'VACANT' in str(col).upper():
+                        vacant_col = col
+                        break
+                if vacant_col:
+                    df_sheet = df_sheet[~df_sheet[vacant_col].astype(str).str.upper().isin(['Y', 'YES', 'TRUE', '1'])]
+
+                # The user wants depot code instead of app code
+                depot_col = 'DEPOTMPO CODE' if 'DEPOTMPO CODE' in df_sheet.columns else 'DEPOT MPO CODE' if 'DEPOT MPO CODE' in df_sheet.columns else 'APP CODE (FINAL)'
+                df_sheet['DEPOT_CODE'] = df_sheet[depot_col].str.strip().str.upper()
                 df_sheet['DREAM APPS MPO CODE'] = df_sheet['DREAM APPS MPO CODE'].str.strip().str.upper()
                 df_sheet['DEPOT'] = df_sheet['DEPOT'].str.strip().str.upper()
 
@@ -1009,7 +1021,7 @@ class ZoneReportApp:
                 metadata_cols = [
                     ('SM', 'SM'), ('ZONE', 'ZONE'), ('FM/AM', 'FM/AM'),
                     ('DEPOT', 'DEPOT'), ('MARKET', 'MARKET'),
-                    ('APP CODE (FINAL)', 'APP CODE'), ("MPO NAME, JUN'26", 'MPO NAME')
+                    ('DEPOT_CODE', 'DEPOT CODE'), ("MPO NAME, JUN'26", 'MPO NAME')
                 ]
                 num_metadata_cols = len(metadata_cols)
 
@@ -1069,7 +1081,7 @@ class ZoneReportApp:
                     sm = row['SM']
                     fm = row['FM/AM']
                     market = row['MARKET']
-                    app_code = row['APP CODE (FINAL)']
+                    app_code = row['DEPOT_CODE']
                     dream_code = row['DREAM APPS MPO CODE']
                     mpo_name = row["MPO NAME, JUN'26"]
 

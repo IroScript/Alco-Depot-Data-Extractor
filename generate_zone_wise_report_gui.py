@@ -75,6 +75,12 @@ def get_subgroup_name(name):
     n = re.sub(r'\s+', ' ', n).strip()
     return n
 
+def clean_subgroup_key(s):
+    if not s:
+        return ""
+    # Strip dots, dashes, and spaces from start/end, and uppercase
+    return s.strip().strip('.').strip('-').strip().upper()
+
 # ══════════════════════════════════════════════════════════════════
 #  Tkinter Scrollable Frame Component
 # ══════════════════════════════════════════════════════════════════
@@ -89,12 +95,14 @@ class ScrollableFrame(tk.Frame):
             pass
         style.configure("Vertical.TScrollbar",
                         gripcount=0,
-                        background=_C['hot'],
-                        troughcolor=_C['void'],
+                        background=_C['cyan'],
+                        troughcolor='#0D1F38',
                         bordercolor=_C['border'],
                         arrowcolor=_C['cyan'],
-                        lightcolor=_C['hot'],
-                        darkcolor=_C['hot'])
+                        lightcolor=_C['cyan'],
+                        darkcolor=_C['cyan'])
+        style.map("Vertical.TScrollbar",
+                  background=[('pressed', _C['mag']), ('active', _C['cyan'])])
 
         self.canvas = tk.Canvas(self, bg=_C['void'], highlightthickness=0)
         self.scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview, style="Vertical.TScrollbar")
@@ -627,7 +635,7 @@ class ZoneReportApp:
             ungrouped = []
             for p in checked:
                 if p['var_is_subgrouped'].get():
-                    sub_name = p['var_subgroup'].get().strip().upper()
+                    sub_name = clean_subgroup_key(p['var_subgroup'].get())
                     if not sub_name:
                         sub_name = "UNNAMED SUBGROUP"
                     groups[sub_name].append(p)
@@ -927,7 +935,7 @@ class ZoneReportApp:
                 elif group_subgroup:
                     for p in selected_prods:
                         if is_subgrouped[p['code']]:
-                            grp = subgroup_names[p['code']].upper()
+                            grp = clean_subgroup_key(subgroup_names[p['code']])
                             if not grp:
                                 grp = "UNNAMED SUBGROUP"
                         else:

@@ -155,10 +155,10 @@ class ZoneReportApp:
         self.output_dir = tk.StringVar()
         self.search_var = tk.StringVar()
         
-        self.opt_group_brand = tk.BooleanVar(value=True)
-        self.opt_group_subgroup = tk.BooleanVar(value=False)
-        self.opt_summary_end = tk.BooleanVar(value=True)
-        self.opt_only_summary = tk.BooleanVar(value=False)
+        self.opt_group_brand = tk.BooleanVar(value=False)
+        self.opt_group_subgroup = tk.BooleanVar(value=True)
+        self.opt_summary_end = tk.BooleanVar(value=False)
+        self.opt_only_summary = tk.BooleanVar(value=True)
         self.opt_exclude_vacant = tk.BooleanVar(value=True)
         
         self.products_data = [] # List of dicts: {'code': str, 'default_name': str, 'var_select': BooleanVar, 'var_name': StringVar, 'var_subgroup': StringVar, 'var_is_subgrouped': BooleanVar, 'row_frame': Frame}

@@ -917,8 +917,15 @@ class ZoneReportApp:
                 df_sales['Month'] = df_sales['Month'].str.strip()
 
                 unique_months = sorted(df_sales['Month'].dropna().unique())
-                month_mapping = {'2026-01': 'Jan', '2026-02': 'Feb', '2026-03': 'Mar', '2026-04': 'Apr', '2026-05': 'May', '2026-06': 'Jun'}
-                month_headers = [month_mapping.get(m, m) for m in unique_months]
+                
+                # Dynamically generate abbreviated month name from YYYY-MM format
+                month_headers = []
+                for m in unique_months:
+                    try:
+                        month_name = datetime.strptime(str(m).strip(), '%Y-%m').strftime('%b')
+                    except Exception:
+                        month_name = str(m)
+                    month_headers.append(month_name)
 
                 # Map custom names and subgroup names from user inputs
                 custom_names = {}

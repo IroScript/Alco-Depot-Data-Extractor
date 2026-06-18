@@ -130,6 +130,9 @@ def run_step_4():
         print(f"\n  [ERROR] {msg}")
         root.quit()
 
+    def mock_show_success_dialog(out_path):
+        print(f"\n  [SUCCESS] 10 Parameter Analysis saved to: {out_path}")
+
     class SyncThread:
         def __init__(self, target, *args, **kwargs):
             self.target = target
@@ -138,7 +141,8 @@ def run_step_4():
 
     with patch('tkinter.messagebox.showinfo', side_effect=on_success), \
          patch('tkinter.messagebox.showerror', side_effect=on_error), \
-         patch('threading.Thread', SyncThread):
+         patch('threading.Thread', SyncThread), \
+         patch.object(s4.ZoneDataAnalyzerApp, 'show_success_dialog', mock_show_success_dialog):
          
          app.run_process()
          

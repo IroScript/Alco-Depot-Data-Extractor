@@ -203,6 +203,100 @@ class ZoneDataAnalyzerApp:
         self.cv.coords(self.progress_bar, 20, 260, 20+w, 263)
         self.root.update_idletasks()
 
+    def show_success_dialog(self, out_path):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Success")
+        dialog.geometry("420x200")
+        dialog.resizable(False, False)
+        dialog.configure(bg=_C['void'])
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Center relative to parent (W_WIN=490, H_WIN=315, Dialog=420x200)
+        parent_x = self.root.winfo_rootx()
+        parent_y = self.root.winfo_rooty()
+        dialog.geometry(f"+{parent_x + 35}+{parent_y + 57}")
+
+        W_D, H_D = 420, 200
+        cv = tk.Canvas(dialog, width=W_D, height=H_D, bg=_C['void'], highlightthickness=0, bd=0)
+        cv.place(x=0, y=0)
+
+        # Background decoration
+        for y in range(H_D):
+            t = y / H_D
+            r = int(3  + t * 4)
+            g = int(4  + t * 5)
+            b = int(10 + t * 16)
+            cv.create_line(0, y, W_D, y, fill=f'#{r:02x}{g:02x}{b:02x}', width=1)
+
+        # Brackets
+        c = _C['cyan']
+        pad, sz = 10, 12
+        cv.create_line(pad, pad, pad+sz, pad, fill=c, width=1)
+        cv.create_line(pad, pad, pad, pad+sz, fill=c, width=1)
+        cv.create_line(W_D-pad-sz, pad, W_D-pad, pad, fill=c, width=1)
+        cv.create_line(W_D-pad, pad, W_D-pad, pad+sz, fill=c, width=1)
+        cv.create_line(pad, H_D-pad, pad+sz, H_D-pad, fill=c, width=1)
+        cv.create_line(pad, H_D-pad-sz, pad, H_D-pad, fill=c, width=1)
+        cv.create_line(W_D-pad-sz, H_D-pad, W_D-pad, H_D-pad, fill=c, width=1)
+        cv.create_line(W_D-pad, H_D-pad-sz, W_D-pad, H_D-pad, fill=c, width=1)
+
+        # Circle tick
+        cv.create_oval(25, 30, 55, 60, fill='#051A18', outline=_C['green'], width=1.5)
+        cv.create_text(40, 45, text='✓', font=('Courier New', 13, 'bold'), fill=_C['green'])
+
+        # Title
+        cv.create_text(70, 45, text="PROCESSING COMPLETE", font=('Courier New', 10, 'bold'), fill=_C['green'], anchor='w')
+
+        norm_path = os.path.normpath(out_path)
+        wrapped_path = norm_path
+        if len(norm_path) > 45:
+            chunks = []
+            for i in range(0, len(norm_path), 45):
+                chunks.append(norm_path[i:i+45])
+            wrapped_path = "\n".join(chunks)
+
+        cv.create_text(25, 80, text=f"Saved to:\n{wrapped_path}", font=('Courier New', 8), fill=_C['text'], anchor='nw')
+
+        # Action handlers
+        def open_file():
+            try:
+                os.startfile(norm_path)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to open file:\n{e}", parent=dialog)
+
+        def open_folder():
+            try:
+                os.startfile(os.path.dirname(norm_path))
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to open folder:\n{e}", parent=dialog)
+
+        # Draw buttons using Canvas items and Tkinter Buttons
+        def make_btn(cx, cy, label, cmd, w=100, h=24, border_color=_C['cyan']):
+            x1, y1, x2, y2 = cx-w//2, cy-h//2, cx+w//2, cy+h//2
+            r = 4
+            poly = [x1+r, y1, x2-r, y1, x2, y1, x2, y1+r, x2, y2-r, x2, y2, x2-r, y2, x1+r, y2, x1, y2, x1, y2-r, x1, y1+r, x1, y1]
+            bg_id = cv.create_polygon(poly, smooth=True, fill='#07152B', outline=border_color, width=1)
+            
+            btn = tk.Button(dialog, text=label, command=cmd, font=('Courier New', 8, 'bold'), fg=border_color,
+                            bg='#07152B', relief='flat', cursor='hand2', activebackground='#0B2A4A',
+                            activeforeground='#FFFFFF', highlightthickness=0, bd=0)
+            cv.create_window(cx, cy, window=btn, width=w-2, height=h-2)
+
+            def on_in(e):
+                cv.itemconfig(bg_id, fill=_C['hot'], outline='#FFFFFF')
+                btn.configure(bg=_C['hot'], fg='#FFFFFF')
+            def on_out(e):
+                cv.itemconfig(bg_id, fill='#07152B', outline=border_color)
+                btn.configure(bg='#07152B', fg=border_color)
+
+            btn.bind('<Enter>', on_in)
+            btn.bind('<Leave>', on_out)
+
+        make_btn(90, 160, "OPEN FILE", open_file, border_color=_C['cyan'])
+        make_btn(210, 160, "OPEN FOLDER", open_folder, border_color=_C['cyan'])
+        make_btn(330, 160, "OK", dialog.destroy, border_color=_C['green'])
+
     def run_process(self):
         ip = self.input_file.get()
         od = self.output_dir.get()
@@ -333,10 +427,10 @@ class ZoneDataAnalyzerApp:
                 ]
                 
                 # Curated premium color formatting for parameter rows
-                font_family = "Segoe UI"
-                font_param_label = Font(name=font_family, size=9, bold=True, color="1F497D")
-                font_param_val_bold = Font(name=font_family, size=9, bold=True)
-                font_param_val_reg = Font(name=font_family, size=9)
+                font_family = "Arial Narrow"
+                font_param_label = Font(name=font_family, size=11, bold=True, color="1F497D")
+                font_param_val_bold = Font(name=font_family, size=11, bold=True)
+                font_param_val_reg = Font(name=font_family, size=11)
                 
                 fill_sum_mean = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid") # Soft light green
                 fill_cv = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid") # Soft light yellow
@@ -461,6 +555,23 @@ class ZoneDataAnalyzerApp:
                                 new_formula = f"=SUM({','.join(sum_cells)})"
                                 ws.cell(row=grand_total_row, column=col, value=new_formula)
                 
+                # Apply Arial Narrow font (size 11) to the entire sheet
+                for r in range(1, ws.max_row + 1):
+                    for col in range(1, max_col + 1):
+                        cell = ws.cell(row=r, column=col)
+                        is_bold = False
+                        if cell.font and cell.font.bold:
+                            is_bold = True
+                        elif r in [1, 2, 3]:
+                            is_bold = True
+                        
+                        color = cell.font.color if cell.font else None
+                        cell.font = Font(name="Arial Narrow", size=11, bold=is_bold, color=color)
+
+                # Set row heights for rotated headers (Row 2 for product names, Row 3 for months)
+                ws.row_dimensions[2].height = 120
+                ws.row_dimensions[3].height = 35
+
                 # Re-format all column widths to prevent clipped text
                 for col in range(1, max_col + 1):
                     col_letter = get_column_letter(col)
@@ -474,7 +585,56 @@ class ZoneDataAnalyzerApp:
                     if col <= 11:
                         ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
                     else:
-                        ws.column_dimensions[col_letter].width = 8
+                        # 17 pixels is approx width 1.71 in Excel
+                        ws.column_dimensions[col_letter].width = 1.71
+
+                # Rotate header text for product columns
+                for col in range(12, max_col + 1):
+                    for r in [2, 3]:
+                        cell = ws.cell(row=r, column=col)
+                        cur_align = cell.alignment
+                        cell.alignment = Alignment(
+                            horizontal=cur_align.horizontal if cur_align else "center",
+                            vertical=cur_align.vertical if cur_align else "center",
+                            wrap_text=cur_align.wrap_text if cur_align else True,
+                            textRotation=90
+                        )
+
+                # Identify product boundaries in the final sheet
+                product_boundaries = []
+                current_prod_start = 12
+                for col in range(13, max_col + 1):
+                    val1 = ws.cell(row=1, column=col).value
+                    if val1 is not None and str(val1).strip() != "":
+                        product_boundaries.append((current_prod_start, col - 1))
+                        current_prod_start = col
+                if current_prod_start <= max_col:
+                    product_boundaries.append((current_prod_start, max_col))
+
+                # Apply vertical borders to box each product group
+                border_medium_vertical = Side(border_style="medium", color="000000")
+                for start_c, end_c in product_boundaries:
+                    for r in range(2, ws.max_row + 1):
+                        cell = ws.cell(row=r, column=end_c)
+                        cur_border = cell.border
+                        cell.border = Border(
+                            left=cur_border.left if cur_border else None,
+                            right=border_medium_vertical,
+                            top=cur_border.top if cur_border else None,
+                            bottom=cur_border.bottom if cur_border else None
+                        )
+                
+                # Apply left border to the very first product column (column 12)
+                if max_col >= 12:
+                    for r in range(2, ws.max_row + 1):
+                        cell = ws.cell(row=r, column=12)
+                        cur_border = cell.border
+                        cell.border = Border(
+                            left=border_medium_vertical,
+                            right=cur_border.right if cur_border else None,
+                            top=cur_border.top if cur_border else None,
+                            bottom=cur_border.bottom if cur_border else None
+                        )
 
                 # Set Print Layout Settings for Legal Landscape & Fitting
                 ws.page_setup.paperSize = 5 # Legal size
@@ -510,7 +670,7 @@ class ZoneDataAnalyzerApp:
                 self.root.after(0, lambda: [
                     self.update_progress(100, 'COMPLETED SUCCESSFULLY'),
                     self.lbl_status.configure(fg=_C['green']),
-                    messagebox.showinfo("Success", f"Data analysis added and saved to:\n{out_path}"),
+                    self.show_success_dialog(out_path),
                     self.exec_btn.configure(state='normal')
                 ])
                 

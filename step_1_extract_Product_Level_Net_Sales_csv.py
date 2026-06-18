@@ -623,8 +623,8 @@ def process_all_depots():
             # Save to CSV in selected output directory
             gui.update_progress(90, "Saving to CSV file...")
             gui.log("[6/6] Saving to CSV...")
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            csv_file = os.path.join(output_dir, f"Product_Level_Net_Sales_{timestamp}.csv")
+            timestamp = datetime.now().strftime('%d_%b_%Y_%I.%M_%p')
+            csv_file = os.path.join(output_dir, f"01_Product_Level_Net_Sales_Extracted_Data_{timestamp}.csv")
             
             net_sales.to_csv(csv_file, index=False)
             

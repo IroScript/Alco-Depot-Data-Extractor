@@ -49,74 +49,81 @@ import glob
 import warnings
 warnings.filterwarnings('ignore')
 
+import gspread
+from google.oauth2.service_account import Credentials
+import json
+
 # ============================================================================
 # CONFIGURATION & PRE-PROCESSING
 # ============================================================================
 
-# Input files
-MPO_FIELD_FILE = r"C:\Users\Irak\Desktop\Barishal April Data\MPO_CODE_AND_FIELD.xlsx"
-TARGET_FILE = r"C:\Users\Irak\Desktop\Barishal April Data\Unit Target of April-2026 (2).xlsx"
-
-def clean_excel_file_inplace(filepath):
-    """
-    Permanently cleans the Excel file in-place:
-    1. Replaces CHAR(160) non-breaking spaces with normal spaces.
-    2. Removes all control/non-printable characters (ASCII 0-31 and 127-159).
-    3. Trims leading/trailing spaces and collapses multiple spaces.
-    Only touches text/string cells, preserving formulas, numbers, dates, styles, and sheet structure.
-    """
-    if not os.path.exists(filepath):
-        print(f"WARNING: File {filepath} not found for cleaning.")
-        return
+def load_google_sheet_by_pattern(spreadsheet_id, pattern=None, exact_name=None, has_header=True):
+    config_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\config.json'
+    creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
     
-    print(f"Permanently cleaning '{os.path.basename(filepath)}' in-place...")
-    try:
-        wb = load_workbook(filepath)
-        cleaned_cells_count = 0
-        for sheet_name in wb.sheetnames:
-            ws = wb[sheet_name]
-            for row in ws.iter_rows():
-                for cell in row:
-                    if cell.value is not None and isinstance(cell.value, str):
-                        orig_val = cell.value
-                        # Replace CHAR(160) (non-breaking spaces) with normal space
-                        val = orig_val.replace('\xa0', ' ')
-                        # CLEAN: Remove control/non-printable characters
-                        val = re.sub(r'[\x00-\x1F\x7F-\x9F]', '', val)
-                        # TRIM: Strip and collapse multiple spaces
-                        val = ' '.join(val.strip().split())
-                        
-                        if val != orig_val:
-                            cell.value = val
-                            cleaned_cells_count += 1
-        if cleaned_cells_count > 0:
-            wb.save(filepath)
-            print(f"  [OK] Cleaned {cleaned_cells_count} text cells in '{os.path.basename(filepath)}'.")
-        else:
-            print(f"  [OK] '{os.path.basename(filepath)}' was already 100% clean.")
-        wb.close()
-    except PermissionError:
-        print(f"\nERROR: Permission denied while writing to '{os.path.basename(filepath)}'.")
-        print("Please close the file if it is open in Excel and run this script again!")
-        sys.exit(1)
-    except Exception as e:
-        print(f"WARNING: Failed to clean '{os.path.basename(filepath)}' in-place. Error: {e}")
+    with open(config_path, 'r') as f:
+        config = json.load(f)
+        
+    scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key(spreadsheet_id)
+    
+    ws = None
+    target_month = None
+    
+    for w in sheet.worksheets():
+        if exact_name and w.title == exact_name:
+            ws = w
+            break
+        if pattern and pattern in w.title:
+            ws = w
+            # Extract month from pattern like "Tgt (2026) April" -> "April"
+            parts = w.title.split()
+            target_month = parts[-1]
+            break
+            
+    if not ws:
+        ws = sheet.sheet1
+        
+    data = ws.get_all_values()
+    if not data:
+        return pd.DataFrame(), target_month, ws.title
+        
+    if has_header:
+        df = pd.DataFrame(data[1:], columns=data[0])
+    else:
+        df = pd.DataFrame(data)
+        
+    # Clean the dataframe (replacing the old inplace clean)
+    df = df.replace({r'\xa0': ' '}, regex=True)
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            df[col] = df[col].apply(lambda x: re.sub(r'[\x00-\x1F\x7F-\x9F]', '', str(x)) if pd.notna(x) else x)
+            df[col] = df[col].apply(lambda x: ' '.join(str(x).strip().split()) if pd.notna(x) else x)
+            
+    return df, target_month, ws.title
 
-print("=" * 80)
-print("PERMANENT IN-PLACE DATA CLEANING")
-print("=" * 80)
-clean_excel_file_inplace(MPO_FIELD_FILE)
-clean_excel_file_inplace(TARGET_FILE)
-print("=" * 80 + "\n")
+TARGET_SPREADSHEET_ID = '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY'
+
+print("Initializing Google Sheets to detect target month...")
+df_target_raw, target_month, target_sheet_name = load_google_sheet_by_pattern(TARGET_SPREADSHEET_ID, pattern="Tgt ", has_header=False)
+if not target_month:
+    print("WARNING: Could not detect target month from sheet name. Defaulting to 'April'.")
+    target_month = "April"
+    target_sheet_name = "Unknown"
+    
+print(f"Detected Target Month: {target_month} (from sheet '{target_sheet_name}')")
+
 
 # Find the latest Product_Level_Net_Sales CSV
-csv_files = glob.glob(r"C:\Users\Irak\Desktop\Barishal April Data\Product_Level_Net_Sales_*.csv")
+csv_files = glob.glob(r"C:\Users\Irak\Desktop\Barishal April Data\*Product_Level_Net_Sales*.csv")
 if not csv_files:
     print("ERROR: No Product_Level_Net_Sales CSV file found!")
-    print("Please run process_product_level_FAST.py first to generate the sales data.")
+    print("Please run step_1_extract_Product_Level_Net_Sales_csv.py first to generate the sales data.")
     exit(1)
 
-ACHIEVEMENT_CSV = max(csv_files, key=os.path.getctime)  # Get the latest file
+ACHIEVEMENT_CSV = max(csv_files, key=os.path.getmtime)  # Get the latest file
 
 print("=" * 80)
 print("COMPLETE DEPOT DATA PROCESSING WORKFLOW")
@@ -155,34 +162,55 @@ pivot = pd.pivot_table(
 pivot_df = pivot.reset_index()
 print(f"  - Pivot table shape: {pivot_df.shape}")
 
-print("\n1.4: Extracting April achievement...")
-april_col = None
+print(f"\n1.4: Extracting {target_month} achievement...")
+target_col = None
+
+# Map month names to numbers (e.g. 'April' -> '04') to match pivot columns ('2026-04')
+month_map = {
+    'january': '01', 'february': '02', 'march': '03', 'april': '04',
+    'may': '05', 'june': '06', 'july': '07', 'august': '08',
+    'september': '09', 'october': '10', 'november': '11', 'december': '12',
+    'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
+    'jun': '06', 'jul': '07', 'aug': '08', 'sep': '09',
+    'oct': '10', 'nov': '11', 'dec': '12'
+}
+target_month_lower = target_month.lower() if target_month else ""
+target_month_num = month_map.get(target_month_lower, target_month_lower)
+
 for col in pivot_df.columns:
-    if '04' in str(col) or 'April' in str(col):
-        april_col = col
+    col_str = str(col).lower()
+    if target_month_lower and (target_month_lower in col_str or f"-{target_month_num}" in col_str):
+        target_col = col
         break
 
-if april_col:
-    april_summary = pivot_df[['DepotMPO_CodeProduct_Code', 'Depot', 'MPO_Code', 'DepotMPO_Code', 
-                               'Product_Code', 'Product_Name', april_col]].copy()
-    april_summary.rename(columns={april_col: 'April_Achievement'}, inplace=True)
-    april_summary = april_summary[april_summary['DepotMPO_CodeProduct_Code'] != 'Grand Total']
-    print(f"  - April records: {len(april_summary)}")
-    print(f"  - Total April achievement: {april_summary['April_Achievement'].sum():,.0f}")
-else:
-    print("  ERROR: April column not found!")
-    exit(1)
+if not target_col:
+    print(f"WARNING: No column found for '{target_month}' in achievement data!")
+
+target_summary_sheet_name = f"{target_month}_Achievement"
+
+if target_col:
+    target_summary = pivot_df[['DepotMPO_CodeProduct_Code', 'Depot', 'MPO_Code', 'DepotMPO_Code', 
+                               'Product_Code', 'Product_Name', target_col]].copy()
+    target_summary.rename(columns={target_col: target_summary_sheet_name}, inplace=True)
+    target_summary = target_summary[target_summary['DepotMPO_CodeProduct_Code'] != 'Grand Total']
+    print(f"  - {target_month} records: {len(target_summary)}")
+    
+    # Check for unassigned
+    unassigned = target_summary[target_summary['DepotMPO_CodeProduct_Code'].str.contains('UNASSIGNED|VACANT|None', na=False, case=False)]
+    if len(unassigned) > 0:
+        print(f"  - WARNING: Found {len(unassigned)} records without proper MPO assignment")
 
 # Add uppercase lookup column
-april_summary.insert(0, 'LOOKUP_KEY_UPPER', april_summary['DepotMPO_CodeProduct_Code'].str.upper())
-print(f"  - Added LOOKUP_KEY_UPPER column")
+    target_summary.insert(0, 'LOOKUP_KEY_UPPER', target_summary['DepotMPO_CodeProduct_Code'].str.upper())
+    print(f"  - Added LOOKUP_KEY_UPPER column")
 
-timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-achievement_pivot_file = f"Achievement_Pivot_{timestamp}.xlsx"
+timestamp = datetime.now().strftime('%d_%b_%Y_%I.%M_%p')
+achievement_pivot_file = f"02A_MPO_Achievement_Pivot_Analysis_{timestamp}.xlsx"
 
 with pd.ExcelWriter(achievement_pivot_file, engine='openpyxl') as writer:
     pivot_df.to_excel(writer, sheet_name='Pivot_All_Months', index=False)
-    april_summary.to_excel(writer, sheet_name='April_Achievement', index=False)
+    if target_col:
+        target_summary.to_excel(writer, sheet_name=target_summary_sheet_name, index=False)
 
 print(f"\n[OK] Achievement pivot saved: {achievement_pivot_file}")
 
@@ -195,8 +223,7 @@ print("STEP 2: EXTRACT TARGET DATA WITH PRODUCT NAMES")
 print("=" * 80)
 
 print("\n2.1: Reading product names from row 3...")
-df_raw = pd.read_excel(TARGET_FILE, header=None)
-product_names_row = df_raw.iloc[2]
+product_names_row = df_target_raw.iloc[2]
 
 product_names = []
 # There are 17 unique products starting at index 8 (columns 8 to 24)
@@ -210,35 +237,42 @@ for i in range(8, 25):
 print(f"  - Total unique product columns: {len(product_names)}")
 
 print("\n2.2: Reading data and combining General Party and Type-1 & PP targets...")
-df_target_raw = pd.read_excel(TARGET_FILE, header=1)
+df_raw = df_target_raw.copy()
+df_target_raw = df_raw.iloc[1:].copy()
+# Reset column names to numbers to avoid duplicates
+df_target_raw.columns = range(df_target_raw.shape[1])
+df_target_raw = df_target_raw.reset_index(drop=True)
 
-# Assign metadata columns
-df_target_raw.columns.values[0] = 'Sl_No'
-df_target_raw.columns.values[1] = 'Name'
-df_target_raw.columns.values[2] = 'Designation'
-df_target_raw.columns.values[3] = 'Market'
+# Assign metadata columns based on the original header (row 1 of df_raw)
+df_target_raw.rename(columns={
+    0: 'Sl_No',
+    1: 'Name',
+    2: 'Designation',
+    3: 'Market',
+    4: 'Confirm_Sales'
+}, inplace=True)
 
 # Extract target for MPO/SMPO (General Party) only, completely skipping FM/AM (Type-1 & PP) Targets in columns AA to AQ (index 26 to 42)
 for i in range(8, 25):
     prod_name = product_names[i - 8]
-    val_gp = pd.to_numeric(df_target_raw.iloc[:, i], errors='coerce').fillna(0)
-    df_target_raw.iloc[:, i] = val_gp.round(0).astype(int)
-    df_target_raw.columns.values[i] = prod_name
+    val_gp = pd.to_numeric(df_target_raw[i], errors='coerce').fillna(0)
+    df_target_raw[prod_name] = val_gp.round(0).astype(int)
 
-# Keep only columns 0 to 24 (inclusive) which are metadata + the 17 combined target columns
-# Keep only columns 0 to 24 (inclusive) which are metadata + the 17 combined target columns
-df_target_raw = df_target_raw.iloc[:, :25].copy()
+# Keep only columns: metadata + the 17 target columns
+metadata_cols = ['Sl_No', 'Name', 'Designation', 'Market']
+df_target_raw = df_target_raw[metadata_cols + product_names].copy()
 
 # Extract zones for every single row from df_raw (header=None) by scanning column 0
 zones_list = []
 current_zone = None
 for idx, row in df_raw.iterrows():
-    if pd.notna(row.iloc[0]) and 'Zone' in str(row.iloc[0]):
-        current_zone = str(row.iloc[0]).replace('Zone :', '').replace('Zone', '').strip()
+    val = row.iloc[0]
+    if pd.notna(val) and 'Zone' in str(val):
+        current_zone = str(val).replace('Zone :', '').replace('Zone', '').strip()
     zones_list.append(current_zone)
 
-# Assign Zone using our exact row index mapping
-df_target_raw['Zone'] = [zones_list[i + 2] for i in range(len(df_target_raw))]
+# Assign Zone using our exact row index mapping (df_target_raw starts from row 1 of df_raw)
+df_target_raw['Zone'] = [zones_list[i + 1] for i in range(len(df_target_raw))]
 
 print("\n2.3: Filtering target markets using blacklist (no designation filtering)...")
 df_target_raw = df_target_raw[df_target_raw['Market'].notna()]
@@ -262,7 +296,7 @@ df_target_filtered['Total_Target'] = df_target_filtered[product_cols].sum(axis=1
 print(f"  - Product columns: {len(product_cols)}")
 print(f"  - Total target quantity: {df_target_filtered['Total_Target'].sum():,.0f}")
 
-target_data_file = f"Target_Data_With_Products_{timestamp}.xlsx"
+target_data_file = f"02B_Parsed_Target_Data_Summary_{timestamp}.xlsx"
 with pd.ExcelWriter(target_data_file, engine='openpyxl') as writer:
     df_target_filtered[['Zone', 'Market', 'Designation', 'Total_Target']].to_excel(writer, sheet_name='Summary', index=False)
     df_target_filtered.to_excel(writer, sheet_name='Full_Data', index=False)
@@ -277,8 +311,32 @@ print("\n" + "=" * 80)
 print("STEP 3: MERGE TARGETS INTO MPO FIELD DATA")
 print("=" * 80)
 
-print("\n3.1: Loading MPO_CODE_AND_FIELD file...")
-df_mpo = pd.read_excel(MPO_FIELD_FILE)
+print("\n3.1: Loading MPO_CODE_AND_FIELD file from Google Sheets...")
+df_mpo_raw, _, _ = load_google_sheet_by_pattern(TARGET_SPREADSHEET_ID, exact_name="FIELD_JAN_2025")
+
+# Ensure unique column names to prevent pandas alignment ValueError
+raw_cols = df_mpo_raw.columns.tolist()
+unique_cols = []
+for i, c in enumerate(raw_cols):
+    col_name = str(c).strip() if pd.notna(c) and str(c).strip() else f"Unnamed_{i}"
+    while col_name in unique_cols:
+        col_name += f"_{i}"
+    unique_cols.append(col_name)
+df_mpo_raw.columns = unique_cols
+df_mpo = df_mpo_raw.rename(columns={
+    'DREAM APPS MPO CODE': 'MPO CODE',
+    'Depot Name': 'DEPOT',
+    'Zone': 'ZONE',
+    'FM Name': 'FM/AM, ZONE', 
+    'Market Name': 'MARKET',
+    'MPO Code': 'MPO CODE'
+})
+# If 'MPO CODE' still missing, just copy 'APP CODE (FINAL)' or whichever is available
+if 'MPO CODE' not in df_mpo.columns:
+    for c in ['APP CODE (FINAL)', 'RX CODE']:
+        if c in df_mpo.columns:
+            df_mpo['MPO CODE'] = df_mpo[c]
+            break
 print(f"  - Total records: {len(df_mpo)}")
 
 print("\n3.2: Adding DEPOT_MPO_CODE concatenation...")
@@ -445,7 +503,7 @@ df_mpo_matched = df_mpo[df_mpo['_matched_to'].notna()].copy()
 df_mpo_final = df_mpo_matched[final_cols].copy()
 df_mpo_final['Total_Target'] = df_mpo_final[product_cols].sum(axis=1)
 
-mpo_field_targets_file = f"MPO_Field_With_Targets_{timestamp}.xlsx"
+mpo_field_targets_file = f"02C_MPO_Matched_Targets_Summary_{timestamp}.xlsx"
 with pd.ExcelWriter(mpo_field_targets_file, engine='openpyxl') as writer:
     df_mpo_final.to_excel(writer, sheet_name='MPO_Field_Targets', index=False)
     df_mpo_final[base_cols + ['Total_Target']].to_excel(writer, sheet_name='Summary', index=False)
@@ -520,7 +578,7 @@ print("STEP 4: CREATE FINAL TARGET VS ACHIEVEMENT REPORT")
 print("=" * 80)
 
 print("\n4.1: Creating product code mapping...")
-product_mapping = april_summary[['Product_Code', 'Product_Name']].drop_duplicates()
+product_mapping = target_summary[['Product_Code', 'Product_Name']].drop_duplicates()
 product_code_dict = dict(zip(product_mapping['Product_Name'], product_mapping['Product_Code']))
 print(f"  - Unique products in achievement: {len(product_code_dict)}")
 
@@ -613,7 +671,7 @@ df_final = pd.concat([df_row1, df_row2, df_new], ignore_index=True)
 print(f"  - Final shape: {df_final.shape}")
 
 print("\n4.5: Saving with VLOOKUP formulas...")
-output_file = f"MPO_Target_vs_Achievement_{timestamp}.xlsx"
+output_file = f"02D_FINAL_MPO_Target_vs_Achievement_Formula_{timestamp}.xlsx"
 df_final.to_excel(output_file, sheet_name='Target_vs_Achievement', index=False)
 
 wb = load_workbook(output_file)
@@ -629,7 +687,7 @@ for excel_col_idx, col_name in enumerate(df_final.columns, start=1):
             depot_mpo_cell = "$F"
             
             for row_idx in range(4, len(df_final) + 2):
-                formula = f'=IFERROR(VLOOKUP(UPPER({depot_mpo_cell}{row_idx}&"_"&{product_code_cell}),\'[{achievement_pivot_file}]April_Achievement\'!$A:$H,8,FALSE),0)'
+                formula = f'=IFERROR(VLOOKUP(UPPER({depot_mpo_cell}{row_idx}&"_"&{product_code_cell}),\'[{achievement_pivot_file}]{target_summary_sheet_name}\'!$A:$H,8,FALSE),0)'
                 ws[f"{col_letter}{row_idx}"] = formula
 
 wb.save(output_file)
@@ -638,9 +696,10 @@ print(f"  - Formulas added for {matched} products")
 
 print("\n4.6: Creating version with calculated values...")
 achievement_lookup = {}
-for idx, row in april_summary.iterrows():
-    key = row['LOOKUP_KEY_UPPER']
-    achievement_lookup[key] = row['April_Achievement']
+if target_col:
+    for idx, row in target_summary.iterrows():
+        key = row['LOOKUP_KEY_UPPER']
+        achievement_lookup[key] = row[target_summary_sheet_name]
 
 df_with_values = pd.read_excel(output_file, sheet_name='Target_vs_Achievement')
 for col in df_with_values.columns:
@@ -660,7 +719,7 @@ for new_col, (orig_col, col_type) in new_col_mapping.items():
                     else:
                         df_with_values.at[row_idx, new_col] = 0
 
-values_file = f"MPO_Target_vs_Achievement_Values_{timestamp}.xlsx"
+values_file = f"02E_FINAL_MPO_Target_vs_Achievement_Values_{timestamp}.xlsx"
 df_with_values.to_excel(values_file, sheet_name='Target_vs_Achievement', index=False)
 
 print(f"\n[OK] Target vs Achievement saved: {output_file}")
@@ -686,7 +745,7 @@ print(f"  - Total MPO records: {len(df_mpo_final)}")
 print(f"  - Product columns: {len(product_cols)}")
 print(f"  - Products matched: {matched}/{len(product_cols)}")
 print(f"  - Total target: {df_mpo_final['Total_Target'].sum():,.0f}")
-print(f"  - Total achievement: {april_summary['April_Achievement'].sum():,.0f}")
+print(f"  - Total achievement: {target_summary[target_summary_sheet_name].sum():,.0f}")
 
 print(f"\nMARKET MATCHING:")
 exact_count = sum(1 for m in matches if m[3] == 'Exact')

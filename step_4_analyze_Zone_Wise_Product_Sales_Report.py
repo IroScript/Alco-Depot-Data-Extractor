@@ -6,6 +6,7 @@ from openpyxl.utils import get_column_letter
 import math
 import random
 import threading
+import glob
 
 # ══════════════════════════════════════════════════════════════════
 #  Design tokens (From SmallApp)
@@ -47,6 +48,15 @@ class ZoneDataAnalyzerApp:
         self._build()
         self._seed_stars()
         self._tick()
+        self.auto_detect_latest_report()
+
+    def auto_detect_latest_report(self):
+        reports = glob.glob(r'c:\Users\Irak\Desktop\Barishal April Data\*Zone_Wise_Sales_Grouped_Report*.xlsx')
+        if reports:
+            latest = max(reports, key=os.path.getmtime)
+            self.input_file.set(latest)
+            self.output_dir.set(os.path.dirname(latest))
+            self.lbl_status.configure(text="✓ LATEST REPORT AUTO-SELECTED", fg=_C['green'])
 
     def _build(self):
         W, H = W_WIN, H_WIN
@@ -320,7 +330,11 @@ class ZoneDataAnalyzerApp:
                                 ws.cell(row=grand_total_row, column=col, value=new_formula)
 
                 self.update_progress(90, 'SAVING FILE...')
-                out_name = "Analysis_" + os.path.basename(ip)
+                original_name = os.path.basename(ip)
+                # Strip the 03_ prefix if it exists to keep it clean
+                if original_name.startswith("03_"):
+                    original_name = original_name[3:]
+                out_name = "04_Analyzed_10_Param_" + original_name
                 out_path = os.path.join(od, out_name)
                 wb.save(out_path)
                 wb.close()

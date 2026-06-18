@@ -461,9 +461,9 @@ class ZoneReportApp:
 
     # ── Auto detect latest CSV ──────────────────────────────────────────
     def auto_detect_latest_csv(self):
-        csv_files = glob.glob(r'c:\Users\Irak\Desktop\Barishal April Data\Product_Level_Net_Sales_*.csv')
+        csv_files = glob.glob(r'c:\Users\Irak\Desktop\Barishal April Data\*Product_Level_Net_Sales*.csv')
         if csv_files:
-            latest_csv = max(csv_files, key=os.path.getctime)
+            latest_csv = max(csv_files, key=os.path.getmtime)
             self.input_file.set(latest_csv)
             self.output_dir.set(os.path.dirname(latest_csv))
             self.lbl_file_msg.configure(text="✓ LATEST WORKFLOW FILE AUTO-SELECTED", fg=_C['green'])
@@ -904,7 +904,7 @@ class ZoneReportApp:
                         df_sheet = df_sheet[~df_sheet[vacant_col].astype(str).str.upper().isin(['Y', 'YES', 'TRUE', '1'])]
 
                 # The user wants depot code instead of app code
-                depot_col = 'DEPOTMPO CODE' if 'DEPOTMPO CODE' in df_sheet.columns else 'DEPOT MPO CODE' if 'DEPOT MPO CODE' in df_sheet.columns else 'APP CODE (FINAL)'
+                depot_col = 'DEPOTMPO CODE' if 'DEPOTMPO CODE' in df_sheet.columns else 'DEPOT MPO CODE' if 'DEPOT MPO CODE' in df_sheet.columns else 'DREAM APPS MPO CODE'
                 df_sheet['DEPOT_CODE'] = df_sheet[depot_col].str.strip().str.upper()
                 df_sheet['DREAM APPS MPO CODE'] = df_sheet['DREAM APPS MPO CODE'].str.strip().str.upper()
                 df_sheet['DEPOT'] = df_sheet['DEPOT'].str.strip().str.upper()
@@ -1198,8 +1198,8 @@ class ZoneReportApp:
                 ws_out.freeze_panes = "H4"
 
                 # Save file
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                out_name = f"Zone_Wise_Product_Sales_Report_{timestamp}.xlsx"
+                timestamp = datetime.now().strftime('%d_%b_%Y_%I.%M_%p')
+                out_name = f"03_Zone_Wise_Sales_Grouped_Report_{timestamp}.xlsx"
                 out_path = os.path.join(od, out_name)
                 
                 print(f"Saving workbook to {out_path}...")

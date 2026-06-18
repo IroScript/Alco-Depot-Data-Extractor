@@ -243,7 +243,10 @@ class ZoneDataAnalyzerApp:
                 ]
                 
                 # Process backwards to avoid messing up row indices
-                for r_boundary, z_name in reversed(zone_boundaries):
+                for idx, (r_boundary, z_name) in enumerate(reversed(zone_boundaries)):
+                    i = len(zone_boundaries) - 1 - idx
+                    offset = i * 10
+                    
                     # We need to find where this zone started to create the formulas
                     z_start = start_row
                     for r in range(r_boundary - 1, start_row - 1, -1):
@@ -252,20 +255,23 @@ class ZoneDataAnalyzerApp:
                             break
                     z_end = r_boundary - 1
                     
+                    final_z_start = z_start + offset
+                    final_z_end = z_end + offset
+                    
                     # Insert 10 rows
                     ws.insert_rows(r_boundary, amount=10)
                     if grand_total_row:
                         grand_total_row += 10
                         
                     # Write parameter labels in MPO NAME column (7)
-                    for i, p_name in enumerate(param_names):
-                        c = ws.cell(row=r_boundary + i, column=7, value=p_name)
+                    for idx_p, p_name in enumerate(param_names):
+                        c = ws.cell(row=r_boundary + idx_p, column=7, value=p_name)
                         # Optionally right align or style
                         
                     # Write formulas for all data columns (8 to max_col)
                     for col in range(8, max_col + 1):
                         col_l = get_column_letter(col)
-                        rng = f"{col_l}{z_start}:{col_l}{z_end}"
+                        rng = f"{col_l}{final_z_start}:{col_l}{final_z_end}"
                         
                         # Row indices for the inserted rows
                         r_count = r_boundary
@@ -284,8 +290,8 @@ class ZoneDataAnalyzerApp:
                         ws.cell(row=r_sum, column=col, value=f"=SUM({rng})")
                         ws.cell(row=r_mean, column=col, value=f"=AVERAGE({rng})")
                         ws.cell(row=r_median, column=col, value=f"=MEDIAN({rng})")
-                        ws.cell(row=r_var, column=col, value=f"=VAR.S({rng})")
-                        ws.cell(row=r_sd, column=col, value=f"=STDEV.S({rng})")
+                        ws.cell(row=r_var, column=col, value=f"=VAR({rng})")
+                        ws.cell(row=r_sd, column=col, value=f"=STDEV({rng})")
                         ws.cell(row=r_min, column=col, value=f"=MIN({rng})")
                         ws.cell(row=r_max, column=col, value=f"=MAX({rng})")
                         ws.cell(row=r_range, column=col, value=f"={col_l}{r_max}-{col_l}{r_min}")

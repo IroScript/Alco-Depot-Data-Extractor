@@ -159,6 +159,7 @@ class ZoneReportApp:
         self.opt_group_subgroup = tk.BooleanVar(value=False)
         self.opt_summary_end = tk.BooleanVar(value=True)
         self.opt_only_summary = tk.BooleanVar(value=False)
+        self.opt_exclude_vacant = tk.BooleanVar(value=True)
         
         self.products_data = [] # List of dicts: {'code': str, 'default_name': str, 'var_select': BooleanVar, 'var_name': StringVar, 'var_subgroup': StringVar, 'var_is_subgrouped': BooleanVar, 'row_frame': Frame}
         self.unique_months = []
@@ -298,6 +299,14 @@ class ZoneReportApp:
                                       activebackground=_C['panel'], activeforeground=_C['cyan'],
                                       selectcolor=_C['void'])
         self.cb_only.pack(anchor="w", padx=20, pady=4)
+
+        # Checkbox 4: Exclude Vacant Markets
+        self.cb_vacant = tk.Checkbutton(self.left_frame, text="Exclude Vacant Markets (Y in VACANT column)",
+                                      variable=self.opt_exclude_vacant, onvalue=True, offvalue=False,
+                                      font=('Courier New', 8), fg=_C['text'], bg=_C['panel'],
+                                      activebackground=_C['panel'], activeforeground=_C['cyan'],
+                                      selectcolor=_C['void'])
+        self.cb_vacant.pack(anchor="w", padx=20, pady=4)
 
         # Spacer
         spacer = tk.Frame(self.left_frame, bg=_C['panel'])
@@ -884,14 +893,15 @@ class ZoneReportApp:
                 df_sheet['MARKET'] = df_sheet['MARKET'].str.strip().str.upper()
                 df_sheet['MPO NAME, JUN\'26'] = df_sheet["MPO NAME, JUN'26"].str.strip().str.upper().fillna('VACANT')
                 
-                # Check if there is a VACANT column and filter
-                vacant_col = None
-                for col in df_sheet.columns:
-                    if 'VACANT' in str(col).upper():
-                        vacant_col = col
-                        break
-                if vacant_col:
-                    df_sheet = df_sheet[~df_sheet[vacant_col].astype(str).str.upper().isin(['Y', 'YES', 'TRUE', '1'])]
+                # Check if there is a VACANT column and filter if checkbox is ticked
+                if self.opt_exclude_vacant.get():
+                    vacant_col = None
+                    for col in df_sheet.columns:
+                        if 'VACANT' in str(col).upper():
+                            vacant_col = col
+                            break
+                    if vacant_col:
+                        df_sheet = df_sheet[~df_sheet[vacant_col].astype(str).str.upper().isin(['Y', 'YES', 'TRUE', '1'])]
 
                 # The user wants depot code instead of app code
                 depot_col = 'DEPOTMPO CODE' if 'DEPOTMPO CODE' in df_sheet.columns else 'DEPOT MPO CODE' if 'DEPOT MPO CODE' in df_sheet.columns else 'APP CODE (FINAL)'
@@ -1019,9 +1029,17 @@ class ZoneReportApp:
                 bottom_total_border = Border(top=border_thin, bottom=border_double, left=border_thin, right=border_thin)
 
                 metadata_cols = [
-                    ('SM', 'SM'), ('ZONE', 'ZONE'), ('FM/AM', 'FM/AM'),
-                    ('DEPOT', 'DEPOT'), ('MARKET', 'MARKET'),
-                    ('DEPOT_CODE', 'DEPOT CODE'), ("MPO NAME, JUN'26", 'MPO NAME')
+                    ('DEPOT', 'DEPOT'),
+                    ('ZONE', 'ZONE'),
+                    ('MARKET', 'MARKET'),
+                    ('FM/AM', 'FM/AM, ZONE'),
+                    ('VACANT_BOOL', "VACANT (JUN'26)?"),
+                    ('DESIG', "DESIG (JUN'26)"),
+                    ('MMO', 'MMO'),
+                    ('SM', 'SM'),
+                    ('DREAM APPS MPO CODE', 'DREAM APPS MPO CODE'),
+                    ('DEPOT_CODE', 'DEPOTMPO CODE'),
+                    ("MPO NAME, JUN'26", 'MPO NAME')
                 ]
                 num_metadata_cols = len(metadata_cols)
 
@@ -1078,21 +1096,25 @@ class ZoneReportApp:
                     r_idx = start_row + idx
                     depot = row['DEPOT']
                     zone = row['ZONE']
-                    sm = row['SM']
-                    fm = row['FM/AM']
                     market = row['MARKET']
-                    app_code = row['DEPOT_CODE']
-                    dream_code = row['DREAM APPS MPO CODE']
-                    mpo_name = row["MPO NAME, JUN'26"]
+                    fm = row['FM/AM']
+                    
+                    vacant_col_name = next((c for c in df_sheet.columns if 'VACANT' in str(c).upper()), None)
+                    vacant_bool = row[vacant_col_name] if vacant_col_name and vacant_col_name in row else ''
+                    
+                    desig_col_name = next((c for c in df_sheet.columns if 'DESIG' in str(c).upper()), None)
+                    desig = row[desig_col_name] if desig_col_name and desig_col_name in row else ''
+                    
+                    mmo = row.get('MMO', '')
+                    sm = row['SM']
+                    dream_code = row.get('DREAM APPS MPO CODE', '')
+                    app_code = row.get('DEPOT_CODE', '')
+                    mpo_name = row.get("MPO NAME, JUN'26", '')
 
-                    # Write metadata
-                    ws_out.cell(row=r_idx, column=1, value=sm).font = font_regular
-                    ws_out.cell(row=r_idx, column=2, value=zone).font = font_regular
-                    ws_out.cell(row=r_idx, column=3, value=fm).font = font_regular
-                    ws_out.cell(row=r_idx, column=4, value=depot).font = font_regular
-                    ws_out.cell(row=r_idx, column=5, value=market).font = font_regular
-                    ws_out.cell(row=r_idx, column=6, value=app_code).font = font_regular
-                    ws_out.cell(row=r_idx, column=7, value=mpo_name).font = font_regular
+                    # Write metadata in specific order
+                    meta_vals = [depot, zone, market, fm, vacant_bool, desig, mmo, sm, dream_code, app_code, mpo_name]
+                    for c_idx, val in enumerate(meta_vals, 1):
+                        ws_out.cell(row=r_idx, column=c_idx, value=val).font = font_regular
 
                     for c_idx in range(1, num_metadata_cols + 1):
                         ws_out.cell(row=r_idx, column=c_idx).border = grid_border

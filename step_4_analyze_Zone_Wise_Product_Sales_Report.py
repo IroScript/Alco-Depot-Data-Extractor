@@ -40,6 +40,7 @@ class ZoneDataAnalyzerApp:
         self.input_file = tk.StringVar()
         self.output_dir = tk.StringVar()
         self.opt_exclude_vacant = tk.BooleanVar(value=True)
+        self.opt_exclude_zero_products = tk.BooleanVar(value=True)
         self._t          = 0.0
         self._scanline_y = 0.0
         self._stars      = []
@@ -51,7 +52,7 @@ class ZoneDataAnalyzerApp:
         self.auto_detect_latest_report()
 
     def auto_detect_latest_report(self):
-        reports = glob.glob(r'c:\Users\Irak\Desktop\Barishal April Data\*Zone_Wise_Sales_Grouped_Report*.xlsx')
+        reports = glob.glob(r'c:\Users\Irak\Desktop\Barishal April Data\03_Zone_Wise_Sales_Grouped_Report*.xlsx')
         if reports:
             latest = max(reports, key=os.path.getmtime)
             self.input_file.set(latest)
@@ -88,10 +89,16 @@ class ZoneDataAnalyzerApp:
                             font=('Courier New', 8), fg=_C['text'], bg=_C['void'],
                             activebackground=_C['void'], activeforeground=_C['cyan'], selectcolor=_C['panel'])
         cb.place(x=20, y=175)
+        
+        cb2 = tk.Checkbutton(self.root, text="Exclude products with zero total sales",
+                             variable=self.opt_exclude_zero_products, onvalue=True, offvalue=False,
+                             font=('Courier New', 8), fg=_C['text'], bg=_C['void'],
+                             activebackground=_C['void'], activeforeground=_C['cyan'], selectcolor=_C['panel'])
+        cb2.place(x=20, y=195)
 
         # Status
         self.lbl_status = tk.Label(self.root, text="◉ SYSTEM READY", font=('Courier New', 8), fg=_C['cyan'], bg=_C['void'])
-        self.lbl_status.place(x=20, y=215)
+        self.lbl_status.place(x=20, y=230)
 
         # Progress Bar
         self.progress_bar = self.cv.create_rectangle(20, 245, 20, 248, fill=_C['cyan'], outline='')
@@ -220,15 +227,51 @@ class ZoneDataAnalyzerApp:
                 self.update_progress(30, 'FILTERING DATA...')
                 if self.opt_exclude_vacant.get():
                     for r in range(end_row, start_row - 1, -1):
-                        mpo_val = str(ws.cell(row=r, column=7).value or "").strip().upper()
-                        fm_val = str(ws.cell(row=r, column=3).value or "").strip().upper()
-                        sm_val = str(ws.cell(row=r, column=1).value or "").strip().upper()
+                        mpo_val = str(ws.cell(row=r, column=11).value or "").strip().upper()
+                        fm_val = str(ws.cell(row=r, column=4).value or "").strip().upper()
+                        sm_val = str(ws.cell(row=r, column=8).value or "").strip().upper()
+                        vacant_val = str(ws.cell(row=r, column=5).value or "").strip().upper()
                         
-                        if mpo_val == 'VACANT' or fm_val == 'VACANT' or sm_val == 'VACANT':
+                        if mpo_val == 'VACANT' or fm_val == 'VACANT' or sm_val == 'VACANT' or vacant_val in ['Y', 'YES', 'TRUE', '1']:
                             ws.delete_rows(r, 1)
                             end_row -= 1
                             if grand_total_row:
                                 grand_total_row -= 1
+                                
+                max_col = ws.max_column
+                
+                if self.opt_exclude_zero_products.get() and grand_total_row:
+                    self.update_progress(40, 'EXCLUDING ZERO-SALES PRODUCTS...')
+                    
+                    product_boundaries = []
+                    current_prod_start = 12
+                    
+                    for col in range(13, max_col + 1):
+                        val1 = ws.cell(row=1, column=col).value
+                        if val1 is not None and str(val1).strip() != "":
+                            product_boundaries.append((current_prod_start, col - 1))
+                            current_prod_start = col
+                    
+                    if current_prod_start <= max_col:
+                        product_boundaries.append((current_prod_start, max_col))
+                        
+                    for start_c, end_c in reversed(product_boundaries):
+                        prod_sum = 0
+                        for c in range(start_c, end_c + 1):
+                            for r in range(start_row, grand_total_row):
+                                val = ws.cell(row=r, column=c).value
+                                if isinstance(val, (int, float)):
+                                    prod_sum += val
+                                elif val:
+                                    try:
+                                        prod_sum += float(val)
+                                    except ValueError:
+                                        pass
+                        
+                        if prod_sum == 0:
+                            ws.delete_cols(start_c, end_c - start_c + 1)
+                            
+                    max_col = ws.max_column
 
                 self.update_progress(50, 'FINDING ZONES & INSERTING 10 PARAMETERS...')
                 
@@ -248,14 +291,14 @@ class ZoneDataAnalyzerApp:
                 
                 # Define 10 parameters
                 param_names = [
-                    "Count", "Sum", "Mean", "Median", "variance",
-                    "sd", "Min", "Max", "Range", "CV %"
+                    "COUNT", "SUM", "MEAN", "MEDIAN", "VARIANCE",
+                    "SD", "MIN", "MAX", "RANGE", "CV %"
                 ]
                 
                 # Process backwards to avoid messing up row indices
                 for idx, (r_boundary, z_name) in enumerate(reversed(zone_boundaries)):
                     i = len(zone_boundaries) - 1 - idx
-                    offset = i * 10
+                    offset = i * 13
                     
                     # We need to find where this zone started to create the formulas
                     z_start = start_row
@@ -268,18 +311,17 @@ class ZoneDataAnalyzerApp:
                     final_z_start = z_start + offset
                     final_z_end = z_end + offset
                     
-                    # Insert 10 rows
-                    ws.insert_rows(r_boundary, amount=10)
+                    # Insert 13 rows (10 for parameters, 3 for gap)
+                    ws.insert_rows(r_boundary, amount=13)
                     if grand_total_row:
-                        grand_total_row += 10
+                        grand_total_row += 13
                         
-                    # Write parameter labels in MPO NAME column (7)
+                    # Write parameter labels in ZONE column (2)
                     for idx_p, p_name in enumerate(param_names):
-                        c = ws.cell(row=r_boundary + idx_p, column=7, value=p_name)
-                        # Optionally right align or style
+                        c = ws.cell(row=r_boundary + idx_p, column=2, value=p_name)
                         
-                    # Write formulas for all data columns (8 to max_col)
-                    for col in range(8, max_col + 1):
+                    # Write formulas for all data columns (12 to max_col)
+                    for col in range(12, max_col + 1):
                         col_l = get_column_letter(col)
                         rng = f"{col_l}{final_z_start}:{col_l}{final_z_end}"
                         
@@ -295,21 +337,27 @@ class ZoneDataAnalyzerApp:
                         r_range = r_boundary + 8
                         r_cv = r_boundary + 9
                         
+                        def dyn_round(expr):
+                            return f"=IFERROR(IF({expr}=0, 0, IF({expr}<0.5, ROUND({expr}, 2), IF({expr}<1, ROUND({expr}, 1), ROUND({expr}, 0)))), \"-\")"
+
                         # Formulas
                         ws.cell(row=r_count, column=col, value=f"=COUNT({rng})")
-                        ws.cell(row=r_sum, column=col, value=f"=SUM({rng})")
-                        ws.cell(row=r_mean, column=col, value=f"=AVERAGE({rng})")
-                        ws.cell(row=r_median, column=col, value=f"=MEDIAN({rng})")
-                        ws.cell(row=r_var, column=col, value=f"=VAR({rng})")
-                        ws.cell(row=r_sd, column=col, value=f"=STDEV({rng})")
-                        ws.cell(row=r_min, column=col, value=f"=MIN({rng})")
-                        ws.cell(row=r_max, column=col, value=f"=MAX({rng})")
-                        ws.cell(row=r_range, column=col, value=f"={col_l}{r_max}-{col_l}{r_min}")
-                        ws.cell(row=r_cv, column=col, value=f"=IFERROR({col_l}{r_sd}/{col_l}{r_mean}*100, \"-\")")
+                        ws.cell(row=r_sum, column=col, value=dyn_round(f"SUM({rng})"))
+                        ws.cell(row=r_mean, column=col, value=dyn_round(f"AVERAGE({rng})"))
+                        ws.cell(row=r_median, column=col, value=dyn_round(f"MEDIAN({rng})"))
+                        ws.cell(row=r_var, column=col, value=dyn_round(f"VARP({rng})"))
+                        ws.cell(row=r_sd, column=col, value=dyn_round(f"STDEVP({rng})"))
+                        ws.cell(row=r_min, column=col, value=dyn_round(f"MIN({rng})"))
+                        ws.cell(row=r_max, column=col, value=dyn_round(f"MAX({rng})"))
+                        ws.cell(row=r_range, column=col, value=dyn_round(f"(MAX({rng})-MIN({rng}))"))
+                        
+                        # CV %: use raw decimal division, format as whole percentage (e.g., 100%)
+                        cv_cell = ws.cell(row=r_cv, column=col, value=f"=IFERROR({col_l}{r_sd}/{col_l}{r_mean}, \"-\")")
+                        cv_cell.number_format = '0%'
                             
                 self.update_progress(80, 'UPDATING GRAND TOTAL FORMULAS...')
                 if grand_total_row:
-                    for col in range(8, max_col + 1):
+                    for col in range(12, max_col + 1):
                         val = ws.cell(row=grand_total_row, column=col).value
                         if str(val).startswith("=SUM("):
                             col_letter = get_column_letter(col)
@@ -323,7 +371,7 @@ class ZoneDataAnalyzerApp:
                             # Let's write a formula summing the "Sum" cells.
                             sum_cells = []
                             for r in range(start_row, grand_total_row):
-                                if str(ws.cell(row=r, column=7).value) == "Sum":
+                                if str(ws.cell(row=r, column=2).value).strip().upper() == "SUM":
                                     sum_cells.append(f"{col_letter}{r}")
                             if sum_cells:
                                 new_formula = f"=SUM({','.join(sum_cells)})"

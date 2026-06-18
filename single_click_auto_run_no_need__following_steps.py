@@ -65,28 +65,23 @@ def run_step_2():
     import step_2_generate_MPO_Target_vs_Achievement_report as s2
     return True
 
-def run_step_3():
+def run_step_3(root):
     print("\n" + "="*60)
     print("STEP 3: Generate Zone Wise Product Sales Report")
     print("="*60)
     import step_3_generate_Zone_Wise_Product_Sales_Report as s3
     
-    root = tk.Tk()
-    root.withdraw()
     app = s3.ZoneReportApp(root)
     
     if not app.input_file.get():
         print("  [ERROR] Could not auto-detect input file (CSV) from Step 1!")
-        root.destroy()
         return False
 
     def on_success(title, msg):
         print(f"\n  [SUCCESS] {msg.split(chr(10))[0]}")
-        root.quit()
         
     def on_error(title, msg):
         print(f"\n  [ERROR] {msg}")
-        root.quit()
 
     def mock_show_success_dialog(out_path):
         print(f"\n  [SUCCESS] Zone Wise Sales Report saved to: {out_path}")
@@ -104,31 +99,32 @@ def run_step_3():
          
          app.run_process()
          
-    root.destroy()
+    # Clean up Step 3 widgets
+    for widget in root.winfo_children():
+        try:
+            widget.destroy()
+        except Exception:
+            pass
+            
     return True
 
-def run_step_4():
+def run_step_4(root):
     print("\n" + "="*60)
     print("STEP 4: Analyze Zone Wise Report (10 Parameters)")
     print("="*60)
     import step_4_analyze_Zone_Wise_Product_Sales_Report as s4
     
-    root = tk.Tk()
-    root.withdraw()
     app = s4.ZoneDataAnalyzerApp(root)
     
     if not app.input_file.get():
         print("  [ERROR] Could not auto-detect input file (Excel) from Step 3!")
-        root.destroy()
         return False
 
     def on_success(title, msg):
         print(f"\n  [SUCCESS] {msg.split(chr(10))[0]}")
-        root.quit()
         
     def on_error(title, msg):
         print(f"\n  [ERROR] {msg}")
-        root.quit()
 
     def mock_show_success_dialog(out_path):
         print(f"\n  [SUCCESS] 10 Parameter Analysis saved to: {out_path}")
@@ -146,7 +142,13 @@ def run_step_4():
          
          app.run_process()
          
-    root.destroy()
+    # Clean up Step 4 widgets
+    for widget in root.winfo_children():
+        try:
+            widget.destroy()
+        except Exception:
+            pass
+            
     return True
 
 def main():
@@ -171,19 +173,27 @@ def main():
     print("\nWaiting 5 seconds before next step...")
     time.sleep(5)
     
+    # Share a single root window to prevent theme changed errors
+    root = tk.Tk()
+    root.withdraw()
+    
     # Run Step 3
-    if not run_step_3():
+    if not run_step_3(root):
         print("\nPipeline stopped at Step 3.")
+        root.destroy()
         return
         
     print("\nWaiting 5 seconds before next step...")
     time.sleep(5)
     
     # Run Step 4
-    if not run_step_4():
+    if not run_step_4(root):
         print("\nPipeline stopped at Step 4.")
+        root.destroy()
         return
         
+    root.destroy()
+    
     print("\n" + "*" * 80)
     print("  ALL STEPS COMPLETED SUCCESSFULLY!")
     print("*" * 80)

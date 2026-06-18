@@ -3,6 +3,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.pagebreak import Break
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 import math
 import random
 import threading
@@ -26,7 +28,7 @@ _C = {
     'hot'    : '#0D2A3F',
 }
 
-W_WIN, H_WIN = 490, 295
+W_WIN, H_WIN = 490, 315
 
 class ZoneDataAnalyzerApp:
     def __init__(self, root):
@@ -41,6 +43,7 @@ class ZoneDataAnalyzerApp:
         self.output_dir = tk.StringVar()
         self.opt_exclude_vacant = tk.BooleanVar(value=True)
         self.opt_exclude_zero_products = tk.BooleanVar(value=True)
+        self.opt_exclude_mostly_zero_products = tk.BooleanVar(value=True)
         self._t          = 0.0
         self._scanline_y = 0.0
         self._stars      = []
@@ -96,19 +99,25 @@ class ZoneDataAnalyzerApp:
                              activebackground=_C['void'], activeforeground=_C['cyan'], selectcolor=_C['panel'])
         cb2.place(x=20, y=195)
 
+        cb3 = tk.Checkbutton(self.root, text="Exclude products with >95% zero sales across months",
+                             variable=self.opt_exclude_mostly_zero_products, onvalue=True, offvalue=False,
+                             font=('Courier New', 8), fg=_C['text'], bg=_C['void'],
+                             activebackground=_C['void'], activeforeground=_C['cyan'], selectcolor=_C['panel'])
+        cb3.place(x=20, y=215)
+
         # Status
         self.lbl_status = tk.Label(self.root, text="◉ SYSTEM READY", font=('Courier New', 8), fg=_C['cyan'], bg=_C['void'])
-        self.lbl_status.place(x=20, y=230)
+        self.lbl_status.place(x=20, y=245)
 
         # Progress Bar
-        self.progress_bar = self.cv.create_rectangle(20, 245, 20, 248, fill=_C['cyan'], outline='')
+        self.progress_bar = self.cv.create_rectangle(20, 260, 20, 263, fill=_C['cyan'], outline='')
 
         # Execute
         self.exec_btn = tk.Button(self.root, text="⟨  RUN 10 PARAMETER ANALYSIS  ⟩", command=self.run_process,
                                   font=('Courier New', 10, 'bold'), fg=_C['cyan'], bg='#030A1C', relief='flat',
                                   cursor='hand2', activebackground='#061C34', activeforeground='#FFFFFF', bd=1,
                                   highlightbackground=_C['cyan'])
-        self.exec_btn.place(x=20, y=260, width=450, height=24)
+        self.exec_btn.place(x=20, y=275, width=450, height=24)
 
     def _paint_gradient(self, W, H):
         for y in range(H):
@@ -191,7 +200,7 @@ class ZoneDataAnalyzerApp:
     def update_progress(self, pct, status):
         self.lbl_status.configure(text=f'◉ {status}')
         w = 450 * (pct / 100.0)
-        self.cv.coords(self.progress_bar, 20, 245, 20+w, 248)
+        self.cv.coords(self.progress_bar, 20, 260, 20+w, 263)
         self.root.update_idletasks()
 
     def run_process(self):
@@ -239,9 +248,13 @@ class ZoneDataAnalyzerApp:
                                 grand_total_row -= 1
                                 
                 max_col = ws.max_column
+
+                # Exclude products based on zero/mostly zero conditions
+                exclude_zero = self.opt_exclude_zero_products.get()
+                exclude_mostly_zero = self.opt_exclude_mostly_zero_products.get()
                 
-                if self.opt_exclude_zero_products.get() and grand_total_row:
-                    self.update_progress(40, 'EXCLUDING ZERO-SALES PRODUCTS...')
+                if (exclude_zero or exclude_mostly_zero) and grand_total_row:
+                    self.update_progress(40, 'EXCLUDING UNUSED PRODUCTS...')
                     
                     product_boundaries = []
                     current_prod_start = 12
@@ -257,6 +270,9 @@ class ZoneDataAnalyzerApp:
                         
                     for start_c, end_c in reversed(product_boundaries):
                         prod_sum = 0
+                        zero_count = 0
+                        total_cells = (grand_total_row - start_row) * (end_c - start_c + 1)
+                        
                         for c in range(start_c, end_c + 1):
                             for r in range(start_row, grand_total_row):
                                 val = ws.cell(row=r, column=c).value
@@ -267,8 +283,29 @@ class ZoneDataAnalyzerApp:
                                         prod_sum += float(val)
                                     except ValueError:
                                         pass
+                                
+                                is_zero = False
+                                if val is None:
+                                    is_zero = True
+                                else:
+                                    try:
+                                        fval = float(val)
+                                        if fval == 0:
+                                            is_zero = True
+                                    except ValueError:
+                                        sval = str(val).strip()
+                                        if sval in ['', '0', '-', 'None']:
+                                            is_zero = True
+                                if is_zero:
+                                    zero_count += 1
                         
-                        if prod_sum == 0:
+                        should_exclude = False
+                        if exclude_zero and prod_sum == 0:
+                            should_exclude = True
+                        elif exclude_mostly_zero and total_cells > 0 and (zero_count / total_cells) > 0.95:
+                            should_exclude = True
+                            
+                        if should_exclude:
                             ws.delete_cols(start_c, end_c - start_c + 1)
                             
                     max_col = ws.max_column
@@ -295,6 +332,19 @@ class ZoneDataAnalyzerApp:
                     "SD", "MIN", "MAX", "RANGE", "CV %"
                 ]
                 
+                # Curated premium color formatting for parameter rows
+                font_family = "Segoe UI"
+                font_param_label = Font(name=font_family, size=9, bold=True, color="1F497D")
+                font_param_val_bold = Font(name=font_family, size=9, bold=True)
+                font_param_val_reg = Font(name=font_family, size=9)
+                
+                fill_sum_mean = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid") # Soft light green
+                fill_cv = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid") # Soft light yellow
+                fill_other = PatternFill(start_color="F2F2F2", end_color="F2F2F2", fill_type="solid") # Very light gray
+                
+                border_thin = Side(border_style="thin", color="D9D9D9")
+                param_border = Border(left=border_thin, right=border_thin, top=border_thin, bottom=border_thin)
+
                 # Process backwards to avoid messing up row indices
                 for idx, (r_boundary, z_name) in enumerate(reversed(zone_boundaries)):
                     i = len(zone_boundaries) - 1 - idx
@@ -318,7 +368,8 @@ class ZoneDataAnalyzerApp:
                         
                     # Write parameter labels in ZONE column (2)
                     for idx_p, p_name in enumerate(param_names):
-                        c = ws.cell(row=r_boundary + idx_p, column=2, value=p_name)
+                        r_curr = r_boundary + idx_p
+                        ws.cell(row=r_curr, column=2, value=p_name)
                         
                     # Write formulas for all data columns (12 to max_col)
                     for col in range(12, max_col + 1):
@@ -339,7 +390,7 @@ class ZoneDataAnalyzerApp:
                         
                         def dyn_round(expr):
                             return f"=IFERROR(IF({expr}=0, 0, IF({expr}<0.5, ROUND({expr}, 2), IF({expr}<1, ROUND({expr}, 1), ROUND({expr}, 0)))), \"-\")"
-
+ 
                         # Formulas
                         ws.cell(row=r_count, column=col, value=f"=COUNT({rng})")
                         ws.cell(row=r_sum, column=col, value=dyn_round(f"SUM({rng})"))
@@ -354,6 +405,47 @@ class ZoneDataAnalyzerApp:
                         # CV %: use raw decimal division, format as whole percentage (e.g., 100%)
                         cv_cell = ws.cell(row=r_cv, column=col, value=f"=IFERROR({col_l}{r_sd}/{col_l}{r_mean}, \"-\")")
                         cv_cell.number_format = '0%'
+                    
+                    # Format & style the parameter and gap rows
+                    for idx_p, p_name in enumerate(param_names):
+                        r_curr = r_boundary + idx_p
+                        ws.row_dimensions[r_curr].height = 18
+                        
+                        for col in range(1, max_col + 1):
+                            cell = ws.cell(row=r_curr, column=col)
+                            cell.border = param_border
+                            
+                            if col == 2:
+                                cell.font = font_param_label
+                                cell.alignment = Alignment(horizontal="left", vertical="center")
+                            elif col >= 12:
+                                if p_name in ["SUM", "MEAN", "CV %"]:
+                                    cell.font = font_param_val_bold
+                                else:
+                                    cell.font = font_param_val_reg
+                                cell.alignment = Alignment(horizontal="right", vertical="center")
+                            else:
+                                cell.font = font_param_val_reg
+                                cell.alignment = Alignment(horizontal="left", vertical="center")
+                                
+                            if p_name in ["SUM", "MEAN"]:
+                                cell.fill = fill_sum_mean
+                            elif p_name == "CV %":
+                                cell.fill = fill_cv
+                            else:
+                                cell.fill = fill_other
+
+                    for idx_g in range(10, 13):
+                        r_gap = r_boundary + idx_g
+                        ws.row_dimensions[r_gap].height = 10
+                        for col in range(1, max_col + 1):
+                            cell = ws.cell(row=r_gap, column=col)
+                            cell.border = Border()
+                            cell.fill = PatternFill(fill_type=None)
+
+                    # Add row page break after the gap rows (except for the last zone)
+                    if idx > 0:
+                        ws.row_breaks.append(Break(id=r_boundary + offset + 12))
                             
                 self.update_progress(80, 'UPDATING GRAND TOTAL FORMULAS...')
                 if grand_total_row:
@@ -361,14 +453,6 @@ class ZoneDataAnalyzerApp:
                         val = ws.cell(row=grand_total_row, column=col).value
                         if str(val).startswith("=SUM("):
                             col_letter = get_column_letter(col)
-                            # Create a sum formula that ignores the intermediate parameter rows
-                            # Excel's SUM ignores text, but our parameters have numbers!
-                            # Since we inserted them, a simple SUM(A4:A{grand_total-1}) will double count or count the sums and counts!
-                            # Better approach: SUM() for just the individual cells? Or let Excel's SUBTOTAL handle it?
-                            # Or since we only want the sum of the original data rows, we can just use SUMIF on MPO NAME != these parameter names?
-                            # No, SUMIF would be complicated.
-                            # Since we already computed "Sum" in the parameter rows, we can just sum those "Sum" cells!
-                            # Let's write a formula summing the "Sum" cells.
                             sum_cells = []
                             for r in range(start_row, grand_total_row):
                                 if str(ws.cell(row=r, column=2).value).strip().upper() == "SUM":
@@ -376,7 +460,43 @@ class ZoneDataAnalyzerApp:
                             if sum_cells:
                                 new_formula = f"=SUM({','.join(sum_cells)})"
                                 ws.cell(row=grand_total_row, column=col, value=new_formula)
+                
+                # Re-format all column widths to prevent clipped text
+                for col in range(1, max_col + 1):
+                    col_letter = get_column_letter(col)
+                    max_len = 0
+                    for row in range(1, ws.max_row + 1):
+                        val = ws.cell(row=row, column=col).value
+                        if val:
+                            val_str = str(val)
+                            if not val_str.startswith('='):
+                                max_len = max(max_len, len(val_str))
+                    if col <= 11:
+                        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+                    else:
+                        ws.column_dimensions[col_letter].width = 8
 
+                # Set Print Layout Settings for Legal Landscape & Fitting
+                ws.page_setup.paperSize = 5 # Legal size
+                ws.page_setup.orientation = 'landscape'
+                ws.sheet_properties.pageSetUpPr.fitToPage = True
+                ws.page_setup.fitToWidth = 1
+                ws.page_setup.fitToHeight = 0
+                
+                ws.page_margins.left = 0.25
+                ws.page_margins.right = 0.25
+                ws.page_margins.top = 0.25
+                ws.page_margins.bottom = 0.25
+                
+                ws.print_title_rows = '1:3' # Repeat header rows on every page
+                ws.views.sheetView[0].showGridLines = True
+                
+                # Hide columns for clean print layout (DEPOT, and VACANT to MPO NAME)
+                hide_cols = [1, 5, 6, 7, 8, 9, 10, 11]
+                for col in hide_cols:
+                    col_letter = get_column_letter(col)
+                    ws.column_dimensions[col_letter].hidden = True
+                
                 self.update_progress(90, 'SAVING FILE...')
                 original_name = os.path.basename(ip)
                 # Strip the 03_ prefix if it exists to keep it clean

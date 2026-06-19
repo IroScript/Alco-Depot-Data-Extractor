@@ -12,7 +12,13 @@ def run_step_1(base_dir):
     
     class MockGUI:
         def __init__(self):
-            self.all_depots_folder = os.path.join(base_dir, "All_Depots")
+            # Check both parent directory and googleDrive directory
+            parent_path = os.path.join(base_dir, "All_Depots")
+            drive_path = os.path.join(base_dir, "googleDrive", "All_Depots")
+            if os.path.exists(drive_path) and os.path.isdir(drive_path) and os.listdir(drive_path):
+                self.all_depots_folder = drive_path
+            else:
+                self.all_depots_folder = parent_path
             self.output_dir = base_dir
             self.depot_folders = []
             if os.path.exists(self.all_depots_folder):

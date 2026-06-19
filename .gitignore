@@ -61,3 +61,8 @@ query
 
 # Sensitive data
 *.shs
+
+# Google Drive credentials & tokens
+googleDrive/env
+googleDrive/token.pickle
+googleDrive/*.json

@@ -52,6 +52,9 @@ class SalesDataManager:
     def __init__(self):
         self.df = None
         self.df_mpo = None
+        self.depots_list = []
+        self.zones_list = []
+        self.fm_ams_list = []
         self.loaded_csv_path = None
         self.last_mtime = 0
         
@@ -65,7 +68,10 @@ class SalesDataManager:
         if os.path.exists(mpo_code_xlsx):
             try:
                 self.df_mpo = pd.read_excel(mpo_code_xlsx)
-                print(f"✓ Loaded {len(self.df_mpo)} MPO mappings from: mpo_code.xlsx")
+                self.depots_list = [str(x) for x in self.df_mpo['DEPOT'].dropna().unique()]
+                self.zones_list = [str(x) for x in self.df_mpo['ZONE'].dropna().unique()]
+                self.fm_ams_list = [str(x) for x in self.df_mpo['FM/AM'].dropna().unique()]
+                print(f"✓ Loaded {len(self.df_mpo)} MPO mappings (Depots: {len(self.depots_list)}, Zones: {len(self.zones_list)}).")
             except Exception as e:
                 print(f"⚠ Warning: Failed to load mpo_code.xlsx: {e}")
         else:
@@ -92,7 +98,21 @@ class SalesDataManager:
             print(f"🔄 Loading/Reloading sales data: {os.path.basename(latest_csv)}...")
             t0 = time.time()
             try:
-                self.df = pd.read_csv(latest_csv)
+                df_raw = pd.read_csv(latest_csv)
+                
+                # Merge MPO mapping data at load time if available
+                if self.df_mpo is not None:
+                    df_mpo_temp = self.df_mpo.copy()
+                    df_mpo_temp.rename(columns={'DEPOT': 'DEPOT_mpo', 'MPO CODE': 'MPO_CODE_mpo'}, inplace=True)
+                    df_merged = pd.merge(df_raw, df_mpo_temp, left_on=['Depot', 'MPO_Code'], right_on=['DEPOT_mpo', 'MPO_CODE_mpo'], how='left')
+                    
+                    # Apply fallback depot to zone mapping for unmatched MPOs
+                    depot_to_zone = self.df_mpo.groupby('DEPOT')['ZONE'].first().to_dict()
+                    df_merged['ZONE'] = df_merged['ZONE'].fillna(df_merged['Depot'].map(depot_to_zone))
+                    self.df = df_merged
+                else:
+                    self.df = df_raw
+                    
                 self.loaded_csv_path = latest_csv
                 self.last_mtime = mtime
                 print(f"✓ Loaded {len(self.df):,} records in {time.time() - t0:.2f} seconds.")
@@ -140,10 +160,11 @@ class ChatSessionManager:
     def clear_session(self, chat_id):
         self.sessions[chat_id] = []
 
+# Instantiate Session Manager
 SESSION_MANAGER = ChatSessionManager()
 
 # ══════════════════════════════════════════════════════════════════
-#  Groq AI Intent Parser (Context Aware)
+#  Groq AI Intent Parser (Context Aware & Upgraded)
 # ══════════════════════════════════════════════════════════════════
 
 def extract_depot_with_ai(query_text, history_messages=None):
@@ -153,19 +174,17 @@ def extract_depot_with_ai(query_text, history_messages=None):
         "Content-Type": "application/json"
     }
     
-    system_prompt = """Identify which depot the user is talking about. 
-The valid depots are: BARISHAL, CHATTOGRAM, CUMILLA, DHAKA-1, DHAKA-2, FARIDPUR, JASHORE, MYMENSINGH, RAJSHAHI, RANGPUR.
-Map common variations (e.g. 'Bariahsal' or 'Barisal' -> 'BARISHAL', 'Chittagong' -> 'CHATTOGRAM', 'Comilla' -> 'CUMILLA', 'Dhaka 1' -> 'DHAKA-1', 'Dhaka 2' -> 'DHAKA-2', 'Faridpur' -> 'FARIDPUR', 'Jessore' -> 'JASHORE', 'Mymensingh' -> 'MYMENSINGH', 'Rajshahi' -> 'RAJSHAHI', 'Rangpur' -> 'RANGPUR').
+    system_prompt = f"""Identify which depot the user is talking about. 
+The valid depots are: {', '.join(DATA_MANAGER.depots_list)}.
+Map common variations (e.g. 'Bariahsal' or 'Barisal' -> 'BARISHAL', 'Chittagong' -> 'CHATTOGRAM', 'Comilla' -> 'CUMILLA', 'Faridpur Zone' -> 'FARIDPUR', 'Dhaka 1' -> 'DHAKA-1', 'Dhaka 2' -> 'DHAKA-2').
 
 This is a chat context. If the user's latest query does not mention a depot, but the previous conversation did, you should refer to the history to identify the depot.
 Return a JSON object with a single key 'depot' (string in uppercase, or null if not mentioned and cannot be inferred)."""
 
-    # Build messages with history if available
+    # Build messages with history
     messages = [{"role": "system", "content": system_prompt}]
     if history_messages:
-        # Only take the text content from history
-        for msg in history_messages[:-1]: # Exclude the current message we're processing
-            # For assistant messages, if they are JSON, try to extract depot to make it readable
+        for msg in history_messages[:-1]:
             if msg["role"] == "assistant":
                 try:
                     js = json.loads(msg["content"])
@@ -206,24 +225,39 @@ def extract_query_intent(query_text, depot, mpo_list, history_messages=None):
         for m in mpo_list:
             mpo_context += f"- Market: {m['MARKET']} -> MPO Code: {m['MPO CODE']}\n"
             
-    system_prompt = f"""You are an AI assistant designed to extract filtering parameters from a natural language query for a sales database.
+    system_prompt = f"""You are an AI assistant designed to extract filtering and aggregation parameters from a natural language query for a sales database.
 Here is the context for the current Depot '{depot or "Unknown"}':
 {mpo_context}
 
-The database fields to extract are:
-- Month: Format YYYY-MM. (e.g. 'january', 'jan' -> '2026-01', 'April', 'apr' -> '2026-04', 'May' -> '2026-05', etc. Assume the year is 2026).
-- Product_Name: E.g. 'ALAGRA', 'MOKAST'. Extract the base brand name in uppercase (e.g. 'alagra' -> 'ALAGRA', 'mokast' -> 'MOKAST').
-- MPO_Code: Based on the market/MPO mentioned in the query, find the closest matching MPO Code from the list above. If the query mentions 'Barishal 1 Market' and the list has 'BSHL. MEDICAL-1 -> B001', select 'B001'.
-- Customer_Name: Extract if a specific customer name or pharmacy is mentioned in the query.
+Valid Zones (e.g. 'FRD' is Faridpur Zone, 'BARI' is Barishal Zone): {', '.join(DATA_MANAGER.zones_list)}
+Some Example FM/AM Names: {', '.join(DATA_MANAGER.fm_ams_list[:20])}
 
-This is a chat conversation. If the user's latest query is a follow-up (e.g., 'Only Barishal Depot?' or 'What about Mokast?'), you should keep/inherit the previous parameters (like month, product_brand) from the assistant's previous JSON responses in the history, UNLESS the user explicitly changes them.
+The database fields to extract are:
+- month: Format YYYY-MM. (e.g. 'january', 'jan' -> '2026-01', 'April', 'apr' -> '2026-04', 'May' -> '2026-05', etc. Assume the year is 2026).
+- product_brand: E.g. 'ALAGRA', 'MOKAST' (brand name in uppercase).
+- product_code: E.g. 'ALK1', 'MON1' (code if explicitly mentioned).
+- mpo_code: Match from MPO code list, or if explicitly mentioned.
+- zone: Match to a valid zone code (e.g. 'FRD', 'BARI', 'COM').
+- fm_am: The name of the Field Manager / Area Manager.
+- market: The name of the market mentioned.
+- vacant_only: boolean (true if user asks for vacant markets, vacant MPOs, or vacant forces. Otherwise false).
+
+Aggregation fields:
+- group_by: Set to "month" if the user asks for a breakdown by month (e.g. 'kon maase koto sale hoise', 'month-wise', 'monthly sales'). Set to "market" if they ask for market-wise breakdown. Set to "fm_am" if they ask for manager-wise. Set to "mpo_code" if they ask for MPO-wise. Otherwise null.
+
+This is a chat conversation. If the user's latest query is a follow-up, inherit parameters from previous assistant's JSON responses in the history, unless explicitly changed.
 
 Return ONLY a JSON object with keys:
-- depot (string, exact matched depot name, or null)
+- depot (string, or null)
 - month (string 'YYYY-MM', or null)
-- product_brand (string in uppercase like 'ALAGRA', 'MOKAST', or null)
-- mpo_code (string from the provided list, or null)
-- customer_name (string, or null)
+- product_brand (string, or null)
+- product_code (string, or null)
+- mpo_code (string, or null)
+- zone (string, or null)
+- fm_am (string, or null)
+- market (string, or null)
+- vacant_only (boolean)
+- group_by (string: "month", "market", "fm_am", "mpo_code", or null)
 
 Do not include any explanation or markdown formatting, return raw JSON string."""
 
@@ -294,95 +328,183 @@ def process_sales_query(chat_id, query_text):
     
     month = intent.get("month")
     product_brand = intent.get("product_brand")
+    product_code = intent.get("product_code")
     mpo_code = intent.get("mpo_code")
-    customer_name = intent.get("customer_name")
+    zone = intent.get("zone")
+    fm_am = intent.get("fm_am")
+    market = intent.get("market")
+    vacant_only = intent.get("vacant_only")
+    group_by = intent.get("group_by")
     
     # 4. Filter DataFrame
     filtered_df = DATA_MANAGER.df.copy()
     
     if depot:
         filtered_df = filtered_df[filtered_df['Depot'].str.upper() == depot.upper()]
+    if zone:
+        filtered_df = filtered_df[filtered_df['ZONE'].str.upper() == zone.upper()]
     if month:
         filtered_df = filtered_df[filtered_df['Month'] == month]
     if product_brand:
         filtered_df = filtered_df[filtered_df['Product_Name'].str.contains(product_brand, case=False, na=False)]
+    if product_code:
+        filtered_df = filtered_df[filtered_df['Product_Code'].str.upper() == product_code.upper()]
     if mpo_code:
         filtered_df = filtered_df[filtered_df['MPO_Code'].str.upper() == mpo_code.upper()]
-    if customer_name:
-        filtered_df = filtered_df[filtered_df['Customer_Name'].str.contains(customer_name, case=False, na=False)]
+    if fm_am:
+        filtered_df = filtered_df[filtered_df['FM/AM'].str.contains(fm_am, case=False, na=False)]
+    if market:
+        filtered_df = filtered_df[filtered_df['MARKET'].str.contains(market, case=False, na=False)]
+    if vacant_only:
+        filtered_df = filtered_df[filtered_df['FM/AM'].str.contains('VACANT', case=False, na=False)]
         
     if filtered_df.empty:
         # Build friendly empty-result message
         filters = []
         if depot: filters.append(f"Depot: {depot}")
+        if zone: filters.append(f"Zone: {zone}")
         if month: filters.append(f"Month: {month}")
         if product_brand: filters.append(f"Product: {product_brand}")
         if mpo_code: filters.append(f"MPO: {mpo_code}")
-        if customer_name: filters.append(f"Customer: {customer_name}")
+        if fm_am: filters.append(f"Manager: {fm_am}")
+        if market: filters.append(f"Market: {market}")
+        if vacant_only: filters.append("Vacant Markets Only")
         
         filter_str = ", ".join(filters) if filters else "No filters"
         return f"⚠️ *No records found matching your query.*\n\n*Applied Filters:* {filter_str}\n\nPlease verify your query details and try again."
 
-    # 5. Calculate statistics
-    total_qty = filtered_df['Quantity'].sum()
-    total_amount = filtered_df['Line_Amount'].sum()
-    invoices = filtered_df['Invoice_No'].nunique()
-    customers = filtered_df['Customer_ID'].nunique()
-    
-    # Map MPO Code to Market name for display
-    market_display = None
-    if mpo_code and DATA_MANAGER.df_mpo is not None:
-        mpo_match = DATA_MANAGER.df_mpo[
-            (DATA_MANAGER.df_mpo['MPO CODE'].str.upper() == mpo_code.upper()) &
-            (DATA_MANAGER.df_mpo['DEPOT'].str.upper() == (depot or "").upper())
-        ]
-        if not mpo_match.empty:
-            market_display = mpo_match.iloc[0]['MARKET']
-            
-    # Format month name for display
-    month_display = month
-    if month:
-        try:
-            dt = datetime.strptime(month, "%Y-%m")
-            month_display = dt.strftime("%B %Y")
-        except:
-            pass
-
-    # Build response Markdown message
+    # 5. Build response Markdown message
     msg_lines = [
         "📊 *SALES REPORT SUMMARY*",
         "=========================================",
         f"🔍 *Query:* \"{query_text}\"",
         "",
-        "📍 *Filter Details:*",
-        f"▪️ *Depot:* {depot or 'ALL'}"
+        "📍 *Filter Details:*"
     ]
     
+    if depot:
+        msg_lines.append(f"▪️ *Depot:* {depot}")
+    else:
+        msg_lines.append("▪️ *Depot:* ALL")
+        
+    if zone:
+        msg_lines.append(f"▪️ *Zone:* {zone}")
+    if month:
+        try:
+            dt = datetime.strptime(month, "%Y-%m")
+            msg_lines.append(f"▪️ *Month:* {dt.strftime('%B %Y')}")
+        except:
+            msg_lines.append(f"▪️ *Month:* {month}")
+            
+    if product_brand:
+        msg_lines.append(f"▪️ *Product:* {product_brand}")
+    if product_code:
+        msg_lines.append(f"▪️ *Product Code:* {product_code}")
     if mpo_code:
+        market_display = None
+        if DATA_MANAGER.df_mpo is not None:
+            mpo_match = DATA_MANAGER.df_mpo[
+                (DATA_MANAGER.df_mpo['MPO CODE'].str.upper() == mpo_code.upper()) &
+                (DATA_MANAGER.df_mpo['DEPOT'].str.upper() == (depot or "").upper())
+            ]
+            if not mpo_match.empty:
+                market_display = mpo_match.iloc[0]['MARKET']
         mpo_info = f"{mpo_code}"
         if market_display:
             mpo_info += f" ({market_display})"
         msg_lines.append(f"▪️ *Market/MPO:* {mpo_info}")
         
-    if month_display:
-        msg_lines.append(f"▪️ *Month:* {month_display}")
+    if fm_am:
+        msg_lines.append(f"▪️ *Manager (FM/AM):* {fm_am}")
+    if market and not mpo_code:
+        msg_lines.append(f"▪️ *Market:* {market}")
+    if vacant_only:
+        msg_lines.append("▪️ *Forces:* VACANT ONLY")
         
-    if product_brand:
-        msg_lines.append(f"▪️ *Product:* {product_brand}")
+    msg_lines.append("=========================================")
+
+    # 6. Aggregation & Formatting
+    if group_by:
+        # Perform group by breakdown
+        group_col = None
+        group_label = ""
         
-    if customer_name:
-        msg_lines.append(f"▪️ *Customer:* {customer_name}")
+        if group_by == 'month':
+            group_col = 'Month'
+            group_label = 'Monthly breakdown'
+        elif group_by == 'market':
+            group_col = 'MARKET'
+            group_label = 'Market-wise breakdown (Top 15)'
+        elif group_by == 'fm_am':
+            group_col = 'FM/AM'
+            group_label = 'Manager-wise breakdown (Top 15)'
+        elif group_by == 'mpo_code':
+            group_col = 'MPO_Code'
+            group_label = 'MPO-wise breakdown (Top 15)'
+            
+        if group_col in filtered_df.columns:
+            # Group stats
+            grouped = filtered_df.groupby(group_col).agg(
+                box_sold=('Quantity', 'sum'),
+                sales_amount=('Line_Amount', 'sum'),
+                invoices=('Invoice_No', 'nunique'),
+                customers=('Customer_ID', 'nunique')
+            ).reset_index()
+            
+            # Sort order
+            if group_by == 'month':
+                # Chronological sort
+                grouped = grouped.sort_values(by='Month')
+            else:
+                # Descending sales volume sort
+                grouped = grouped.sort_values(by='box_sold', ascending=False).head(15)
+                
+            msg_lines.append(f"📈 *{group_label}:*")
+            
+            for idx, row in grouped.iterrows():
+                col_val = row[group_col]
+                # Format month name
+                if group_by == 'month':
+                    try:
+                        dt = datetime.strptime(str(col_val), "%Y-%m")
+                        col_val = dt.strftime("%b %Y")
+                    except:
+                        pass
+                
+                # Format amounts
+                box_str = f"{row['box_sold']:,.2f} Boxes"
+                amt_str = f"{row['sales_amount']:,.2f} TK"
+                inv_str = f"{row['invoices']:,} Inv"
+                cus_str = f"{row['customers']:,} Cus"
+                
+                msg_lines.append(f"▪️ *{col_val}:* {box_str} ({amt_str}, {inv_str}, {cus_str})")
+            
+            # Print grand total summary below
+            total_qty = filtered_df['Quantity'].sum()
+            total_amount = filtered_df['Line_Amount'].sum()
+            msg_lines.extend([
+                "-----------------------------------------",
+                f"🧮 *Grand Total:* *{total_qty:,.2f} Boxes* ({total_amount:,.2f} TK)"
+            ])
+        else:
+            msg_lines.append(f"⚠ Aggregation field '{group_by}' could not be matched to data columns.")
+            
+    else:
+        # Standard grand totals output
+        total_qty = filtered_df['Quantity'].sum()
+        total_amount = filtered_df['Line_Amount'].sum()
+        invoices = filtered_df['Invoice_No'].nunique()
+        customers = filtered_df['Customer_ID'].nunique()
         
-    msg_lines.extend([
-        "",
-        "📈 *Calculated Statistics:*",
-        f"▪️ *Total Box Sold:* *{total_qty:,.2f}*",
-        f"▪️ *Total Net Sales:* *{total_amount:,.2f} TK*",
-        f"▪️ *Total Invoices:* *{invoices:,}*",
-        f"▪️ *Unique Customers:* *{customers:,}*",
-        "========================================="
-    ])
-    
+        msg_lines.extend([
+            "📈 *Calculated Statistics:*",
+            f"▪️ *Total Box Sold:* *{total_qty:,.2f}*",
+            f"▪️ *Total Net Sales:* *{total_amount:,.2f} TK*",
+            f"▪️ *Total Invoices:* *{invoices:,}*",
+            f"▪️ *Unique Customers:* *{customers:,}*"
+        ])
+        
+    msg_lines.append("=========================================")
     return "\n".join(msg_lines)
 
 # ══════════════════════════════════════════════════════════════════
@@ -412,9 +534,9 @@ I can query the latest sales transaction report generated by the Admin and give 
 ▪️ "january maase Bariahsal 1 Market e alagra koto box sale hoise"
 ▪️ "chattogram depot e may maase mokast koto invoice aar customer cilo"
 ▪️ "B001 mpo code er alagra total sales amount koto"
-▪️ "Napa product er total sale koto"
+▪️ "Alagra kon maase koto sale hoise? Faridpur Zone e"
 
-💬 *Note:* I remember the context of the chat! If you ask a follow-up question (e.g. "What about Barishal Depot?" or "Only Dhaka-2?"), I will keep your previous filters (like month or product) active!
+💬 *Note:* I remember the context of the chat! If you ask a follow-up question, I will keep your previous filters (like month or product) active!
 
 To reset context and start fresh, type `/reset` or `/start`.
 
@@ -427,7 +549,7 @@ def handle_reset_command(chat_id):
 
 def main_loop():
     print("=" * 80)
-    print("  TELEGRAM SALES QUERY BOT - RUNNING (LONG POLLING WITH CONTEXT MEMORY)")
+    print("  TELEGRAM SALES QUERY BOT - RUNNING (LONG POLLING WITH METADATA MAPPING)")
     print("=" * 80)
     print(f"Bot Token: {TELEGRAM_BOT_TOKEN[:15]}...")
     if DATA_MANAGER.loaded_csv_path:

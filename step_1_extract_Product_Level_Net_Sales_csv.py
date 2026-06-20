@@ -447,6 +447,7 @@ def extract_sales_data(depot_name, db_name):
             o.xsp AS MPO_Code,
             o.xordernum AS Invoice_No,
             o.xdate AS Invoice_Date,
+            o.ztime AS Transaction_Time,
             CASE 
                 WHEN o.xordernum LIKE 'IN-%' OR o.xordernum LIKE 'IN--%' THEN 'Sale'
                 WHEN o.xordernum LIKE 'SR-%' OR o.xordernum LIKE 'SR--%' THEN 'Return'
@@ -629,8 +630,46 @@ def process_all_depots():
             net_sales.to_csv(csv_file, index=False)
             
             file_size_mb = os.path.getsize(csv_file) / (1024 * 1024)
-            gui.log(f"\n✓ Saved: {csv_file}")
+            gui.log(f"\n[OK] Saved File 1: {csv_file}")
             gui.log(f"  File size: {file_size_mb:.2f} MB")
+            
+            # Save File 2 (Daily/Detailed Raw Transactions)
+            gui.update_progress(92, "Saving detailed daily CSV file...")
+            gui.log("Generating File 2 (Daily/Detailed Raw Transactions)...")
+            
+            detailed_df = combined_df.copy()
+            
+            # Format datetime columns to string
+            detailed_df['Invoice_Date'] = pd.to_datetime(detailed_df['Invoice_Date']).dt.strftime('%Y-%m-%d')
+            detailed_df['Transaction_Time'] = pd.to_datetime(detailed_df['Transaction_Time']).dt.strftime('%Y-%m-%d %H:%M:%S.%f').str[:-3]
+            
+            # Clean names
+            detailed_df['Customer_Name'] = detailed_df['Customer_Name'].astype(str).str.strip()
+            detailed_df['Product_Name'] = detailed_df['Product_Name'].astype(str).str.strip()
+            
+            # Group by transaction/invoice level detail
+            detailed_grouped = detailed_df.groupby([
+                'Depot', 'MPO_Code', 'Invoice_No', 'Invoice_Date', 'Transaction_Time', 
+                'Transaction_Type', 'Customer_ID', 'Customer_Name', 'Product_Code', 'Product_Name', 'Month'
+            ]).agg({
+                'Quantity': 'sum',
+                'Line_Amount': 'sum'
+            }).reset_index()
+            
+            # Reorder columns
+            col_order = [
+                'Depot', 'MPO_Code', 'Invoice_No', 'Invoice_Date', 'Transaction_Time', 
+                'Transaction_Type', 'Customer_ID', 'Customer_Name', 'Product_Code', 'Product_Name', 
+                'Quantity', 'Line_Amount', 'Month'
+            ]
+            detailed_grouped = detailed_grouped[col_order]
+            
+            csv_file_detailed = os.path.join(output_dir, f"01.1_Date_wise_Customer_wise_Product_wise_Net_Sales_Extracted_Data_{timestamp}.csv")
+            detailed_grouped.to_csv(csv_file_detailed, index=False)
+            
+            detailed_size_mb = os.path.getsize(csv_file_detailed) / (1024 * 1024)
+            gui.log(f"[OK] Saved File 2: {csv_file_detailed}")
+            gui.log(f"  File size: {detailed_size_mb:.2f} MB")
             
             # Statistics
             total_sale_qty = net_sales['Sale_Qty'].sum()
@@ -688,8 +727,10 @@ def process_all_depots():
             # Show success message
             messagebox.showinfo("Success", 
                                f"Processing complete!\n\n"
-                               f"File saved to:\n{csv_file}\n\n"
-                               f"Total records: {len(net_sales):,}\n"
+                               f"File 1 saved to:\n{csv_file}\n\n"
+                               f"File 2 saved to:\n{csv_file_detailed}\n\n"
+                               f"Total records (File 1): {len(net_sales):,}\n"
+                               f"Total records (File 2): {len(detailed_grouped):,}\n"
                                f"Net Sales: {total_actual_amt:,.2f} BDT")
         
         except Exception as e:

@@ -596,11 +596,21 @@ def process_all_depots():
             gui.update_progress(75, "Grouping returns data...")
             gui.log("[4/6] Grouping returns...")
             returns_grouped = returns_df.groupby('CONCATENATED_KEY').agg({
+                'Depot': 'first',
+                'MPO_Code': 'first',
+                'Customer_ID': 'first',
+                'Customer_Name': 'first',
+                'Month': 'first',
+                'Product_Code': 'first',
+                'Product_Name': 'first',
                 'Quantity': 'sum',
                 'Line_Amount': 'sum'
             }).reset_index()
             
-            returns_grouped.columns = ['CONCATENATED_KEY', 'Return_Qty', 'Return_Amount']
+            returns_grouped.columns = [
+                'CONCATENATED_KEY', 'Depot_ret', 'MPO_Code_ret', 'Customer_ID_ret', 'Customer_Name_ret',
+                'Month_ret', 'Product_Code_ret', 'Product_Name_ret', 'Return_Qty', 'Return_Amount'
+            ]
             
             gui.log(f"      Unique keys: {len(returns_grouped):,}")
             
@@ -611,15 +621,27 @@ def process_all_depots():
                 sales_grouped,
                 returns_grouped,
                 on='CONCATENATED_KEY',
-                how='left'
+                how='outer'
             )
             
-            # Fill NaN and calculate
+            # Fill NaN for Sales and Returns
+            net_sales['Sale_Qty'] = net_sales['Sale_Qty'].fillna(0)
+            net_sales['Sale_Amount'] = net_sales['Sale_Amount'].fillna(0)
             net_sales['Return_Qty'] = net_sales['Return_Qty'].fillna(0)
             net_sales['Return_Amount'] = net_sales['Return_Amount'].fillna(0)
+            
+            # Reconstruct missing columns using the values from returns if sales were empty
+            for col in ['Depot', 'MPO_Code', 'Customer_ID', 'Customer_Name', 'Month', 'Product_Code', 'Product_Name']:
+                net_sales[col] = net_sales[col].fillna(net_sales[col + '_ret'])
+                
+            # Drop the helper columns
+            net_sales.drop(columns=[col + '_ret' for col in ['Depot', 'MPO_Code', 'Customer_ID', 'Customer_Name', 'Month', 'Product_Code', 'Product_Name']], inplace=True)
+            
+            # Recalculate actuals
             net_sales['ACTUAL_SALE_QTY'] = net_sales['Sale_Qty'] - net_sales['Return_Qty']
             net_sales['ACTUAL_SALE_AMOUNT'] = net_sales['Sale_Amount'] - net_sales['Return_Amount']
-            net_sales['Return_Rate_%'] = (net_sales['Return_Qty'] / net_sales['Sale_Qty'] * 100).round(2)
+            net_sales['Return_Rate_%'] = (net_sales['Return_Qty'] / net_sales['Sale_Qty'] * 100).round(2).fillna(0)
+            net_sales['Return_Rate_%'] = net_sales['Return_Rate_%'].replace([float('inf'), float('-inf')], 0)
             
             # Save to CSV in selected output directory
             gui.update_progress(90, "Saving to CSV file...")
@@ -654,7 +676,7 @@ def process_all_depots():
             # Group by transaction/invoice level detail
             detailed_grouped = detailed_df.groupby([
                 'Depot', 'MPO_Code', 'Invoice_No', 'Invoice_Date', 'Transaction_Time', 
-                'Transaction_Type', 'Customer_ID', 'Customer_Name', 'Product_Code', 'Product_Name', 'Month'
+                'Transaction_Type', 'Customer_ID', 'Customer_Name', 'Product_Code', 'Product_Name', 'Month', 'CONCATENATED_KEY'
             ]).agg({
                 'Quantity': 'sum',
                 'Line_Amount': 'sum'
@@ -662,7 +684,7 @@ def process_all_depots():
             
             # Reorder columns
             col_order = [
-                'Depot', 'MPO_Code', 'Invoice_No', 'Invoice_Date', 'Transaction_Time', 
+                'CONCATENATED_KEY', 'Depot', 'MPO_Code', 'Invoice_No', 'Invoice_Date', 'Transaction_Time', 
                 'Transaction_Type', 'Customer_ID', 'Customer_Name', 'Product_Code', 'Product_Name', 
                 'Quantity', 'Line_Amount', 'Month'
             ]

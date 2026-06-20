@@ -15,6 +15,26 @@ if hasattr(sys.stdout, 'reconfigure'):
     except:
         pass
 
+import subprocess
+
+def find_rclone_executable():
+    if shutil.which("rclone"):
+        return "rclone"
+    common_paths = [r"C:\rclone\rclone.exe"]
+    try:
+        for item in os.listdir("C:\\"):
+            if "rclone" in item.lower():
+                full_path = os.path.join("C:\\", item, "rclone.exe")
+                if os.path.exists(full_path):
+                    common_paths.append(full_path)
+    except:
+        pass
+    for path in common_paths:
+        if os.path.exists(path):
+            return path
+    return "rclone"
+
+
 # ══════════════════════════════════════════════════════════════════
 #  Pipeline Execution Steps
 # ══════════════════════════════════════════════════════════════════
@@ -456,6 +476,76 @@ def main():
     detailed_grouped.to_csv(csv_file_detailed, index=False)
     print(f"[SAVED FILE 2] {csv_file_detailed}")
     
+    # ── GENERATE SQLITE DATABASE AND UPLOAD TO GOOGLE DRIVE ──
+    try:
+        print("\n" + "="*60)
+        print("GENERATING SQLITE DATABASE & UPLOADING TO GOOGLE DRIVE")
+        print("="*60)
+        
+        mpo_code_xlsx = os.path.join(base_dir, "archive", "recent", "mpo_code.xlsx")
+        if os.path.exists(mpo_code_xlsx):
+            print("Enriching sales data with MPO mappings for SQLite...")
+            df_mpo = pd.read_excel(mpo_code_xlsx)
+            df_mpo_temp = df_mpo.copy()
+            df_mpo_temp.rename(columns={'DEPOT': 'DEPOT_mpo', 'MPO CODE': 'MPO_CODE_mpo'}, inplace=True)
+            
+            # Merge
+            df_merged = pd.merge(
+                detailed_grouped, 
+                df_mpo_temp, 
+                left_on=['Depot', 'MPO_Code'], 
+                right_on=['DEPOT_mpo', 'MPO_CODE_mpo'], 
+                how='left'
+            )
+            
+            # Fallback depot to zone
+            depot_to_zone = df_mpo.groupby('DEPOT')['ZONE'].first().to_dict()
+            df_merged['ZONE'] = df_merged['ZONE'].fillna(df_merged['Depot'].map(depot_to_zone))
+            
+            # Drop helper columns
+            df_merged.drop(columns=['DEPOT_mpo', 'MPO_CODE_mpo'], errors='ignore', inplace=True)
+        else:
+            print("⚠ Warning: mpo_code.xlsx not found. Writing raw detailed data to SQLite without mapping.")
+            df_merged = detailed_grouped.copy()
+            
+        # Write to SQLite
+        import sqlite3
+        sqlite_path = os.path.join(base_dir, "sales.db")
+        if os.path.exists(sqlite_path):
+            try:
+                os.remove(sqlite_path)
+            except Exception as ex:
+                print(f"  Could not remove old sales.db: {ex}")
+                
+        print(f"Writing {len(df_merged):,} records to SQLite...")
+        conn = sqlite3.connect(sqlite_path)
+        df_merged.to_sql("sales", conn, if_exists="replace", index=False)
+        
+        # Create indexes
+        print("Creating indexes on SQLite table...")
+        cursor = conn.cursor()
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_depot ON sales (Depot)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_month ON sales (Month)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_product ON sales (Product_Name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mpo ON sales (MPO_Code)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_zone ON sales (ZONE)")
+        conn.commit()
+        conn.close()
+        print("✓ SQLite database generated successfully.")
+        
+        # Upload using rclone
+        rclone_exe = find_rclone_executable()
+        # The parent folder ID
+        parent_folder_id = "1fRl-N_fNU_bJfkxH9a_EYLJeHPB43gzv"
+        remote_path = f"grive_new,root_folder_id={parent_folder_id}:sales.db"
+        
+        print(f"Uploading sales.db to Google Drive...")
+        upload_cmd = [rclone_exe, "copyto", "--progress", sqlite_path, remote_path]
+        subprocess.run(upload_cmd, check=True)
+        print("✓ [SUCCESS] SQLite database uploaded to Google Drive successfully!")
+    except Exception as e:
+        print(f"❌ Error generating/uploading SQLite database: {e}")
+        
     print(f"\nSuccessfully combined depots: {', '.join(success_depots)}")
     
     print("\nWaiting 5 seconds before next step...")

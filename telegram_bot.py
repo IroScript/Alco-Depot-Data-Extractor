@@ -5,7 +5,12 @@ import json
 import time
 import requests
 import pandas as pd
+import sqlite3
+import io
 from datetime import datetime
+from google.oauth2.service_account import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
 
 # Reconfigure console output encoding to prevent Windows crash on non-ASCII characters
 if hasattr(sys.stdout, 'reconfigure'):
@@ -13,6 +18,7 @@ if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8', errors='backslashreplace')
     except:
         pass
+
 
 # ══════════════════════════════════════════════════════════════════
 #  Configuration & Environment Loader
@@ -45,97 +51,127 @@ if not GROQ_API_KEY:
     sys.exit(1)
 
 # ══════════════════════════════════════════════════════════════════
-#  Data Manager (Handles Lazy Loading & Auto-Reloading of CSV)
+#  Google Drive Sync & Database Downloader
+# ══════════════════════════════════════════════════════════════════
+
+def download_sales_db_from_gdrive(base_dir):
+    creds_path = os.path.join(base_dir, "FieldEdit", "alco-pharma-cf4b49e394bb.json")
+    if not os.path.exists(creds_path):
+        print(f"❌ Error: Service account key not found at {creds_path}")
+        return False
+        
+    try:
+        print("🔄 Connecting to Google Drive via Service Account...")
+        scopes = ['https://www.googleapis.com/auth/drive']
+        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        drive_service = build('drive', 'v3', credentials=creds)
+        
+        # Parent folder ID where sales.db is located
+        parent_folder_id = "1fRl-N_fNU_bJfkxH9a_EYLJeHPB43gzv"
+        query = f"'{parent_folder_id}' in parents and name = 'sales.db' and trashed = false"
+        
+        results = drive_service.files().list(q=query, fields="files(id, name)").execute()
+        files = results.get('files', [])
+        
+        if not files:
+            print("❌ Error: sales.db not found in Google Drive parent folder.")
+            return False
+            
+        file_id = files[0]['id']
+        print(f"✓ Found sales.db on Drive (ID: {file_id}). Downloading...")
+        
+        local_db_path = os.path.join(base_dir, "sales.db")
+        request = drive_service.files().get_media(fileId=file_id)
+        
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+            print(f"  Download progress: {int(status.progress() * 100)}%")
+            
+        with open(local_db_path, "wb") as f:
+            f.write(fh.getvalue())
+            
+        print(f"✓ SQLite database successfully synced locally to: {local_db_path}")
+        return True
+    except Exception as e:
+        print(f"❌ Error downloading sales.db from Google Drive: {e}")
+        return False
+
+# ══════════════════════════════════════════════════════════════════
+#  Data Manager (Handles SQLite Connection & Metadata Loading)
 # ══════════════════════════════════════════════════════════════════
 
 class SalesDataManager:
     def __init__(self):
-        self.df = None
-        self.df_mpo = None
         self.depots_list = []
         self.zones_list = []
         self.fm_ams_list = []
-        self.loaded_csv_path = None
-        self.last_mtime = 0
         
-        # Load MPO mappings once
-        self.load_mpo_mappings()
-        # Initial load
+        # Initial check/load
         self.check_and_load_data()
 
-    def load_mpo_mappings(self):
-        mpo_code_xlsx = os.path.join(BASE_DIR, "archive", "recent", "mpo_code.xlsx")
-        if os.path.exists(mpo_code_xlsx):
-            try:
-                self.df_mpo = pd.read_excel(mpo_code_xlsx)
-                self.depots_list = [str(x) for x in self.df_mpo['DEPOT'].dropna().unique()]
-                self.zones_list = [str(x) for x in self.df_mpo['ZONE'].dropna().unique()]
-                self.fm_ams_list = [str(x) for x in self.df_mpo['FM/AM'].dropna().unique()]
-                print(f"✓ Loaded {len(self.df_mpo)} MPO mappings (Depots: {len(self.depots_list)}, Zones: {len(self.zones_list)}).")
-            except Exception as e:
-                print(f"⚠ Warning: Failed to load mpo_code.xlsx: {e}")
-        else:
-            print("⚠ Warning: mpo_code.xlsx not found at archive/recent/mpo_code.xlsx")
-
-    def get_latest_csv_path(self):
-        csv_files = glob.glob(os.path.join(BASE_DIR, "01.1_Date_wise_Customer_wise_Product_wise_Net_Sales_Extracted_Data_*.csv"))
-        if not csv_files:
-            return None
-        # Sort by modification time to get the latest one
-        csv_files.sort(key=os.path.getmtime, reverse=True)
-        return csv_files[0]
-
     def check_and_load_data(self):
-        latest_csv = self.get_latest_csv_path()
-        if not latest_csv:
-            print("⚠ Warning: No 01.1 Date-wise CSV file found in root yet.")
-            return False
+        db_path = os.path.join(BASE_DIR, "sales.db")
+        if not os.path.exists(db_path):
+            print("sales.db not found locally. Syncing from Google Drive...")
+            download_sales_db_from_gdrive(BASE_DIR)
             
-        mtime = os.path.getmtime(latest_csv)
-        
-        # Reload if not loaded yet, or if file has been modified (e.g. newly generated by admin)
-        if self.df is None or latest_csv != self.loaded_csv_path or mtime > self.last_mtime:
-            print(f"🔄 Loading/Reloading sales data: {os.path.basename(latest_csv)}...")
-            t0 = time.time()
+        if os.path.exists(db_path):
+            return self.load_metadata_from_sqlite()
+        return False
+
+    def load_metadata_from_sqlite(self):
+        db_path = os.path.join(BASE_DIR, "sales.db")
+        if os.path.exists(db_path):
             try:
-                df_raw = pd.read_csv(latest_csv)
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
                 
-                # Merge MPO mapping data at load time if available
-                if self.df_mpo is not None:
-                    df_mpo_temp = self.df_mpo.copy()
-                    df_mpo_temp.rename(columns={'DEPOT': 'DEPOT_mpo', 'MPO CODE': 'MPO_CODE_mpo'}, inplace=True)
-                    df_merged = pd.merge(df_raw, df_mpo_temp, left_on=['Depot', 'MPO_Code'], right_on=['DEPOT_mpo', 'MPO_CODE_mpo'], how='left')
-                    
-                    # Apply fallback depot to zone mapping for unmatched MPOs
-                    depot_to_zone = self.df_mpo.groupby('DEPOT')['ZONE'].first().to_dict()
-                    df_merged['ZONE'] = df_merged['ZONE'].fillna(df_merged['Depot'].map(depot_to_zone))
-                    self.df = df_merged
-                else:
-                    self.df = df_raw
-                    
-                self.loaded_csv_path = latest_csv
-                self.last_mtime = mtime
-                print(f"✓ Loaded {len(self.df):,} records in {time.time() - t0:.2f} seconds.")
+                # Fetch depots
+                cursor.execute("SELECT DISTINCT Depot FROM sales WHERE Depot IS NOT NULL")
+                self.depots_list = sorted([str(row[0]) for row in cursor.fetchall()])
+                
+                # Fetch zones
+                cursor.execute("SELECT DISTINCT ZONE FROM sales WHERE ZONE IS NOT NULL")
+                self.zones_list = sorted([str(row[0]) for row in cursor.fetchall()])
+                
+                # Fetch fm_ams
+                cursor.execute("SELECT DISTINCT [FM/AM] FROM sales WHERE [FM/AM] IS NOT NULL")
+                self.fm_ams_list = sorted([str(row[0]) for row in cursor.fetchall()])
+                
+                conn.close()
+                print(f"✓ Loaded metadata from SQLite (Depots: {len(self.depots_list)}, Zones: {len(self.zones_list)}, Managers: {len(self.fm_ams_list)})")
                 return True
             except Exception as e:
-                print(f"❌ Error loading CSV: {e}")
-                return False
-        return True
+                print(f"⚠ Warning: Failed to query metadata from SQLite: {e}")
+        return False
 
     def get_mpo_list_for_depot(self, depot_name):
         mpo_list = []
-        if self.df_mpo is not None and depot_name:
-            df_depot = self.df_mpo[self.df_mpo['DEPOT'].str.upper() == depot_name.upper()]
-            for idx, row in df_depot.iterrows():
-                if pd.notna(row['MARKET']) and pd.notna(row['MPO CODE']):
+        db_path = os.path.join(BASE_DIR, "sales.db")
+        if depot_name and os.path.exists(db_path):
+            try:
+                conn = sqlite3.connect(db_path)
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT DISTINCT MARKET, MPO_Code FROM sales WHERE UPPER(Depot) = ? AND MARKET IS NOT NULL AND MPO_Code IS NOT NULL", 
+                    (depot_name.upper(),)
+                )
+                for row in cursor.fetchall():
                     mpo_list.append({
-                        "MARKET": str(row['MARKET']).strip(),
-                        "MPO CODE": str(row['MPO CODE']).strip()
+                        "MARKET": str(row[0]).strip(),
+                        "MPO CODE": str(row[1]).strip()
                     })
+                conn.close()
+            except Exception as e:
+                print(f"Error querying MPO list for depot {depot_name}: {e}")
         return mpo_list
 
 # Instantiate Data Manager
 DATA_MANAGER = SalesDataManager()
+
 
 # ══════════════════════════════════════════════════════════════════
 #  Chat Session Context Manager (For follow-up questions)
@@ -292,7 +328,8 @@ def process_sales_query(chat_id, query_text):
     # Ensure latest data is loaded
     DATA_MANAGER.check_and_load_data()
     
-    if DATA_MANAGER.df is None:
+    db_path = os.path.join(BASE_DIR, "sales.db")
+    if not os.path.exists(db_path):
         return "❌ Error: Sales database file is not loaded or not found. Please ask the Admin to run the pipeline first."
         
     print(f"\nProcessing query for Chat {chat_id}: '{query_text}'")
@@ -353,29 +390,51 @@ def process_sales_query(chat_id, query_text):
     vacant_only = intent.get("vacant_only")
     group_by = intent.get("group_by")
     
-    # 4. Filter DataFrame
-    filtered_df = DATA_MANAGER.df.copy()
+    # 4. Build SQLite Query
+    conditions = []
+    params = []
     
     if depot:
-        filtered_df = filtered_df[filtered_df['Depot'].str.upper() == depot.upper()]
+        conditions.append("UPPER(Depot) = ?")
+        params.append(depot.upper())
     if zone:
-        filtered_df = filtered_df[filtered_df['ZONE'].str.upper() == zone.upper()]
+        conditions.append("UPPER(ZONE) = ?")
+        params.append(zone.upper())
     if month:
-        filtered_df = filtered_df[filtered_df['Month'] == month]
+        conditions.append("Month = ?")
+        params.append(month)
     if product_brand:
-        filtered_df = filtered_df[filtered_df['Product_Name'].str.contains(product_brand, case=False, na=False)]
+        conditions.append("Product_Name LIKE ?")
+        params.append(f"%{product_brand}%")
     if product_code:
-        filtered_df = filtered_df[filtered_df['Product_Code'].str.upper() == product_code.upper()]
+        conditions.append("UPPER(Product_Code) = ?")
+        params.append(product_code.upper())
     if mpo_code:
-        filtered_df = filtered_df[filtered_df['MPO_Code'].str.upper() == mpo_code.upper()]
+        conditions.append("UPPER(MPO_Code) = ?")
+        params.append(mpo_code.upper())
     if fm_am:
-        filtered_df = filtered_df[filtered_df['FM/AM'].str.contains(fm_am, case=False, na=False)]
+        conditions.append("[FM/AM] LIKE ?")
+        params.append(f"%{fm_am}%")
     if market:
-        filtered_df = filtered_df[filtered_df['MARKET'].str.contains(market, case=False, na=False)]
+        conditions.append("MARKET LIKE ?")
+        params.append(f"%{market}%")
     if vacant_only:
-        filtered_df = filtered_df[filtered_df['FM/AM'].str.contains('VACANT', case=False, na=False)]
+        conditions.append("[FM/AM] LIKE ?")
+        params.append("%VACANT%")
         
-    if filtered_df.empty:
+    where_clause = ""
+    if conditions:
+        where_clause = "WHERE " + " AND ".join(conditions)
+        
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    
+    # Check if empty first
+    cursor.execute(f"SELECT COUNT(*) FROM sales {where_clause}", params)
+    total_records = cursor.fetchone()[0]
+    
+    if total_records == 0:
+        conn.close()
         # Build friendly empty-result message
         filters = []
         if depot: filters.append(f"Depot: {depot}")
@@ -419,13 +478,17 @@ def process_sales_query(chat_id, query_text):
         msg_lines.append(f"▪️ *Product Code:* {product_code}")
     if mpo_code:
         market_display = None
-        if DATA_MANAGER.df_mpo is not None:
-            mpo_match = DATA_MANAGER.df_mpo[
-                (DATA_MANAGER.df_mpo['MPO CODE'].str.upper() == mpo_code.upper()) &
-                (DATA_MANAGER.df_mpo['DEPOT'].str.upper() == (depot or "").upper())
-            ]
-            if not mpo_match.empty:
-                market_display = mpo_match.iloc[0]['MARKET']
+        try:
+            cursor.execute(
+                "SELECT DISTINCT MARKET FROM sales WHERE UPPER(MPO_Code) = ? AND UPPER(Depot) = ? AND MARKET IS NOT NULL LIMIT 1",
+                (mpo_code.upper(), (depot or "").upper())
+            )
+            match_row = cursor.fetchone()
+            if match_row:
+                market_display = match_row[0]
+        except Exception as e:
+            print(f"Error querying market display: {e}")
+            
         mpo_info = f"{mpo_code}"
         if market_display:
             mpo_info += f" ({market_display})"
@@ -442,44 +505,56 @@ def process_sales_query(chat_id, query_text):
 
     # 6. Aggregation & Formatting
     if group_by:
-        # Perform group by breakdown
         group_col = None
         group_label = ""
+        order_by = ""
         
         if group_by == 'month':
             group_col = 'Month'
             group_label = 'Monthly breakdown'
+            order_by = "Month ASC"
         elif group_by == 'market':
             group_col = 'MARKET'
             group_label = 'Market-wise breakdown (Top 15)'
+            order_by = "box_sold DESC"
         elif group_by == 'fm_am':
-            group_col = 'FM/AM'
+            group_col = '[FM/AM]'
             group_label = 'Manager-wise breakdown (Top 15)'
+            order_by = "box_sold DESC"
         elif group_by == 'mpo_code':
             group_col = 'MPO_Code'
             group_label = 'MPO-wise breakdown (Top 15)'
+            order_by = "box_sold DESC"
             
-        if group_col in filtered_df.columns:
-            # Group stats
-            grouped = filtered_df.groupby(group_col).agg(
-                box_sold=('Quantity', 'sum'),
-                sales_amount=('Line_Amount', 'sum'),
-                invoices=('Invoice_No', 'nunique'),
-                customers=('Customer_ID', 'nunique')
-            ).reset_index()
+        # Group stats
+        query = f"""
+            SELECT 
+                {group_col} AS group_col,
+                SUM(Quantity) AS box_sold,
+                SUM(Line_Amount) AS sales_amount,
+                COUNT(DISTINCT Invoice_No) AS invoices,
+                COUNT(DISTINCT Customer_ID) AS customers
+            FROM sales
+            {where_clause}
+            GROUP BY {group_col}
+            ORDER BY {order_by}
+        """
+        if group_by != 'month':
+            query += " LIMIT 15"
             
-            # Sort order
-            if group_by == 'month':
-                # Chronological sort
-                grouped = grouped.sort_values(by='Month')
-            else:
-                # Descending sales volume sort
-                grouped = grouped.sort_values(by='box_sold', ascending=False).head(15)
-                
+        try:
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+            
             msg_lines.append(f"📈 *{group_label}:*")
             
-            for idx, row in grouped.iterrows():
-                col_val = row[group_col]
+            for row in rows:
+                col_val = row[0]
+                box_sold = row[1] or 0.0
+                sales_amount = row[2] or 0.0
+                invoices_cnt = row[3] or 0
+                customers_cnt = row[4] or 0
+                
                 # Format month name
                 if group_by == 'month':
                     try:
@@ -489,29 +564,43 @@ def process_sales_query(chat_id, query_text):
                         pass
                 
                 # Format amounts
-                box_str = f"{row['box_sold']:,.2f} Boxes"
-                amt_str = f"{row['sales_amount']:,.2f} TK"
-                inv_str = f"{row['invoices']:,} Inv"
-                cus_str = f"{row['customers']:,} Cus"
+                box_str = f"{box_sold:,.2f} Boxes"
+                amt_str = f"{sales_amount:,.2f} TK"
+                inv_str = f"{invoices_cnt:,} Inv"
+                cus_str = f"{customers_cnt:,} Cus"
                 
                 msg_lines.append(f"▪️ *{col_val}:* {box_str} ({amt_str}, {inv_str}, {cus_str})")
+                
+            # Grand total
+            cursor.execute(f"SELECT SUM(Quantity), SUM(Line_Amount) FROM sales {where_clause}", params)
+            gt_row = cursor.fetchone()
+            total_qty = gt_row[0] or 0.0
+            total_amount = gt_row[1] or 0.0
             
-            # Print grand total summary below
-            total_qty = filtered_df['Quantity'].sum()
-            total_amount = filtered_df['Line_Amount'].sum()
             msg_lines.extend([
                 "-----------------------------------------",
                 f"🧮 *Grand Total:* *{total_qty:,.2f} Boxes* ({total_amount:,.2f} TK)"
             ])
-        else:
-            msg_lines.append(f"⚠ Aggregation field '{group_by}' could not be matched to data columns.")
+        except Exception as e:
+            print(f"Error querying group breakdown: {e}")
+            msg_lines.append(f"⚠ Aggregation field '{group_by}' could not be processed.")
             
     else:
         # Standard grand totals output
-        total_qty = filtered_df['Quantity'].sum()
-        total_amount = filtered_df['Line_Amount'].sum()
-        invoices = filtered_df['Invoice_No'].nunique()
-        customers = filtered_df['Customer_ID'].nunique()
+        cursor.execute(f"""
+            SELECT 
+                SUM(Quantity), 
+                SUM(Line_Amount), 
+                COUNT(DISTINCT Invoice_No), 
+                COUNT(DISTINCT Customer_ID) 
+            FROM sales 
+            {where_clause}
+        """, params)
+        gt_row = cursor.fetchone()
+        total_qty = gt_row[0] or 0.0
+        total_amount = gt_row[1] or 0.0
+        invoices = gt_row[2] or 0
+        customers = gt_row[3] or 0
         
         msg_lines.extend([
             "📈 *Calculated Statistics:*",
@@ -522,7 +611,9 @@ def process_sales_query(chat_id, query_text):
         ])
         
     msg_lines.append("=========================================")
+    conn.close()
     return "\n".join(msg_lines)
+
 
 # ══════════════════════════════════════════════════════════════════
 #  Telegram Bot Core & Long Polling Loop
@@ -566,13 +657,14 @@ def handle_reset_command(chat_id):
 
 def main_loop():
     print("=" * 80)
-    print("  TELEGRAM SALES QUERY BOT - RUNNING (LONG POLLING WITH METADATA MAPPING)")
+    print("  TELEGRAM SALES QUERY BOT - RUNNING (SQLITE + GOOGLE DRIVE SYNC)")
     print("=" * 80)
     print(f"Bot Token: {TELEGRAM_BOT_TOKEN[:15]}...")
-    if DATA_MANAGER.loaded_csv_path:
-        print(f"Active Data File: {os.path.basename(DATA_MANAGER.loaded_csv_path)}")
+    db_path = os.path.join(BASE_DIR, "sales.db")
+    if os.path.exists(db_path):
+        print(f"Active SQLite DB: sales.db")
     else:
-        print("Active Data File: None (waiting for file generation)")
+        print("Active SQLite DB: None (waiting for file sync)")
     print("Bot is listening for messages... Press Ctrl+C to exit.\n")
     
     offset = None
@@ -614,6 +706,14 @@ def main_loop():
                     continue
                 elif text.startswith("/reset"):
                     handle_reset_command(chat_id)
+                    continue
+                elif text.startswith("/reload"):
+                    send_telegram_message(chat_id, "🔄 *Syncing sales database from Google Drive...*")
+                    if download_sales_db_from_gdrive(BASE_DIR):
+                        DATA_MANAGER.check_and_load_data()
+                        send_telegram_message(chat_id, "✅ *Database reload complete!* Using the latest data.")
+                    else:
+                        send_telegram_message(chat_id, "❌ *Failed to reload database.* Please check server logs.")
                     continue
                 
                 # Process query

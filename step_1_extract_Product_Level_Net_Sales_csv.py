@@ -647,6 +647,10 @@ def process_all_depots():
             detailed_df['Customer_Name'] = detailed_df['Customer_Name'].astype(str).str.strip()
             detailed_df['Product_Name'] = detailed_df['Product_Name'].astype(str).str.strip()
             
+            # Apply negative returns logic for daily transaction sheet
+            detailed_df.loc[detailed_df['Transaction_Type'] == 'Return', 'Quantity'] *= -1
+            detailed_df.loc[detailed_df['Transaction_Type'] == 'Return', 'Line_Amount'] *= -1
+            
             # Group by transaction/invoice level detail
             detailed_grouped = detailed_df.groupby([
                 'Depot', 'MPO_Code', 'Invoice_No', 'Invoice_Date', 'Transaction_Time', 

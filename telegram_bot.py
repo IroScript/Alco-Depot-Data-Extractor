@@ -118,10 +118,35 @@ class SalesDataManager:
 DATA_MANAGER = SalesDataManager()
 
 # ══════════════════════════════════════════════════════════════════
-#  Groq AI Intent Parser
+#  Chat Session Context Manager (For follow-up questions)
 # ══════════════════════════════════════════════════════════════════
 
-def extract_depot_with_ai(query_text):
+class ChatSessionManager:
+    def __init__(self):
+        self.sessions = {}  # chat_id -> list of message dicts
+
+    def get_history(self, chat_id):
+        if chat_id not in self.sessions:
+            self.sessions[chat_id] = []
+        return self.sessions[chat_id]
+
+    def add_message(self, chat_id, role, content):
+        history = self.get_history(chat_id)
+        history.append({"role": role, "content": content})
+        # Keep only the last 6 messages (3 turns) to prevent context bloat
+        if len(history) > 6:
+            self.sessions[chat_id] = history[-6:]
+
+    def clear_session(self, chat_id):
+        self.sessions[chat_id] = []
+
+SESSION_MANAGER = ChatSessionManager()
+
+# ══════════════════════════════════════════════════════════════════
+#  Groq AI Intent Parser (Context Aware)
+# ══════════════════════════════════════════════════════════════════
+
+def extract_depot_with_ai(query_text, history_messages=None):
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
@@ -131,14 +156,30 @@ def extract_depot_with_ai(query_text):
     system_prompt = """Identify which depot the user is talking about. 
 The valid depots are: BARISHAL, CHATTOGRAM, CUMILLA, DHAKA-1, DHAKA-2, FARIDPUR, JASHORE, MYMENSINGH, RAJSHAHI, RANGPUR.
 Map common variations (e.g. 'Bariahsal' or 'Barisal' -> 'BARISHAL', 'Chittagong' -> 'CHATTOGRAM', 'Comilla' -> 'CUMILLA', 'Dhaka 1' -> 'DHAKA-1', 'Dhaka 2' -> 'DHAKA-2', 'Faridpur' -> 'FARIDPUR', 'Jessore' -> 'JASHORE', 'Mymensingh' -> 'MYMENSINGH', 'Rajshahi' -> 'RAJSHAHI', 'Rangpur' -> 'RANGPUR').
-Return a JSON object with a single key 'depot' (string in uppercase, or null if not mentioned)."""
+
+This is a chat context. If the user's latest query does not mention a depot, but the previous conversation did, you should refer to the history to identify the depot.
+Return a JSON object with a single key 'depot' (string in uppercase, or null if not mentioned and cannot be inferred)."""
+
+    # Build messages with history if available
+    messages = [{"role": "system", "content": system_prompt}]
+    if history_messages:
+        # Only take the text content from history
+        for msg in history_messages[:-1]: # Exclude the current message we're processing
+            # For assistant messages, if they are JSON, try to extract depot to make it readable
+            if msg["role"] == "assistant":
+                try:
+                    js = json.loads(msg["content"])
+                    messages.append({"role": "assistant", "content": f"Active Depot: {js.get('depot')}"})
+                except:
+                    messages.append(msg)
+            else:
+                messages.append(msg)
+                
+    messages.append({"role": "user", "content": f"Query: {query_text}"})
 
     data = {
         "model": "llama-3.3-70b-versatile",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Query: {query_text}"}
-        ],
+        "messages": messages,
         "temperature": 0.0,
         "response_format": {"type": "json_object"}
     }
@@ -152,7 +193,7 @@ Return a JSON object with a single key 'depot' (string in uppercase, or null if 
         print(f"  [AI] Error detecting depot: {e}")
         return None
 
-def extract_query_intent(query_text, depot, mpo_list):
+def extract_query_intent(query_text, depot, mpo_list, history_messages=None):
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {GROQ_API_KEY}",
@@ -170,12 +211,15 @@ Here is the context for the current Depot '{depot or "Unknown"}':
 {mpo_context}
 
 The database fields to extract are:
-- Month: Format YYYY-MM. (e.g. 'january', 'jan' -> '2026-01', 'April', 'apr' -> '2026-04', 'May' -> '2026-05', etc. Assume the year is 2026 unless specified otherwise).
+- Month: Format YYYY-MM. (e.g. 'january', 'jan' -> '2026-01', 'April', 'apr' -> '2026-04', 'May' -> '2026-05', etc. Assume the year is 2026).
 - Product_Name: E.g. 'ALAGRA', 'MOKAST'. Extract the base brand name in uppercase (e.g. 'alagra' -> 'ALAGRA', 'mokast' -> 'MOKAST').
 - MPO_Code: Based on the market/MPO mentioned in the query, find the closest matching MPO Code from the list above. If the query mentions 'Barishal 1 Market' and the list has 'BSHL. MEDICAL-1 -> B001', select 'B001'.
 - Customer_Name: Extract if a specific customer name or pharmacy is mentioned in the query.
 
+This is a chat conversation. If the user's latest query is a follow-up (e.g., 'Only Barishal Depot?' or 'What about Mokast?'), you should keep/inherit the previous parameters (like month, product_brand) from the assistant's previous JSON responses in the history, UNLESS the user explicitly changes them.
+
 Return ONLY a JSON object with keys:
+- depot (string, exact matched depot name, or null)
 - month (string 'YYYY-MM', or null)
 - product_brand (string in uppercase like 'ALAGRA', 'MOKAST', or null)
 - mpo_code (string from the provided list, or null)
@@ -183,12 +227,16 @@ Return ONLY a JSON object with keys:
 
 Do not include any explanation or markdown formatting, return raw JSON string."""
 
+    # Build messages with history
+    messages = [{"role": "system", "content": system_prompt}]
+    if history_messages:
+        for msg in history_messages[:-1]:
+            messages.append(msg)
+    messages.append({"role": "user", "content": f"Query: {query_text}"})
+
     data = {
         "model": "llama-3.3-70b-versatile",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": f"Query: {query_text}"}
-        ],
+        "messages": messages,
         "temperature": 0.0,
         "response_format": {"type": "json_object"}
     }
@@ -206,25 +254,43 @@ Do not include any explanation or markdown formatting, return raw JSON string.""
 #  Query Processor (Filters Data & Formats Response)
 # ══════════════════════════════════════════════════════════════════
 
-def process_sales_query(query_text):
+def process_sales_query(chat_id, query_text):
     # Ensure latest data is loaded
     DATA_MANAGER.check_and_load_data()
     
     if DATA_MANAGER.df is None:
         return "❌ Error: Sales database file is not loaded or not found. Please ask the Admin to run the pipeline first."
         
-    print(f"\nProcessing user query: '{query_text}'")
+    print(f"\nProcessing query for Chat {chat_id}: '{query_text}'")
     
-    # 1. Detect Depot
-    depot = extract_depot_with_ai(query_text)
+    # Get history for this session
+    history = SESSION_MANAGER.get_history(chat_id)
+    # Temporary append user query for the detection step
+    temp_msg = {"role": "user", "content": query_text}
+    history.append(temp_msg)
+    
+    # 1. Detect Depot (Context Aware)
+    depot = extract_depot_with_ai(query_text, history)
     print(f"  Depot detected: {depot}")
     
     # 2. Get markets list for this depot
     mpo_list = DATA_MANAGER.get_mpo_list_for_depot(depot)
     
-    # 3. Extract details using AI with MPO context
-    intent = extract_details_with_context = extract_query_intent(query_text, depot, mpo_list)
+    # 3. Extract details using AI with MPO context and full history
+    intent = extract_query_intent(query_text, depot, mpo_list, history)
     print(f"  Extracted Intent: {json.dumps(intent)}")
+    
+    # Update the depot if intent found a different one
+    if intent.get("depot"):
+        depot = intent["depot"]
+        
+    # Standardize intent by injecting the detected depot
+    intent["depot"] = depot
+    
+    # Store this turn in history (we remove the temporary user message and add structured ones)
+    history.pop()  # remove temp user message
+    SESSION_MANAGER.add_message(chat_id, "user", query_text)
+    SESSION_MANAGER.add_message(chat_id, "assistant", json.dumps(intent))
     
     month = intent.get("month")
     product_brand = intent.get("product_brand")
@@ -337,6 +403,7 @@ def send_telegram_message(chat_id, text):
         print(f"❌ Error sending message to {chat_id}: {e}")
 
 def handle_start_command(chat_id):
+    SESSION_MANAGER.clear_session(chat_id)
     welcome_text = """👋 *Hello! I am the Alco Pharma Sales Query Bot.*
 
 I can query the latest sales transaction report generated by the Admin and give you quick stats on demand.
@@ -347,12 +414,20 @@ I can query the latest sales transaction report generated by the Admin and give 
 ▪️ "B001 mpo code er alagra total sales amount koto"
 ▪️ "Napa product er total sale koto"
 
+💬 *Note:* I remember the context of the chat! If you ask a follow-up question (e.g. "What about Barishal Depot?" or "Only Dhaka-2?"), I will keep your previous filters (like month or product) active!
+
+To reset context and start fresh, type `/reset` or `/start`.
+
 Just type your question below! 👇"""
     send_telegram_message(chat_id, welcome_text)
 
+def handle_reset_command(chat_id):
+    SESSION_MANAGER.clear_session(chat_id)
+    send_telegram_message(chat_id, "🔄 *Chat context has been reset.* You can start a new query now.")
+
 def main_loop():
     print("=" * 80)
-    print("  TELEGRAM SALES QUERY BOT - RUNNING (LONG POLLING)")
+    print("  TELEGRAM SALES QUERY BOT - RUNNING (LONG POLLING WITH CONTEXT MEMORY)")
     print("=" * 80)
     print(f"Bot Token: {TELEGRAM_BOT_TOKEN[:15]}...")
     if DATA_MANAGER.loaded_csv_path:
@@ -398,12 +473,15 @@ def main_loop():
                 if text.startswith("/start") or text.startswith("/help"):
                     handle_start_command(chat_id)
                     continue
+                elif text.startswith("/reset"):
+                    handle_reset_command(chat_id)
+                    continue
                 
                 # Process query
                 send_telegram_message(chat_id, "⏳ *Processing your query... please wait.*")
                 
                 try:
-                    response_text = process_sales_query(text)
+                    response_text = process_sales_query(chat_id, text)
                 except Exception as ex:
                     print(f"❌ Error processing query: {ex}")
                     response_text = "❌ *An error occurred while processing your query.* Please make sure the query format is correct."

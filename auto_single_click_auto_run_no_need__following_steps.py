@@ -1085,15 +1085,11 @@ def main():
     detailed_grouped.to_csv(csv_file_detailed, index=False)
     print(f"[SAVED FILE 2] {csv_file_detailed}")
     
-    # ── GENERATE SQLITE DATABASE AND UPLOAD TO GOOGLE DRIVE ──
+    # ── CLOUD API UPLOAD OR SQLITE DATABASE FALLBACK ──
     try:
-        print("\n" + "="*60)
-        print("GENERATING SQLITE DATABASE & UPLOADING TO GOOGLE DRIVE")
-        print("="*60)
-        
         mpo_code_xlsx = os.path.join(base_dir, "archive", "recent", "mpo_code.xlsx")
         if os.path.exists(mpo_code_xlsx):
-            print("Enriching sales data with MPO mappings for SQLite...")
+            print("Enriching sales data with MPO mappings...")
             df_mpo = pd.read_excel(mpo_code_xlsx)
             df_mpo_temp = df_mpo.copy()
             df_mpo_temp.rename(columns={'DEPOT': 'DEPOT_mpo', 'MPO CODE': 'MPO_CODE_mpo'}, inplace=True)
@@ -1114,46 +1110,138 @@ def main():
             # Drop helper columns
             df_merged.drop(columns=['DEPOT_mpo', 'MPO_CODE_mpo'], errors='ignore', inplace=True)
         else:
-            print("⚠ Warning: mpo_code.xlsx not found. Writing raw detailed data to SQLite without mapping.")
+            print("⚠ Warning: mpo_code.xlsx not found. Processing raw detailed data without mapping.")
             df_merged = detailed_grouped.copy()
-            
-        # Write to SQLite
-        import sqlite3
-        sqlite_path = os.path.join(base_dir, "sales.db")
-        if os.path.exists(sqlite_path):
+
+        # Load environment credentials for cloud upload
+        api_gateway_url = env.get("API_GATEWAY_URL")
+        api_key = env.get("API_KEY", "alco_secure_api_key_2026")
+        
+        uploaded_to_cloud = False
+        if api_gateway_url:
             try:
-                os.remove(sqlite_path)
-            except Exception as ex:
-                print(f"  Could not remove old sales.db: {ex}")
+                print("\n" + "="*60)
+                print("UPLOADING SALES DATA TO CLOUD API GATEWAY")
+                print("="*60)
                 
-        print(f"Writing {len(df_merged):,} records to SQLite...")
-        conn = sqlite3.connect(sqlite_path)
-        df_merged.to_sql("sales", conn, if_exists="replace", index=False)
-        
-        # Create indexes
-        print("Creating indexes on SQLite table...")
-        cursor = conn.cursor()
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_depot ON sales (Depot)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_month ON sales (Month)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_product ON sales (Product_Name)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mpo ON sales (MPO_Code)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_zone ON sales (ZONE)")
-        conn.commit()
-        conn.close()
-        print("✓ SQLite database generated successfully.")
-        
-        # Upload using rclone
-        rclone_exe = find_rclone_executable()
-        # The parent folder ID
-        parent_folder_id = "1fRl-N_fNU_bJfkxH9a_EYLJeHPB43gzv"
-        remote_path = f"grive_new,root_folder_id={parent_folder_id}:sales.db"
-        
-        print(f"Uploading sales.db to Google Drive...")
-        upload_cmd = [rclone_exe, "copyto", "--progress", sqlite_path, remote_path]
-        subprocess.run(upload_cmd, check=True)
-        print("✓ [SUCCESS] SQLite database uploaded to Google Drive successfully!")
+                # Format records for API
+                df_api = df_merged.copy()
+                df_api.rename(columns={
+                    'CONCATENATED_KEY': 'concatenated_key',
+                    'Depot': 'depot',
+                    'MPO_Code': 'mpo_code',
+                    'Invoice_No': 'invoice_no',
+                    'Invoice_Date': 'invoice_date',
+                    'Transaction_Time': 'transaction_time',
+                    'Transaction_Type': 'transaction_type',
+                    'Customer_ID': 'customer_id',
+                    'Customer_Name': 'customer_name',
+                    'Product_Code': 'product_code',
+                    'Product_Name': 'product_name',
+                    'Quantity': 'quantity',
+                    'Line_Amount': 'line_amount',
+                    'Month': 'month',
+                    'ZONE': 'zone',
+                    'MARKET': 'market',
+                    'FM/AM': 'fm_am'
+                }, inplace=True)
+                
+                # Convert timestamps and dates to strings
+                for col in ['invoice_date', 'transaction_time']:
+                    if col in df_api.columns:
+                        df_api[col] = df_api[col].astype(str)
+                        
+                records = df_api.to_dict(orient='records')
+                total_records = len(records)
+                batch_size = 5000
+                
+                print(f"Streaming {total_records:,} records to Aiven PostgreSQL in batches of {batch_size}...")
+                headers = {
+                    "X-API-Key": api_key,
+                    "Content-Type": "application/json"
+                }
+                
+                for idx in range(0, total_records, batch_size):
+                    batch = records[idx:idx+batch_size]
+                    res = requests.post(
+                        f"{api_gateway_url.rstrip('/')}/upload/sales", 
+                        json=batch, 
+                        headers=headers, 
+                        timeout=90
+                    )
+                    res.raise_for_status()
+                    print(f"  ✓ Uploaded records {idx:,} to {min(idx+batch_size, total_records):,}")
+                    
+                print("✓ [SUCCESS] All records uploaded to Aiven PostgreSQL cloud database!")
+                uploaded_to_cloud = True
+            except Exception as api_err:
+                print(f"⚠ Warning: Cloud API Gateway upload failed: {api_err}")
+                print("Falling back to local SQLite generation...")
+                
+        if not uploaded_to_cloud:
+            print("\n" + "="*60)
+            print("GENERATING LOCAL SQLITE DATABASE & UPLOADING TO GOOGLE DRIVE")
+            print("="*60)
+            
+            # Write to SQLite
+            import sqlite3
+            sqlite_path = os.path.join(base_dir, "sales.db")
+            if os.path.exists(sqlite_path):
+                try:
+                    os.remove(sqlite_path)
+                except Exception as ex:
+                    print(f"  Could not remove old sales.db: {ex}")
+                    
+            print(f"Writing {len(df_merged):,} records to SQLite (with normalized lowercase columns)...")
+            
+            # Format columns to lowercase for database compatibility
+            df_sqlite = df_merged.copy()
+            df_sqlite.rename(columns={
+                'CONCATENATED_KEY': 'concatenated_key',
+                'Depot': 'depot',
+                'MPO_Code': 'mpo_code',
+                'Invoice_No': 'invoice_no',
+                'Invoice_Date': 'invoice_date',
+                'Transaction_Time': 'transaction_time',
+                'Transaction_Type': 'transaction_type',
+                'Customer_ID': 'customer_id',
+                'Customer_Name': 'customer_name',
+                'Product_Code': 'product_code',
+                'Product_Name': 'product_name',
+                'Quantity': 'quantity',
+                'Line_Amount': 'line_amount',
+                'Month': 'month',
+                'ZONE': 'zone',
+                'MARKET': 'market',
+                'FM/AM': 'fm_am'
+            }, inplace=True)
+            
+            conn = sqlite3.connect(sqlite_path)
+            df_sqlite.to_sql("sales", conn, if_exists="replace", index=False)
+            
+            # Create indexes
+            print("Creating indexes on SQLite table...")
+            cursor = conn.cursor()
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_depot ON sales (depot)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_month ON sales (month)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_product ON sales (product_name)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_mpo ON sales (mpo_code)")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_zone ON sales (zone)")
+            conn.commit()
+            conn.close()
+            print("✓ SQLite database generated successfully.")
+            
+            # Upload using rclone
+            rclone_exe = find_rclone_executable()
+            parent_folder_id = "1fRl-N_fNU_bJfkxH9a_EYLJeHPB43gzv"
+            remote_path = f"grive_new,root_folder_id={parent_folder_id}:sales.db"
+            
+            print(f"Uploading sales.db to Google Drive...")
+            upload_cmd = [rclone_exe, "copyto", "--progress", sqlite_path, remote_path]
+            subprocess.run(upload_cmd, check=True)
+            print("✓ [SUCCESS] SQLite database uploaded to Google Drive successfully!")
     except Exception as e:
-        print(f"❌ Error generating/uploading SQLite database: {e}")
+        print(f"❌ Error during database processing: {e}")
         
     print(f"\nSuccessfully processed depots: {', '.join(success_depots)}")
     

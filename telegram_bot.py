@@ -112,51 +112,72 @@ class SalesDataManager:
         # Initial check/load
         self.check_and_load_data()
 
+    def get_db_connection(self):
+        db_url = ENV.get("DATABASE_URL")
+        if db_url:
+            try:
+                import psycopg2
+                return psycopg2.connect(db_url)
+            except Exception as e:
+                print(f"⚠ Warning: Failed to connect to PostgreSQL ({e}). Falling back to local SQLite...")
+        
+        sqlite_path = os.path.join(BASE_DIR, "sales.db")
+        return sqlite3.connect(sqlite_path)
+
+    def get_db_placeholder(self):
+        db_url = ENV.get("DATABASE_URL")
+        if db_url:
+            return "%s"
+        return "?"
+
     def check_and_load_data(self):
+        db_url = ENV.get("DATABASE_URL")
+        if db_url:
+            return self.load_metadata()
+            
         db_path = os.path.join(BASE_DIR, "sales.db")
         if not os.path.exists(db_path):
             print("sales.db not found locally. Syncing from Google Drive...")
             download_sales_db_from_gdrive(BASE_DIR)
             
         if os.path.exists(db_path):
-            return self.load_metadata_from_sqlite()
+            return self.load_metadata()
         return False
 
-    def load_metadata_from_sqlite(self):
-        db_path = os.path.join(BASE_DIR, "sales.db")
-        if os.path.exists(db_path):
-            try:
-                conn = sqlite3.connect(db_path)
-                cursor = conn.cursor()
-                
-                # Fetch depots
-                cursor.execute("SELECT DISTINCT Depot FROM sales WHERE Depot IS NOT NULL")
-                self.depots_list = sorted([str(row[0]) for row in cursor.fetchall()])
-                
-                # Fetch zones
-                cursor.execute("SELECT DISTINCT ZONE FROM sales WHERE ZONE IS NOT NULL")
-                self.zones_list = sorted([str(row[0]) for row in cursor.fetchall()])
-                
-                # Fetch fm_ams
-                cursor.execute("SELECT DISTINCT [FM/AM] FROM sales WHERE [FM/AM] IS NOT NULL")
-                self.fm_ams_list = sorted([str(row[0]) for row in cursor.fetchall()])
-                
-                conn.close()
-                print(f"✓ Loaded metadata from SQLite (Depots: {len(self.depots_list)}, Zones: {len(self.zones_list)}, Managers: {len(self.fm_ams_list)})")
-                return True
-            except Exception as e:
-                print(f"⚠ Warning: Failed to query metadata from SQLite: {e}")
-        return False
+    def load_metadata(self):
+        try:
+            conn = self.get_db_connection()
+            cursor = conn.cursor()
+            
+            # Fetch depots
+            cursor.execute("SELECT DISTINCT depot FROM sales WHERE depot IS NOT NULL")
+            self.depots_list = sorted([str(row[0]) for row in cursor.fetchall()])
+            
+            # Fetch zones
+            cursor.execute("SELECT DISTINCT zone FROM sales WHERE zone IS NOT NULL")
+            self.zones_list = sorted([str(row[0]) for row in cursor.fetchall()])
+            
+            # Fetch fm_ams
+            cursor.execute("SELECT DISTINCT fm_am FROM sales WHERE fm_am IS NOT NULL")
+            self.fm_ams_list = sorted([str(row[0]) for row in cursor.fetchall()])
+            
+            cursor.close()
+            conn.close()
+            print(f"✓ Loaded metadata (Depots: {len(self.depots_list)}, Zones: {len(self.zones_list)}, Managers: {len(self.fm_ams_list)})")
+            return True
+        except Exception as e:
+            print(f"⚠ Warning: Failed to query metadata from database: {e}")
+            return False
 
     def get_mpo_list_for_depot(self, depot_name):
         mpo_list = []
-        db_path = os.path.join(BASE_DIR, "sales.db")
-        if depot_name and os.path.exists(db_path):
+        if depot_name:
             try:
-                conn = sqlite3.connect(db_path)
+                conn = self.get_db_connection()
                 cursor = conn.cursor()
+                placeholder = self.get_db_placeholder()
                 cursor.execute(
-                    "SELECT DISTINCT MARKET, MPO_Code FROM sales WHERE UPPER(Depot) = ? AND MARKET IS NOT NULL AND MPO_Code IS NOT NULL", 
+                    f"SELECT DISTINCT market, mpo_code FROM sales WHERE UPPER(depot) = {placeholder} AND market IS NOT NULL AND mpo_code IS NOT NULL", 
                     (depot_name.upper(),)
                 )
                 for row in cursor.fetchall():
@@ -164,6 +185,7 @@ class SalesDataManager:
                         "MARKET": str(row[0]).strip(),
                         "MPO CODE": str(row[1]).strip()
                     })
+                cursor.close()
                 conn.close()
             except Exception as e:
                 print(f"Error querying MPO list for depot {depot_name}: {e}")
@@ -328,9 +350,11 @@ def process_sales_query(chat_id, query_text):
     # Ensure latest data is loaded
     DATA_MANAGER.check_and_load_data()
     
-    db_path = os.path.join(BASE_DIR, "sales.db")
-    if not os.path.exists(db_path):
-        return "❌ Error: Sales database file is not loaded or not found. Please ask the Admin to run the pipeline first."
+    db_url = ENV.get("DATABASE_URL")
+    if not db_url:
+        db_path = os.path.join(BASE_DIR, "sales.db")
+        if not os.path.exists(db_path):
+            return "❌ Error: Sales database file is not loaded or not found. Please ask the Admin to run the pipeline first."
         
     print(f"\nProcessing query for Chat {chat_id}: '{query_text}'")
     
@@ -390,43 +414,44 @@ def process_sales_query(chat_id, query_text):
     vacant_only = intent.get("vacant_only")
     group_by = intent.get("group_by")
     
-    # 4. Build SQLite Query
+    # 4. Build Query
     conditions = []
     params = []
+    placeholder = DATA_MANAGER.get_db_placeholder()
     
     if depot:
-        conditions.append("UPPER(Depot) = ?")
+        conditions.append(f"UPPER(depot) = {placeholder}")
         params.append(depot.upper())
     if zone:
-        conditions.append("UPPER(ZONE) = ?")
+        conditions.append(f"UPPER(zone) = {placeholder}")
         params.append(zone.upper())
     if month:
-        conditions.append("Month = ?")
+        conditions.append(f"month = {placeholder}")
         params.append(month)
     if product_brand:
-        conditions.append("Product_Name LIKE ?")
+        conditions.append(f"product_name LIKE {placeholder}")
         params.append(f"%{product_brand}%")
     if product_code:
-        conditions.append("UPPER(Product_Code) = ?")
+        conditions.append(f"UPPER(product_code) = {placeholder}")
         params.append(product_code.upper())
     if mpo_code:
-        conditions.append("UPPER(MPO_Code) = ?")
+        conditions.append(f"UPPER(mpo_code) = {placeholder}")
         params.append(mpo_code.upper())
     if fm_am:
-        conditions.append("[FM/AM] LIKE ?")
+        conditions.append(f"fm_am LIKE {placeholder}")
         params.append(f"%{fm_am}%")
     if market:
-        conditions.append("MARKET LIKE ?")
+        conditions.append(f"market LIKE {placeholder}")
         params.append(f"%{market}%")
     if vacant_only:
-        conditions.append("[FM/AM] LIKE ?")
+        conditions.append(f"fm_am LIKE {placeholder}")
         params.append("%VACANT%")
         
     where_clause = ""
     if conditions:
         where_clause = "WHERE " + " AND ".join(conditions)
         
-    conn = sqlite3.connect(db_path)
+    conn = DATA_MANAGER.get_db_connection()
     cursor = conn.cursor()
     
     # Check if empty first
@@ -434,6 +459,7 @@ def process_sales_query(chat_id, query_text):
     total_records = cursor.fetchone()[0]
     
     if total_records == 0:
+        cursor.close()
         conn.close()
         # Build friendly empty-result message
         filters = []
@@ -480,7 +506,7 @@ def process_sales_query(chat_id, query_text):
         market_display = None
         try:
             cursor.execute(
-                "SELECT DISTINCT MARKET FROM sales WHERE UPPER(MPO_Code) = ? AND UPPER(Depot) = ? AND MARKET IS NOT NULL LIMIT 1",
+                f"SELECT DISTINCT market FROM sales WHERE UPPER(mpo_code) = {placeholder} AND UPPER(depot) = {placeholder} AND market IS NOT NULL LIMIT 1",
                 (mpo_code.upper(), (depot or "").upper())
             )
             match_row = cursor.fetchone()
@@ -510,19 +536,19 @@ def process_sales_query(chat_id, query_text):
         order_by = ""
         
         if group_by == 'month':
-            group_col = 'Month'
+            group_col = 'month'
             group_label = 'Monthly breakdown'
-            order_by = "Month ASC"
+            order_by = "month ASC"
         elif group_by == 'market':
-            group_col = 'MARKET'
+            group_col = 'market'
             group_label = 'Market-wise breakdown (Top 15)'
             order_by = "box_sold DESC"
         elif group_by == 'fm_am':
-            group_col = '[FM/AM]'
+            group_col = 'fm_am'
             group_label = 'Manager-wise breakdown (Top 15)'
             order_by = "box_sold DESC"
         elif group_by == 'mpo_code':
-            group_col = 'MPO_Code'
+            group_col = 'mpo_code'
             group_label = 'MPO-wise breakdown (Top 15)'
             order_by = "box_sold DESC"
             
@@ -530,10 +556,10 @@ def process_sales_query(chat_id, query_text):
         query = f"""
             SELECT 
                 {group_col} AS group_col,
-                SUM(Quantity) AS box_sold,
-                SUM(Line_Amount) AS sales_amount,
-                COUNT(DISTINCT Invoice_No) AS invoices,
-                COUNT(DISTINCT Customer_ID) AS customers
+                SUM(quantity) AS box_sold,
+                SUM(line_amount) AS sales_amount,
+                COUNT(DISTINCT invoice_no) AS invoices,
+                COUNT(DISTINCT customer_id) AS customers
             FROM sales
             {where_clause}
             GROUP BY {group_col}
@@ -550,10 +576,10 @@ def process_sales_query(chat_id, query_text):
             
             for row in rows:
                 col_val = row[0]
-                box_sold = row[1] or 0.0
-                sales_amount = row[2] or 0.0
-                invoices_cnt = row[3] or 0
-                customers_cnt = row[4] or 0
+                box_sold = float(row[1]) if row[1] is not None else 0.0
+                sales_amount = float(row[2]) if row[2] is not None else 0.0
+                invoices_cnt = int(row[3]) if row[3] is not None else 0
+                customers_cnt = int(row[4]) if row[4] is not None else 0
                 
                 # Format month name
                 if group_by == 'month':
@@ -572,10 +598,10 @@ def process_sales_query(chat_id, query_text):
                 msg_lines.append(f"▪️ *{col_val}:* {box_str} ({amt_str}, {inv_str}, {cus_str})")
                 
             # Grand total
-            cursor.execute(f"SELECT SUM(Quantity), SUM(Line_Amount) FROM sales {where_clause}", params)
+            cursor.execute(f"SELECT SUM(quantity), SUM(line_amount) FROM sales {where_clause}", params)
             gt_row = cursor.fetchone()
-            total_qty = gt_row[0] or 0.0
-            total_amount = gt_row[1] or 0.0
+            total_qty = float(gt_row[0]) if gt_row[0] is not None else 0.0
+            total_amount = float(gt_row[1]) if gt_row[1] is not None else 0.0
             
             msg_lines.extend([
                 "-----------------------------------------",
@@ -589,18 +615,18 @@ def process_sales_query(chat_id, query_text):
         # Standard grand totals output
         cursor.execute(f"""
             SELECT 
-                SUM(Quantity), 
-                SUM(Line_Amount), 
-                COUNT(DISTINCT Invoice_No), 
-                COUNT(DISTINCT Customer_ID) 
+                SUM(quantity), 
+                SUM(line_amount), 
+                COUNT(DISTINCT invoice_no), 
+                COUNT(DISTINCT customer_id) 
             FROM sales 
             {where_clause}
         """, params)
         gt_row = cursor.fetchone()
-        total_qty = gt_row[0] or 0.0
-        total_amount = gt_row[1] or 0.0
-        invoices = gt_row[2] or 0
-        customers = gt_row[3] or 0
+        total_qty = float(gt_row[0]) if gt_row[0] is not None else 0.0
+        total_amount = float(gt_row[1]) if gt_row[1] is not None else 0.0
+        invoices = int(gt_row[2]) if gt_row[2] is not None else 0
+        customers = int(gt_row[3]) if gt_row[3] is not None else 0
         
         msg_lines.extend([
             "📈 *Calculated Statistics:*",
@@ -611,6 +637,7 @@ def process_sales_query(chat_id, query_text):
         ])
         
     msg_lines.append("=========================================")
+    cursor.close()
     conn.close()
     return "\n".join(msg_lines)
 

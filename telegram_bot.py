@@ -179,7 +179,7 @@ The valid depots are: {', '.join(DATA_MANAGER.depots_list)}.
 Map common variations (e.g. 'Bariahsal' or 'Barisal' -> 'BARISHAL', 'Chittagong' -> 'CHATTOGRAM', 'Comilla' -> 'CUMILLA', 'Faridpur Zone' -> 'FARIDPUR', 'Dhaka 1' -> 'DHAKA-1', 'Dhaka 2' -> 'DHAKA-2').
 
 This is a chat context. If the user's latest query does not mention a depot, but the previous conversation did, you should refer to the history to identify the depot.
-Return a JSON object with a single key 'depot' (string in uppercase, or null if not mentioned and cannot be inferred)."""
+Return a JSON object with a single key 'depot' (string in uppercase, or null if not mentioned and cannot be inferred. Never return "Unknown", "ALL", "None", or "Null" as a string)."""
 
     # Build messages with history
     messages = [{"role": "system", "content": system_prompt}]
@@ -234,7 +234,7 @@ Some Example FM/AM Names: {', '.join(DATA_MANAGER.fm_ams_list[:20])}
 
 The database fields to extract are:
 - month: Format YYYY-MM. (e.g. 'january', 'jan' -> '2026-01', 'April', 'apr' -> '2026-04', 'May' -> '2026-05', etc. Assume the year is 2026).
-- product_brand: E.g. 'ALAGRA', 'MOKAST' (brand name in uppercase).
+- product_brand: Must match one of these brand names (in uppercase): ALAGRA, MOKAST, DOMPI, ESOPRA, BETASEF, OMEPRA, AMDIN, AXECLAV, CALMI, ECOX, ROSVIN, SAVER, STAFLU, VERTIG, ZINEX, ACIPRA, ACLO, ADNIX, BENDIL, BROLYT, CLOPIDOL, DAZINE, DIRIN, DUMAFLOX, EMISET, EPIZAM, GLUVIL, LEAXE, LEBROD, LEOFLOX, LEVOCET, LOSA, METMIN, MOXIFLOX, NOLAR, NOLER, OTICEF, PANTOPRA, RUPALER, SAPOX, TIEMO, TIXOL, TOLEC, TOSMA, VERTIC, VIEV, ZIVIT.
 - product_code: E.g. 'ALK1', 'MON1' (code if explicitly mentioned).
 - mpo_code: Match from MPO code list, or if explicitly mentioned.
 - zone: Match to a valid zone code (e.g. 'FRD', 'BARI', 'COM').
@@ -248,7 +248,7 @@ Aggregation fields:
 This is a chat conversation. If the user's latest query is a follow-up, inherit parameters from previous assistant's JSON responses in the history, unless explicitly changed.
 
 Return ONLY a JSON object with keys:
-- depot (string, or null)
+- depot (string, or null. If not specified or refers to all depots, set to null. Never return "Unknown", "ALL", or "None" as a string)
 - month (string 'YYYY-MM', or null)
 - product_brand (string, or null)
 - product_code (string, or null)
@@ -303,8 +303,20 @@ def process_sales_query(chat_id, query_text):
     temp_msg = {"role": "user", "content": query_text}
     history.append(temp_msg)
     
+    # Helper function to normalize parameters (map Unknown/ALL/None/Null to None)
+    def normalize_param(val):
+        if val is None:
+            return None
+        if isinstance(val, str):
+            val_clean = val.strip()
+            if val_clean.lower() in ["unknown", "all", "none", "null", "any", "undefined", ""]:
+                return None
+            return val_clean
+        return val
+
     # 1. Detect Depot (Context Aware)
     depot = extract_depot_with_ai(query_text, history)
+    depot = normalize_param(depot)
     print(f"  Depot detected: {depot}")
     
     # 2. Get markets list for this depot
@@ -312,7 +324,12 @@ def process_sales_query(chat_id, query_text):
     
     # 3. Extract details using AI with MPO context and full history
     intent = extract_query_intent(query_text, depot, mpo_list, history)
-    print(f"  Extracted Intent: {json.dumps(intent)}")
+    
+    # Normalize all extracted parameters in the intent dict
+    for key in ["depot", "month", "product_brand", "product_code", "mpo_code", "zone", "fm_am", "market"]:
+        intent[key] = normalize_param(intent.get(key))
+        
+    print(f"  Extracted Intent (Normalized): {json.dumps(intent)}")
     
     # Update the depot if intent found a different one
     if intent.get("depot"):

@@ -2,6 +2,13 @@ import os
 import sys
 import psycopg2
 
+# Reconfigure console output encoding to prevent Windows crash on non-ASCII characters
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='backslashreplace')
+    except:
+        pass
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ENV_PATH = os.path.join(BASE_DIR, "googleDrive", "env")
 
@@ -58,6 +65,8 @@ def main():
             zone VARCHAR(50),
             market VARCHAR(100),
             fm_am VARCHAR(100),
+            external_ref_id VARCHAR(100),
+            sync_status VARCHAR(20) DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             CONSTRAINT uq_sales_transaction UNIQUE (invoice_no, product_code, transaction_type, depot)
         );

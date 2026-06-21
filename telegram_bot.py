@@ -684,14 +684,20 @@ def handle_reset_command(chat_id):
 
 def main_loop():
     print("=" * 80)
-    print("  TELEGRAM SALES QUERY BOT - RUNNING (SQLITE + GOOGLE DRIVE SYNC)")
+    print("  TELEGRAM SALES QUERY BOT - RUNNING")
     print("=" * 80)
     print(f"Bot Token: {TELEGRAM_BOT_TOKEN[:15]}...")
-    db_path = os.path.join(BASE_DIR, "sales.db")
-    if os.path.exists(db_path):
-        print(f"Active SQLite DB: sales.db")
+    db_url = ENV.get("DATABASE_URL")
+    if db_url:
+        # Hide password in printed host
+        host_display = db_url.split('@')[-1]
+        print(f"Active DB: Aiven PostgreSQL ({host_display})")
     else:
-        print("Active SQLite DB: None (waiting for file sync)")
+        db_path = os.path.join(BASE_DIR, "sales.db")
+        if os.path.exists(db_path):
+            print(f"Active DB: Local SQLite (sales.db)")
+        else:
+            print("Active DB: None (waiting for file sync)")
     print("Bot is listening for messages... Press Ctrl+C to exit.\n")
     
     offset = None

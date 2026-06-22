@@ -7,11 +7,35 @@ from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import execute_values
 
-app = FastAPI(title="Alco Pharma ERP API Gateway", version="1.0.0")
+# Load env file if not set (useful for local runs)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+env_paths = [
+    os.path.join(BASE_DIR, "googleDrive", "env"),
+    os.path.join(os.path.dirname(BASE_DIR), "googleDrive", "env")
+]
+env_vars = {}
+for path in env_paths:
+    if os.path.exists(path):
+        with open(path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    parts = line.split('=', 1)
+                    if len(parts) == 2:
+                        env_vars[parts[0].strip()] = parts[1].strip()
+        break
 
-# Read environment variables
-API_KEY = os.environ.get("API_KEY", "alco_secure_api_key_2026")
-DATABASE_URL = os.environ.get("DATABASE_URL")
+API_KEY = os.environ.get("API_KEY") or env_vars.get("API_KEY", "alco_secure_api_key_2026")
+DATABASE_URL = os.environ.get("DATABASE_URL") or env_vars.get("DATABASE_URL")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY") or env_vars.get("GROQ_API_KEY")
+
+# Expose keys to the environment so modules we import can access them
+if DATABASE_URL and not os.environ.get("DATABASE_URL"):
+    os.environ["DATABASE_URL"] = DATABASE_URL
+if GROQ_API_KEY and not os.environ.get("GROQ_API_KEY"):
+    os.environ["GROQ_API_KEY"] = GROQ_API_KEY
+
+app = FastAPI(title="Alco Pharma ERP API Gateway", version="1.0.0")
 
 # Validate database URL
 if not DATABASE_URL:
@@ -25,6 +49,7 @@ def verify_api_key(x_api_key: str = Header(...)):
             detail="Invalid API Key"
         )
     return x_api_key
+
 
 # Pydantic Model for Sales Record
 class SalesRecord(BaseModel):
@@ -149,3 +174,28 @@ def get_metadata(api_key: str = Depends(verify_api_key)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
+
+# Pydantic Model for Chat Request
+class ChatPayload(BaseModel):
+    session_id: str
+    query: str
+
+@app.post("/api/chat")
+def chat_endpoint(payload: ChatPayload, api_key: str = Depends(verify_api_key)):
+    try:
+        # Dynamically add the parent directory to sys.path so we can import telegram_bot
+        parent_dir = os.path.dirname(BASE_DIR)
+        if parent_dir not in sys.path:
+            sys.path.append(parent_dir)
+        
+        # Import process_sales_query from telegram_bot
+        from telegram_bot import process_sales_query
+        
+        response_text = process_sales_query(payload.session_id, payload.query)
+        return {"response": response_text}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Chat processing error: {str(e)}"
+        )
+

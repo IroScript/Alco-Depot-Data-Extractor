@@ -34,6 +34,7 @@ wheels/
 *.mdf
 *.ldf
 *.bak
+*.db
 
 # Data folder (IMPORTANT: Contains MDF files and sensitive data)
 Data/

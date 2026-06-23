@@ -507,6 +507,37 @@ class ZoneReportApp:
             idx_max = prod_name_counts.groupby('Product_Code')['count'].idxmax()
             standard_names = prod_name_counts.loc[idx_max, ['Product_Code', 'Product_Name']]
             
+            # Load subgroup mapping and standard name mapping from excel file
+            subgroup_mapping = {}
+            standard_name_mapping = {}
+            excel_path = None
+            paths_to_try = [
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'),
+                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'),
+                r'c:\Users\Irak\Desktop\Barishal April Data\PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'
+            ]
+            for p in paths_to_try:
+                if os.path.exists(p):
+                    excel_path = p
+                    break
+            if excel_path:
+                try:
+                    df_excel = pd.read_excel(excel_path)
+                    
+                    # 1. Map PRODUCT_CODE_ALL_ROW -> SUB_GROUP_STANDARD (takes the first unique match)
+                    df_sub = df_excel.dropna(subset=['PRODUCT_CODE_ALL_ROW', 'SUB_GROUP_STANDARD']).copy()
+                    df_sub['PRODUCT_CODE_ALL_ROW'] = df_sub['PRODUCT_CODE_ALL_ROW'].astype(str).str.strip().str.upper()
+                    df_sub['SUB_GROUP_STANDARD'] = df_sub['SUB_GROUP_STANDARD'].astype(str).str.strip()
+                    subgroup_mapping = dict(zip(df_sub['PRODUCT_CODE_ALL_ROW'], df_sub['SUB_GROUP_STANDARD']))
+                    
+                    # 2. Map Product_Code -> Product_Name (from rows where Product_Code is NOT null)
+                    df_name = df_excel.dropna(subset=['Product_Code', 'Product_Name']).copy()
+                    df_name['Product_Code'] = df_name['Product_Code'].astype(str).str.strip().str.upper()
+                    df_name['Product_Name'] = df_name['Product_Name'].astype(str).str.strip()
+                    standard_name_mapping = dict(zip(df_name['Product_Code'], df_name['Product_Name']))
+                except Exception as ex:
+                    print(f"Error loading Excel mapping: {ex}")
+
             # Sort products by code
             sorted_prods = standard_names.sort_values(by='Product_Code')
             
@@ -515,9 +546,13 @@ class ZoneReportApp:
                 code = row['Product_Code']
                 def_name = row['Product_Name']
                 
+                # Check Excel mappings first, fallback to CSV values
+                standard_name_val = standard_name_mapping.get(code, def_name)
+                subgroup_val = subgroup_mapping.get(code, get_subgroup_name(def_name))
+                
                 var_select = tk.BooleanVar(value=True) # Selected by default
-                var_name = tk.StringVar(value=def_name)
-                var_subgroup = tk.StringVar(value=get_subgroup_name(def_name))
+                var_name = tk.StringVar(value=standard_name_val)
+                var_subgroup = tk.StringVar(value=subgroup_val)
                 var_is_subgrouped = tk.BooleanVar(value=True)
                 
                 # Draw row frame (hidden by default until packed)

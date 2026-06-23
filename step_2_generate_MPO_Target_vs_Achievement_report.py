@@ -612,9 +612,31 @@ def find_product_code(target_product, product_code_dict):
     else:
         return None
 
+# Load target to code mapping from Excel sheet
+excel_path = r'c:\Users\Irak\Desktop\Barishal April Data\PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'
+excel_mapping = {}
+if os.path.exists(excel_path):
+    try:
+        df_excel = pd.read_excel(excel_path)
+        # We can map from Product_Name -> PRODUCT_CODE_ALL_ROW
+        df_excel['Product_Name_clean'] = df_excel['Product_Name'].astype(str).str.strip().str.upper()
+        df_excel['PRODUCT_CODE_ALL_ROW'] = df_excel['PRODUCT_CODE_ALL_ROW'].astype(str).str.strip().str.upper()
+        excel_mapping = dict(zip(df_excel['Product_Name_clean'], df_excel['PRODUCT_CODE_ALL_ROW']))
+        
+        # Also map from Product_Name.1 -> PRODUCT_CODE_ALL_ROW to be extra sure
+        df_excel['Product_Name.1_clean'] = df_excel['Product_Name.1'].astype(str).str.strip().str.upper()
+        for k, v in zip(df_excel['Product_Name.1_clean'], df_excel['PRODUCT_CODE_ALL_ROW']):
+            if k not in excel_mapping:
+                excel_mapping[k] = v
+    except Exception as ex:
+        print(f"Error loading Excel mapping for step 2: {ex}")
+
 target_to_code = {}
 for prod in product_cols:
-    code = find_product_code(prod, product_code_dict)
+    prod_upper = str(prod).strip().upper()
+    code = excel_mapping.get(prod_upper)
+    if not code:
+        code = find_product_code(prod, product_code_dict)
     target_to_code[prod] = code if code else ""
 
 matched = sum(1 for v in target_to_code.values() if v)

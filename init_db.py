@@ -74,6 +74,22 @@ def main():
         cursor.execute(create_table_query)
         print("✓ Table 'sales' created.")
         
+        # 1.1 Create User Roles Table (Cloud Database Setup)
+        print("Creating table 'user_roles' if not exists...")
+        create_roles_query = """
+        CREATE TABLE IF NOT EXISTS user_roles (
+            telegram_chat_id BIGINT PRIMARY KEY,
+            username VARCHAR(100),
+            role VARCHAR(20) NOT NULL,
+            mpo_code VARCHAR(50),
+            zone_code VARCHAR(50),
+            depot_name VARCHAR(100),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """
+        cursor.execute(create_roles_query)
+        print("✓ Table 'user_roles' created.")
+        
         # 2. Create Indexes for rapid bot lookup
         print("Creating indexes on search columns...")
         indexes = {

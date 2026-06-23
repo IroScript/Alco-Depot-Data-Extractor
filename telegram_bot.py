@@ -111,24 +111,177 @@ class SalesDataManager:
         
         # Initial check/load
         self.check_and_load_data()
+        self.init_roles_table()
 
     def get_db_connection(self):
-        db_url = ENV.get("DATABASE_URL")
-        if db_url:
-            try:
-                import psycopg2
-                return psycopg2.connect(db_url)
-            except Exception as e:
-                print(f"⚠ Warning: Failed to connect to PostgreSQL ({e}). Falling back to local SQLite...")
-        
+        # Force SQLite fallback for PythonAnywhere environment to bypass outbound PostgreSQL port blocks
         sqlite_path = os.path.join(BASE_DIR, "sales.db")
         return sqlite3.connect(sqlite_path)
 
     def get_db_placeholder(self):
-        db_url = ENV.get("DATABASE_URL")
-        if db_url:
-            return "%s"
         return "?"
+
+    def init_roles_table(self):
+        try:
+            conn = self.get_db_connection()
+            cursor = conn.cursor()
+            db_url = ENV.get("DATABASE_URL")
+            if db_url:
+                # PostgreSQL Syntax
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS user_roles (
+                        telegram_chat_id BIGINT PRIMARY KEY,
+                        username VARCHAR(100),
+                        role VARCHAR(20) NOT NULL,
+                        mpo_code VARCHAR(50),
+                        zone_code VARCHAR(50),
+                        depot_name VARCHAR(100),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS depot_sync_meta (
+                        depot_name VARCHAR(50) PRIMARY KEY,
+                        last_sync_time TIMESTAMP NOT NULL,
+                        last_uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        status VARCHAR(20) DEFAULT 'SUCCESS'
+                    )
+                """)
+            else:
+                # SQLite Syntax
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS user_roles (
+                        telegram_chat_id INTEGER PRIMARY KEY,
+                        username TEXT,
+                        role TEXT NOT NULL,
+                        mpo_code TEXT,
+                        zone_code TEXT,
+                        depot_name TEXT,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """)
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS depot_sync_meta (
+                        depot_name TEXT PRIMARY KEY,
+                        last_sync_time TIMESTAMP NOT NULL,
+                        last_uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        status TEXT DEFAULT 'SUCCESS'
+                    )
+                """)
+            conn.commit()
+            
+            # Auto-insert default ADMIN (8720168059) if not exists
+            placeholder = self.get_db_placeholder()
+            cursor.execute(
+                f"INSERT INTO user_roles (telegram_chat_id, username, role) VALUES ({placeholder}, {placeholder}, {placeholder}) ON CONFLICT (telegram_chat_id) DO NOTHING",
+                (8720168059, "Irak", "ADMIN")
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            print("✓ user_roles and depot_sync_meta tables initialized successfully.")
+        except Exception as e:
+            print(f"❌ Error initializing tables: {e}")
+
+    def get_depot_sync_times(self, depots):
+        sync_data = {}
+        if not depots:
+            return sync_data
+        try:
+            conn = self.get_db_connection()
+            cursor = conn.cursor()
+            placeholder = self.get_db_placeholder()
+            
+            # Support list input or single string
+            if isinstance(depots, str):
+                depots = [depots]
+                
+            for depot in depots:
+                cursor.execute(
+                    f"SELECT last_sync_time FROM depot_sync_meta WHERE UPPER(depot_name) = {placeholder}",
+                    (depot.upper(),)
+                )
+                row = cursor.fetchone()
+                if row:
+                    # SQLite returns str, Postgres returns datetime
+                    val = row[0]
+                    if isinstance(val, str):
+                        try:
+                            # Clean fractional seconds if any
+                            if "." in val:
+                                val = val.split(".")[0]
+                            sync_data[depot.upper()] = datetime.strptime(val, "%Y-%m-%d %H:%M:%S")
+                        except Exception as parse_ex:
+                            print(f"Error parsing SQLite sync date: {parse_ex}")
+                            sync_data[depot.upper()] = None
+                    else:
+                        sync_data[depot.upper()] = val
+                else:
+                    sync_data[depot.upper()] = None
+            cursor.close()
+            conn.close()
+        except Exception as e:
+            print(f"Error querying depot sync times: {e}")
+        return sync_data
+
+    def get_user_role(self, chat_id):
+        try:
+            conn = self.get_db_connection()
+            cursor = conn.cursor()
+            placeholder = self.get_db_placeholder()
+            cursor.execute(
+                f"SELECT role, mpo_code, zone_code, depot_name FROM user_roles WHERE telegram_chat_id = {placeholder}",
+                (chat_id,)
+            )
+            row = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            if row:
+                return {
+                    "role": str(row[0]).strip().upper(),
+                    "mpo_code": str(row[1]).strip() if row[1] else None,
+                    "zone_code": str(row[2]).strip() if row[2] else None,
+                    "depot_name": str(row[3]).strip() if row[3] else None
+                }
+        except Exception as e:
+            print(f"Error querying user role for {chat_id}: {e}")
+        return None
+
+    def add_user(self, chat_id, role, mpo_code=None, zone_code=None, depot_name=None, username=None):
+        try:
+            conn = self.get_db_connection()
+            cursor = conn.cursor()
+            placeholder = self.get_db_placeholder()
+            
+            # Delete if exists first to overwrite cleanly
+            cursor.execute(f"DELETE FROM user_roles WHERE telegram_chat_id = {placeholder}", (chat_id,))
+            
+            query = f"""
+                INSERT INTO user_roles (telegram_chat_id, username, role, mpo_code, zone_code, depot_name)
+                VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
+            """
+            cursor.execute(query, (chat_id, username, role.upper(), mpo_code, zone_code, depot_name))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error adding user {chat_id}: {e}")
+            return False
+
+    def remove_user(self, chat_id):
+        try:
+            conn = self.get_db_connection()
+            cursor = conn.cursor()
+            placeholder = self.get_db_placeholder()
+            cursor.execute(f"DELETE FROM user_roles WHERE telegram_chat_id = {placeholder}", (chat_id,))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error removing user {chat_id}: {e}")
+            return False
 
     def check_and_load_data(self):
         db_url = ENV.get("DATABASE_URL")
@@ -414,15 +567,37 @@ def process_sales_query(chat_id, query_text):
     vacant_only = intent.get("vacant_only")
     group_by = intent.get("group_by")
     
-    # 4. Build Query
-    conditions = []
-    params = []
+    # 4. Enforce Role-Based Restrictions
+    user_role = DATA_MANAGER.get_user_role(chat_id)
     placeholder = DATA_MANAGER.get_db_placeholder()
     
-    if depot:
+    # Standard query filters from user intent
+    conditions = []
+    params = []
+    
+    if user_role:
+        role = user_role.get("role")
+        if role == "MPO" and user_role.get("mpo_code"):
+            # Force MPO filter and override any parsed query MPO code
+            mpo_code = user_role.get("mpo_code")
+            conditions.append(f"UPPER(mpo_code) = {placeholder}")
+            params.append(mpo_code.upper())
+        elif role in ["SM", "DSM"]:
+            # Force Zone/Depot filter
+            if user_role.get("zone_code"):
+                zone = user_role.get("zone_code")
+                conditions.append(f"UPPER(zone) = {placeholder}")
+                params.append(zone.upper())
+            if user_role.get("depot_name"):
+                depot = user_role.get("depot_name")
+                conditions.append(f"UPPER(depot) = {placeholder}")
+                params.append(depot.upper())
+                
+    # Now append other intent filters unless overridden by role limits
+    if depot and not (user_role and user_role.get("role") in ["SM", "DSM"] and user_role.get("depot_name")):
         conditions.append(f"UPPER(depot) = {placeholder}")
         params.append(depot.upper())
-    if zone:
+    if zone and not (user_role and user_role.get("role") in ["SM", "DSM"] and user_role.get("zone_code")):
         conditions.append(f"UPPER(zone) = {placeholder}")
         params.append(zone.upper())
     if month:
@@ -434,7 +609,7 @@ def process_sales_query(chat_id, query_text):
     if product_code:
         conditions.append(f"UPPER(product_code) = {placeholder}")
         params.append(product_code.upper())
-    if mpo_code:
+    if mpo_code and not (user_role and user_role.get("role") == "MPO"):
         conditions.append(f"UPPER(mpo_code) = {placeholder}")
         params.append(mpo_code.upper())
     if fm_am:
@@ -637,6 +812,43 @@ def process_sales_query(chat_id, query_text):
         ])
         
     msg_lines.append("=========================================")
+    
+    # 7. Check for Outdated Depot Data Warnings (3-Hour Threshold)
+    # Determine which depots are involved in this query
+    resolved_depots = []
+    if depot:
+        resolved_depots = [depot]
+    else:
+        # If no specific depot is queried, look up depots containing active MPOs or zones filtered,
+        # or fall back to metadata list if it's a general query
+        resolved_depots = DATA_MANAGER.depots_list
+        
+    if resolved_depots:
+        sync_times = DATA_MANAGER.get_depot_sync_times(resolved_depots)
+        now = datetime.now()
+        outdated_warnings = []
+        
+        for d, sync_time in sync_times.items():
+            if not sync_time:
+                # No sync record at all
+                outdated_warnings.append(f"▪️ *{d}:* কোন ডেটা আপলোড রেকর্ড পাওয়া যায়নি।")
+            else:
+                diff = now - sync_time
+                diff_hours = diff.total_seconds() / 3600.0
+                # Trigger warning if diff is more than 3 hours, or if the dates don't match (outdated day)
+                if diff_hours > 3.0 or sync_time.date() < now.date():
+                    time_str = sync_time.strftime("%d %b %Y, %I:%M %p")
+                    outdated_warnings.append(f"▪️ *{d}* (শেষ আপডেট: {time_str})")
+        
+        if outdated_warnings:
+            msg_lines.extend([
+                "",
+                "⚠️ *ডাটা স্ট্যাটাস সতর্কতা (আউটডেটেড ডেটা):*",
+                "নিম্নলিখিত ডেপোগুলোর ৩ ঘণ্টার মধ্যে কোন আপডেট পাওয়া যায়নি। অনুগ্রহ করে তাদের আপলোড নিশ্চিত করতে বলুন:",
+                "\n".join(outdated_warnings),
+                "========================================="
+            ])
+            
     cursor.close()
     conn.close()
     return "\n".join(msg_lines)
@@ -733,6 +945,18 @@ def main_loop():
                 text = message["text"].strip()
                 print(f"📩 Received message from {user_info} ({chat_id}): '{text}'")
                 
+                # Check user registration/role
+                user_role = DATA_MANAGER.get_user_role(chat_id)
+                if not user_role:
+                    unauthorized_msg = (
+                        f"⚠️ *দুঃখিত, আপনি এই বটের অনুমোদিত ইউজার নন।*\n\n"
+                        f"বটের এক্সেস পেতে আপনার অ্যাডমিনের সাথে যোগাযোগ করুন।\n"
+                        f"আপনার Telegram Chat ID: `{chat_id}`"
+                    )
+                    send_telegram_message(chat_id, unauthorized_msg)
+                    print(f"🚫 Denied unauthorized request from {user_info} ({chat_id})")
+                    continue
+                
                 # Check for commands
                 if text.startswith("/start") or text.startswith("/help"):
                     handle_start_command(chat_id)
@@ -741,12 +965,92 @@ def main_loop():
                     handle_reset_command(chat_id)
                     continue
                 elif text.startswith("/reload"):
+                    if user_role.get("role") != "ADMIN":
+                        send_telegram_message(chat_id, "🚫 *দুঃখিত, এই কমান্ডটি শুধুমাত্র অ্যাডমিনদের জন্য বরাদ্দ।*")
+                        continue
                     send_telegram_message(chat_id, "🔄 *Syncing sales database from Google Drive...*")
                     if download_sales_db_from_gdrive(BASE_DIR):
                         DATA_MANAGER.check_and_load_data()
                         send_telegram_message(chat_id, "✅ *Database reload complete!* Using the latest data.")
                     else:
                         send_telegram_message(chat_id, "❌ *Failed to reload database.* Please check server logs.")
+                    continue
+                elif text.startswith("/adduser"):
+                    if user_role.get("role") != "ADMIN":
+                        send_telegram_message(chat_id, "🚫 *দুঃখিত, এই কমান্ডটি শুধুমাত্র অ্যাডমিনদের জন্য বরাদ্দ।*")
+                        continue
+                    
+                    # Command format: /adduser <chat_id> <role> <code_or_zone>
+                    parts = text.split()
+                    if len(parts) < 3:
+                        usage = (
+                            "ℹ️ *ইউজার যোগ করার সঠিক নিয়ম:*\n"
+                            "▪️ MPO যোগ করতে: `/adduser <chat_id> MPO <mpo_code>`\n"
+                            "▪️ SM/DSM যোগ করতে: `/adduser <chat_id> SM <zone_code>`\n"
+                            "▪️ ADMIN যোগ করতে: `/adduser <chat_id> ADMIN`"
+                        )
+                        send_telegram_message(chat_id, usage)
+                        continue
+                    
+                    try:
+                        target_chat_id = int(parts[1])
+                        target_role = parts[2].upper()
+                        mpo_code = None
+                        zone_code = None
+                        depot_name = None
+                        
+                        if target_role == "MPO":
+                            if len(parts) < 4:
+                                send_telegram_message(chat_id, "⚠️ *ভুল ফরম্যাট!* MPO-র ক্ষেত্রে MPO Code উল্লেখ করতে হবে।\nযেমন: `/adduser 7648835590 MPO ALK1`")
+                                continue
+                            mpo_code = parts[3].upper()
+                        elif target_role in ["SM", "DSM"]:
+                            if len(parts) < 4:
+                                send_telegram_message(chat_id, "⚠️ *ভুল ফরম্যাট!* SM/DSM-এর ক্ষেত্রে Zone Code বা Depot উল্লেখ করতে হবে।\nযেমন: `/adduser 7648835590 SM BARI`")
+                                continue
+                            val = parts[3].upper()
+                            # Check if the code is a zone or a depot
+                            if val in DATA_MANAGER.zones_list:
+                                zone_code = val
+                            elif val in [d.upper() for d in DATA_MANAGER.depots_list]:
+                                # Find original cased depot name
+                                for d in DATA_MANAGER.depots_list:
+                                    if d.upper() == val:
+                                        depot_name = d
+                                        break
+                            else:
+                                # Default to zone code if not matched
+                                zone_code = val
+                        
+                        if DATA_MANAGER.add_user(target_chat_id, target_role, mpo_code=mpo_code, zone_code=zone_code, depot_name=depot_name):
+                            detail_str = ""
+                            if mpo_code: detail_str = f" for MPO code {mpo_code}"
+                            elif zone_code: detail_str = f" for Zone {zone_code}"
+                            elif depot_name: detail_str = f" for Depot {depot_name}"
+                            send_telegram_message(chat_id, f"✅ *সফলভাবে ইউজার যুক্ত করা হয়েছে!*\n\n▪️ Chat ID: `{target_chat_id}`\n▪️ Role: `{target_role}`{detail_str}")
+                        else:
+                            send_telegram_message(chat_id, "❌ *ইউজার যোগ করতে ব্যর্থ হয়েছে।* ডাটাবেজ সংযোগ চেক করুন।")
+                    except ValueError:
+                        send_telegram_message(chat_id, "⚠️ *ভুল ফরম্যাট!* Chat ID অবশ্যই একটি সংখ্যা হতে হবে।")
+                    continue
+                elif text.startswith("/removeuser"):
+                    if user_role.get("role") != "ADMIN":
+                        send_telegram_message(chat_id, "🚫 *দুঃখিত, এই কমান্ডটি শুধুমাত্র অ্যাডমিনদের জন্য বরাদ্দ।*")
+                        continue
+                    
+                    parts = text.split()
+                    if len(parts) < 2:
+                        send_telegram_message(chat_id, "ℹ️ *ইউজার রিমুভ করার সঠিক নিয়ম:* `/removeuser <chat_id>`")
+                        continue
+                        
+                    try:
+                        target_chat_id = int(parts[1])
+                        if DATA_MANAGER.remove_user(target_chat_id):
+                            send_telegram_message(chat_id, f"✅ *সফলভাবে ইউজার ডিলিট করা হয়েছে!*\n\n▪️ Chat ID: `{target_chat_id}`")
+                        else:
+                            send_telegram_message(chat_id, "❌ *ইউজার ডিলিট করতে ব্যর্থ হয়েছে।*")
+                    except ValueError:
+                        send_telegram_message(chat_id, "⚠️ *ভুল ফরম্যাট!* Chat ID অবশ্যই একটি সংখ্যা হতে হবে।")
                     continue
                 
                 # Process query

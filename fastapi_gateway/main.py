@@ -1,17 +1,18 @@
 import os
 import sys
+import shutil
+import sqlite3
 from typing import List, Optional
 from datetime import date, datetime
 from fastapi import FastAPI, Header, HTTPException, Depends, status
 from pydantic import BaseModel
-import psycopg2
-from psycopg2.extras import execute_values
 
 # Load env file if not set (useful for local runs)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(BASE_DIR)
 env_paths = [
     os.path.join(BASE_DIR, "googleDrive", "env"),
-    os.path.join(os.path.dirname(BASE_DIR), "googleDrive", "env")
+    os.path.join(PARENT_DIR, "googleDrive", "env")
 ]
 env_vars = {}
 for path in env_paths:
@@ -26,20 +27,17 @@ for path in env_paths:
         break
 
 API_KEY = os.environ.get("API_KEY") or env_vars.get("API_KEY", "alco_secure_api_key_2026")
-DATABASE_URL = os.environ.get("DATABASE_URL") or env_vars.get("DATABASE_URL")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY") or env_vars.get("GROQ_API_KEY")
 
-# Expose keys to the environment so modules we import can access them
-if DATABASE_URL and not os.environ.get("DATABASE_URL"):
-    os.environ["DATABASE_URL"] = DATABASE_URL
+# Expose key to env
 if GROQ_API_KEY and not os.environ.get("GROQ_API_KEY"):
     os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
-app = FastAPI(title="Alco Pharma ERP API Gateway", version="1.0.0")
+# Set Local SQLite database path (hosted inside the parent directory of fastapi_gateway)
+DB_PATH = os.path.join(PARENT_DIR, "sales.db")
+BACKUP_DB_PATH = os.path.join(PARENT_DIR, "sales_backup.db")
 
-# Validate database URL
-if not DATABASE_URL:
-    print("⚠ WARNING: DATABASE_URL environment variable is not set!")
+app = FastAPI(title="Alco Pharma ERP API Gateway", version="1.0.0")
 
 # Dependency to check API Key
 def verify_api_key(x_api_key: str = Header(...)):
@@ -49,7 +47,6 @@ def verify_api_key(x_api_key: str = Header(...)):
             detail="Invalid API Key"
         )
     return x_api_key
-
 
 # Pydantic Model for Sales Record
 class SalesRecord(BaseModel):
@@ -71,85 +68,146 @@ class SalesRecord(BaseModel):
     market: Optional[str] = None
     fm_am: Optional[str] = None
 
+# Pydantic Model for Bulk Upload Wrapper
+class UploadPayload(BaseModel):
+    extraction_time: str # Format YYYY-MM-DD HH:MM:SS (local PC sync time)
+    records: List[SalesRecord]
+
 @app.get("/")
 def read_root():
-    return {"status": "running", "service": "Alco Pharma ERP API Gateway"}
+    return {"status": "running", "service": "Alco Pharma ERP API Gateway (SQLite Mode)"}
 
 @app.post("/upload/sales", status_code=status.HTTP_201_CREATED)
-def upload_sales(records: List[SalesRecord], api_key: str = Depends(verify_api_key)):
-    if not DATABASE_URL:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Cloud Database URL not configured on server"
-        )
+def upload_sales(payload: UploadPayload, api_key: str = Depends(verify_api_key)):
+    records = payload.records
+    if not records:
+        return {"success": True, "count": 0, "message": "No records supplied"}
         
+    # Backup current DB before modification to ensure rollbacks
+    db_existed = os.path.exists(DB_PATH)
+    if db_existed:
+        try:
+            shutil.copy2(DB_PATH, BACKUP_DB_PATH)
+        except Exception as backup_ex:
+            print(f"Failed to create database backup: {backup_ex}")
+            
+    conn = None
     try:
-        # Connect to PostgreSQL
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
-        # Prepare data for bulk upsert
+        # 1. Initialize tables if they don't exist yet
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sales (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                concatenated_key TEXT NOT NULL,
+                depot TEXT NOT NULL,
+                mpo_code TEXT NOT NULL,
+                invoice_no TEXT NOT NULL,
+                invoice_date TEXT NOT NULL,
+                transaction_time TEXT,
+                transaction_type TEXT NOT NULL,
+                customer_id TEXT NOT NULL,
+                customer_name TEXT,
+                product_code TEXT NOT NULL,
+                product_name TEXT,
+                quantity REAL NOT NULL,
+                line_amount REAL NOT NULL,
+                month TEXT NOT NULL,
+                zone TEXT,
+                market TEXT,
+                fm_am TEXT,
+                sync_status TEXT DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT uq_sales_transaction UNIQUE (invoice_no, product_code, transaction_type, depot)
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS depot_sync_meta (
+                depot_name TEXT PRIMARY KEY,
+                last_sync_time TEXT NOT NULL,
+                last_uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                status TEXT DEFAULT 'SUCCESS'
+            )
+        """)
+        conn.commit()
+        
+        # 2. Identify all depots present in the incoming payload
+        depots_to_update = list(set([r.depot.upper() for r in records]))
+        
+        # 3. Incremental Delete: Clear old records for ONLY the incoming depots
+        for depot_name in depots_to_update:
+            cursor.execute("DELETE FROM sales WHERE UPPER(depot) = ?", (depot_name,))
+            
+        # 4. Bulk Insert new rows
+        insert_query = """
+            INSERT INTO sales (
+                concatenated_key, depot, mpo_code, invoice_no, invoice_date, transaction_time,
+                transaction_type, customer_id, customer_name, product_code, product_name,
+                quantity, line_amount, month, zone, market, fm_am
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        
         data_tuples = []
         for r in records:
-            # Parse transaction_time to datetime object or string
-            t_time = r.transaction_time
-            if t_time:
-                try:
-                    # Clean timestamp format
-                    t_time = datetime.strptime(t_time, "%Y-%m-%d %H:%M:%S.%f")
-                except:
-                    try:
-                        t_time = datetime.strptime(t_time, "%Y-%m-%d %H:%M:%S")
-                    except:
-                        pass
-                        
             data_tuples.append((
-                r.concatenated_key, r.depot, r.mpo_code, r.invoice_no, r.invoice_date, t_time,
+                r.concatenated_key, r.depot, r.mpo_code, r.invoice_no, r.invoice_date, r.transaction_time,
                 r.transaction_type, r.customer_id, r.customer_name, r.product_code, r.product_name,
                 r.quantity, r.line_amount, r.month, r.zone, r.market, r.fm_am
             ))
             
-        # SQL statement for bulk upsert
-        upsert_query = """
-        INSERT INTO sales (
-            concatenated_key, depot, mpo_code, invoice_no, invoice_date, transaction_time,
-            transaction_type, customer_id, customer_name, product_code, product_name,
-            quantity, line_amount, month, zone, market, fm_am
-        ) VALUES %s
-        ON CONFLICT (invoice_no, product_code, transaction_type, depot)
-        DO UPDATE SET
-            quantity = EXCLUDED.quantity,
-            line_amount = EXCLUDED.line_amount,
-            transaction_time = EXCLUDED.transaction_time,
-            customer_name = EXCLUDED.customer_name,
-            product_name = EXCLUDED.product_name,
-            zone = EXCLUDED.zone,
-            market = EXCLUDED.market,
-            fm_am = EXCLUDED.fm_am;
-        """
+        cursor.executemany(insert_query, data_tuples)
         
-        # Execute batch upsert using execute_values (highly optimized)
-        execute_values(cursor, upsert_query, data_tuples)
+        # 5. Update depot sync metadata timestamps
+        for depot_name in depots_to_update:
+            # Find original cased name from records
+            orig_name = next((r.depot for r in records if r.depot.upper() == depot_name), depot_name)
+            cursor.execute("""
+                INSERT INTO depot_sync_meta (depot_name, last_sync_time, last_uploaded_at, status)
+                VALUES (?, ?, datetime('now'), 'SUCCESS')
+                ON CONFLICT(depot_name) DO UPDATE SET
+                    last_sync_time = EXCLUDED.last_sync_time,
+                    last_uploaded_at = EXCLUDED.last_uploaded_at,
+                    status = 'SUCCESS'
+            """, (orig_name, payload.extraction_time))
+            
         conn.commit()
         cursor.close()
         conn.close()
         
-        return {"success": True, "count": len(records)}
+        # Remove backup file on successful transaction commit
+        if os.path.exists(BACKUP_DB_PATH):
+            try:
+                os.remove(BACKUP_DB_PATH)
+            except:
+                pass
+                
+        return {"success": True, "count": len(records), "depots_updated": depots_to_update}
     except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        # Restore backup if transaction failed
+        if db_existed and os.path.exists(BACKUP_DB_PATH):
+            try:
+                shutil.copy2(BACKUP_DB_PATH, DB_PATH)
+            except Exception as restore_ex:
+                print(f"Failed to restore database from backup: {restore_ex}")
+                
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database error during insert: {str(e)}"
+            detail=f"Database error during merge upload: {str(e)}"
         )
 
 @app.get("/sales/metadata")
 def get_metadata(api_key: str = Depends(verify_api_key)):
-    if not DATABASE_URL:
+    if not os.path.exists(DB_PATH):
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Database URL not configured"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Database file not found"
         )
     try:
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
         cursor.execute("SELECT DISTINCT depot FROM sales WHERE depot IS NOT NULL")
@@ -184,9 +242,8 @@ class ChatPayload(BaseModel):
 def chat_endpoint(payload: ChatPayload, api_key: str = Depends(verify_api_key)):
     try:
         # Dynamically add the parent directory to sys.path so we can import telegram_bot
-        parent_dir = os.path.dirname(BASE_DIR)
-        if parent_dir not in sys.path:
-            sys.path.append(parent_dir)
+        if PARENT_DIR not in sys.path:
+            sys.path.append(PARENT_DIR)
         
         # Import process_sales_query from telegram_bot
         from telegram_bot import process_sales_query

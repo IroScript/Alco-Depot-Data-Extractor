@@ -25,7 +25,7 @@ API_KEY = ENV.get("API_KEY", "alco_secure_api_key_2026")
 
 def create_zip():
     zip_path = os.path.join(BASE_DIR, "erp_setup.zip")
-    print("📦 Packaging files into erp_setup.zip...")
+    print("[ZIP] Packaging files into erp_setup.zip...")
     
     # List of files/folders to include in deployment package
     items = [
@@ -63,7 +63,7 @@ def create_zip():
             else:
                 zipf.write(item_path, item)
                 
-    print(f"✅ Created zip successfully at {zip_path} (Size: {os.path.getsize(zip_path)/(1024*1024):.2f} MB)")
+    print(f"[ZIP] Created zip successfully at {zip_path} (Size: {os.path.getsize(zip_path)/(1024*1024):.2f} MB)")
     return zip_path
 
 def deploy_to_pythonanywhere():
@@ -74,7 +74,7 @@ def deploy_to_pythonanywhere():
     pa_token = ENV.get("PYTHONANYWHERE_API_TOKEN") # Add PYTHONANYWHERE_API_TOKEN in googleDrive/env
     
     if not pa_token:
-        print("\n❌ Error: PYTHONANYWHERE_API_TOKEN not found in googleDrive/env.")
+        print("\n[ERROR] PYTHONANYWHERE_API_TOKEN not found in googleDrive/env.")
         print("Please configure PYTHONANYWHERE_API_TOKEN=your_token inside googleDrive/env.")
         print("Create a token at: PythonAnywhere Account page -> API Token tab.")
         return False
@@ -85,7 +85,7 @@ def deploy_to_pythonanywhere():
     
     # 1. Upload Zip File using PythonAnywhere Files API
     upload_url = f"https://www.pythonanywhere.com/api/v0/user/{pa_username}/files/path/home/{pa_username}/erp_setup.zip"
-    print(f"\n📤 Uploading erp_setup.zip to PythonAnywhere...")
+    print(f"\n[UPLOAD] Uploading erp_setup.zip to PythonAnywhere...")
     
     try:
         with open(zip_path, "rb") as f:
@@ -93,14 +93,14 @@ def deploy_to_pythonanywhere():
             r = requests.post(upload_url, headers=headers, files=files, timeout=120)
             
         if r.status_code in [200, 201]:
-            print("✅ File uploaded successfully.")
+            print("[UPLOAD] File uploaded successfully.")
         else:
-            print(f"❌ Upload failed: HTTP {r.status_code} - {r.text}")
+            print(f"[ERROR] Upload failed: HTTP {r.status_code} - {r.text}")
             return False
             
         # 2. Run remote unzip and pkill/restart telegram bot via Console API
         console_create_url = f"https://www.pythonanywhere.com/api/v0/user/{pa_username}/consoles/"
-        print("\n⚙️ Opening remote PythonAnywhere console to extract & restart bot...")
+        print("\n[CONSOLE] Opening remote PythonAnywhere console to extract & restart bot...")
         
         # Command sequence to extract zip and restart bot
         cmd = (
@@ -117,23 +117,23 @@ def deploy_to_pythonanywhere():
         
         console_res = requests.post(console_create_url, headers=headers, json=console_payload, timeout=30)
         if console_res.status_code == 201:
-            print("✅ Remote extraction and bot restart triggered.")
+            print("[CONSOLE] Remote extraction and bot restart triggered.")
         else:
             # Fallback warning if console limit reached
-            print(f"⚠️ Console trigger HTTP {console_res.status_code}. (You may need to manually run: unzip -o erp_setup.zip && pkill -f telegram_bot.py ; workon erp_env && nohup python telegram_bot.py > bot.log 2>&1 &)")
+            print(f"[WARN] Console trigger HTTP {console_res.status_code}. (You may need to manually run: unzip -o erp_setup.zip && pkill -f telegram_bot.py ; workon erp_env && nohup python telegram_bot.py > bot.log 2>&1 &)")
             
         # 3. Reload Web App (FastAPI Gateway)
         domain = f"{pa_username}.pythonanywhere.com"
         reload_url = f"https://www.pythonanywhere.com/api/v0/user/{pa_username}/webapps/{domain}/reload/"
-        print(f"\n🔄 Reloading Web App ({domain})...")
+        print(f"\n[RELOAD] Reloading Web App ({domain})...")
         
         webapp_res = requests.post(reload_url, headers=headers, timeout=30)
         if webapp_res.status_code == 200:
-            print("✅ FastAPI Web App reloaded successfully!")
-            print("\n🎉 ERP Deployment completed successfully!")
+            print("[RELOAD] FastAPI Web App reloaded successfully!")
+            print("\n[SUCCESS] ERP Deployment completed successfully!")
             return True
         else:
-            print(f"❌ Web App reload failed: HTTP {webapp_res.status_code} - {webapp_res.text}")
+            print(f"[ERROR] Web App reload failed: HTTP {webapp_res.status_code} - {webapp_res.text}")
             return False
             
     except Exception as e:

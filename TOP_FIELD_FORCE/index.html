@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALCO-PHARMA // YEAR 50,000 QUANTUM FIELD FORCE NEXUS</title>
+    
+    <!-- Google Fonts: Orbitron, Rajdhani, Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        quantum: {
+                            void: '#02040a',
+                            panel: 'rgba(11, 17, 30, 0.7)',
+                            cyan: '#06b6d4',
+                            indigo: '#6366f1',
+                            purple: '#a855f7',
+                            emerald: '#10b981',
+                            amber: '#f59e0b',
+                            rose: '#f43f5e'
+                        }
+                    },
+                    fontFamily: {
+                        cyber: ['Orbitron', 'sans-serif'],
+                        tech: ['Rajdhani', 'sans-serif'],
+                        body: ['Outfit', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'neon-cyan': '0 0 20px rgba(6, 182, 212, 0.5)',
+                        'neon-purple': '0 0 25px rgba(168, 85, 247, 0.5)',
+                        'neon-indigo': '0 0 25px rgba(99, 102, 241, 0.4)'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Custom Classic CSS & Quantum Animations -->
+    <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        body {
+            background-color: #02040a;
+            color: #e2e8f0;
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+        }
+        .bg-grid-pattern {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+        .cyber-border {
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
+        }
+        .cyber-border:hover {
+            border-color: rgba(168, 85, 247, 0.6);
+            box-shadow: 0 0 25px rgba(168, 85, 247, 0.3);
+        }
+        /* Custom Glowing Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #02040a; }
+        ::-webkit-scrollbar-thumb { background: #1e1b4b; border-radius: 4px; border: 1px solid #6366f1; }
+        ::-webkit-scrollbar-thumb:hover { background: #6366f1; box-shadow: 0 0 10px #06b6d4; }
+    </style>
+</head>
+<body class="min-h-screen bg-quantum-void bg-grid-pattern relative selection:bg-cyan-500 selection:text-black">
+
+    <!-- Top Futuristic Quantum HUD Navbar -->
+    <header class="sticky top-0 z-50 backdrop-blur-2xl bg-black/80 border-b border-cyan-500/30 px-6 py-3.5 shadow-neon-indigo flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-500 via-indigo-600 to-purple-500 flex items-center justify-center shadow-neon-cyan animate-pulse">
+                <span class="text-white font-cyber font-black text-xl">Ω</span>
+            </div>
+            <div>
+                <h1 class="font-cyber font-black text-xl tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-indigo-300 to-purple-400">
+                    ALCO // YEAR 50,000 QUANTUM NEXUS
+                </h1>
+                <p class="font-tech text-xs tracking-[0.3em] text-cyan-400 font-bold uppercase">
+                    Holographic Field Force & Bio-Depot Teleportation Grid
+                </p>
+            </div>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="classic_index.html" class="px-3 py-1.5 rounded-md border border-purple-500/50 bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 font-tech font-bold text-xs tracking-wider transition-all shadow-sm hover:shadow-neon-purple flex items-center gap-1.5">
+                <span>⏪</span> SWITCH TO CLASSIC 2026 UI
+            </a>
+            <div class="px-3 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/50 text-cyan-300 font-tech font-semibold text-xs flex items-center gap-2" title="All Calculations strictly grouped by product_code">
+                <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                <span>RULE: PRODUCT CODE ANCHOR</span>
+            </div>
+            <div id="connection-status" class="px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 font-tech font-semibold text-xs flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span id="status-text">QUANTUM SQL CORE: ACTIVE</span>
+            </div>
+            <button id="btn-refresh-api" class="px-3 py-1.5 rounded bg-indigo-600/30 hover:bg-indigo-600/60 border border-indigo-400 text-indigo-200 font-tech font-bold text-xs tracking-wider transition-all shadow-neon-indigo">
+                ⚡ RESYNC MATRIX
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="max-w-[1700px] mx-auto p-6 space-y-8">
+        
+        <!-- HERO SECTION: Three.js Holographic Globe & Dijkstra Quantum Router -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            
+            <!-- LEFT (7 cols): Three.js Holographic Field Force Sphere -->
+            <div class="lg:col-span-7 backdrop-blur-xl bg-slate-950/60 cyber-border rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between min-h-[420px]">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="relative z-10 flex justify-between items-start">
+                    <div>
+                        <span class="text-[10px] font-cyber tracking-[0.4em] text-cyan-400 uppercase bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-500/30">3D Neural Visualizer</span>
+                        <h2 class="font-cyber font-bold text-2xl text-white mt-2">HOLOGRAPHIC FIELD ENTANGLEMENT</h2>
+                        <p class="font-tech text-sm text-slate-400">Real-time simulation of 730 MPO nodes and 189 Product vectors interacting across bio-depot networks.</p>
+                    </div>
+                    <div class="text-right hidden sm:block">
+                        <div class="font-cyber text-xs text-purple-400">SIMULATION ENGINE</div>
+                        <div class="font-mono text-sm font-bold text-emerald-400">THREE.JS // WEBGL 2.0</div>
+                    </div>
+                </div>
+
+                <!-- Three.js Canvas Container -->
+                <div id="quantum-3d-canvas" class="w-full h-[320px] relative z-0 flex items-center justify-center my-2">
+                    <div class="text-cyan-400/60 font-cyber animate-pulse">INITIATING YEAR 50,000 HOLOGRAPHIC FIELD...</div>
+                </div>
+
+                <div class="relative z-10 flex justify-between items-center text-xs font-tech text-slate-400 border-t border-slate-800/80 pt-3">
+                    <div class="flex items-center gap-4">
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> Depot Relays</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-400"></span> MPO Photons</span>
+                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Active Parties</span>
+                    </div>
+                    <div class="font-mono text-cyan-300">INTERACTIVITY: MOUSE HOVER / ROTATION ENABLED</div>
+                </div>
+            </div>
+
+            <!-- RIGHT (5 cols): Dijkstra Quantum Teleportation Route Optimizer -->
+            <div class="lg:col-span-5 backdrop-blur-xl bg-slate-950/80 cyber-border rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-40 h-40 bg-purple-600/15 rounded-full blur-2xl pointer-events-none"></div>
+                
+                <div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-cyber tracking-[0.4em] text-purple-400 uppercase bg-purple-950/80 px-2.5 py-1 rounded border border-purple-500/30">Algorithm Feature</span>
+                        <span class="font-mono text-xs text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded">DIJKSTRA SHORTEST PATH</span>
+                    </div>
+                    <h2 class="font-cyber font-bold text-xl text-white mt-2">QUANTUM ROUTE OPTIMIZER</h2>
+                    <p class="font-tech text-sm text-slate-400 mt-1">Select Depot Core and Target Station to compute minimum-impedance teleportation trajectory for instant order delivery.</p>
+
+                    <!-- Dijkstra Controls -->
+                    <div class="grid grid-cols-2 gap-3 mt-4">
+                        <div>
+                            <label class="block font-tech text-xs text-cyan-300 uppercase mb-1">Start Node (Depot Core)</label>
+                            <select id="dijkstra-start" class="w-full bg-slate-900 border border-cyan-500/40 rounded px-3 py-2 text-sm font-tech text-cyan-200 focus:outline-none focus:border-cyan-400">
+                                <option value="DHK">DHK - Dhaka Core</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-tech text-xs text-purple-300 uppercase mb-1">Target Station (Zone)</label>
+                            <select id="dijkstra-end" class="w-full bg-slate-900 border border-purple-500/40 rounded px-3 py-2 text-sm font-tech text-purple-200 focus:outline-none focus:border-purple-400">
+                                <option value="CTG">CTG - Chittagong Nexus</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button id="btn-run-dijkstra" class="w-full mt-3 py-2.5 bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-cyber font-bold text-xs tracking-wider rounded-lg transition-all shadow-neon-cyan flex items-center justify-center gap-2">
+                        <span>⚡ COMPUTE OPTIMAL TELEPORTATION PATH (DIJKSTRA)</span>
+                    </button>
+
+                    <div id="dijkstra-status" class="mt-3 p-2.5 rounded bg-slate-900/90 border border-slate-700 font-tech text-xs text-slate-300 min-h-[38px] flex items-center">
+                        <span class="text-slate-500">Click button above to calculate quantum route...</span>
+                    </div>
+                </div>
+
+                <!-- Dijkstra Network HTML5 Canvas -->
+                <div class="mt-4 border border-slate-800 rounded-lg bg-black/60 p-2 relative overflow-hidden">
+                    <canvas id="dijkstra-canvas" width="460" height="170" class="w-full h-[170px]"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- KPI METRICS HUD MATRIX -->
+        <section>
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-2 h-6 bg-gradient-to-b from-cyan-400 to-purple-600 rounded-full"></div>
+                <h2 class="font-cyber font-bold text-xl tracking-wider text-white">YEAR 50,000 EXECUTIVE MATRIX</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <!-- KPI 1 -->
+                <div class="backdrop-blur-xl bg-slate-950/60 border border-cyan-500/30 hover:border-cyan-400/80 p-5 rounded-xl transition-all hover:shadow-neon-cyan group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition-all"></div>
+                    <div class="font-tech text-xs text-cyan-400 font-semibold uppercase tracking-wider">Total Quantum Revenue</div>
+                    <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-cyan-300 transition-colors" id="kpi-sales">৳ 0.00</div>
+                    <div class="font-tech text-[11px] text-slate-500 mt-1">Across 10 regional bio-depots</div>
+                </div>
+                <!-- KPI 2 -->
+                <div class="backdrop-blur-xl bg-slate-950/60 border border-indigo-500/30 hover:border-indigo-400/80 p-5 rounded-xl transition-all hover:shadow-neon-indigo group relative overflow-hidden">
+                    <div class="font-tech text-xs text-indigo-400 font-semibold uppercase tracking-wider">Transaction Beams</div>
+                    <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-indigo-300 transition-colors" id="kpi-invoices">0</div>
+                    <div class="font-tech text-[11px] text-slate-500 mt-1">Unique invoice pulses</div>
+                </div>
+                <!-- KPI 3 -->
+                <div class="backdrop-blur-xl bg-slate-950/60 border border-emerald-500/30 hover:border-emerald-400/80 p-5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-500/20 group relative overflow-hidden">
+                    <div class="font-tech text-xs text-emerald-400 font-semibold uppercase tracking-wider">Party Entanglements</div>
+                    <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-emerald-300 transition-colors" id="kpi-parties">0</div>
+                    <div class="font-tech text-[11px] text-slate-500 mt-1">Unique visited customers</div>
+                </div>
+                <!-- KPI 4 -->
+                <div class="backdrop-blur-xl bg-slate-950/60 border border-purple-500/30 hover:border-purple-400/80 p-5 rounded-xl transition-all hover:shadow-neon-purple group relative overflow-hidden">
+                    <div class="font-tech text-xs text-purple-400 font-semibold uppercase tracking-wider">Active Field Photons</div>
+                    <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-purple-300 transition-colors" id="kpi-mpos">0</div>
+                    <div class="font-tech text-[11px] text-slate-500 mt-1">Active MPO agents</div>
+                </div>
+                <!-- KPI 5 -->
+                <div class="backdrop-blur-xl bg-slate-950/60 border border-amber-500/30 hover:border-amber-400/80 p-5 rounded-xl transition-all hover:shadow-lg hover:shadow-amber-500/20 group relative overflow-hidden">
+                    <div class="font-tech text-xs text-amber-400 font-semibold uppercase tracking-wider">Bio-Product Vectors</div>
+                    <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-amber-300 transition-colors" id="kpi-products">0</div>
+                    <div class="font-tech text-[11px] text-slate-500 mt-1">Unique Product Codes</div>
+                </div>
+                <!-- KPI 6 -->
+                <div class="backdrop-blur-xl bg-slate-950/60 border border-rose-500/30 hover:border-rose-400/80 p-5 rounded-xl transition-all hover:shadow-lg hover:shadow-rose-500/20 group relative overflow-hidden">
+                    <div class="font-tech text-xs text-rose-400 font-semibold uppercase tracking-wider">Avg Quantum Packet</div>
+                    <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-rose-300 transition-colors" id="kpi-aov">৳ 0.00</div>
+                    <div class="font-tech text-[11px] text-slate-500 mt-1">AOV per invoice pulse</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- NAVIGATION TABS -->
+        <nav class="flex flex-wrap gap-2 border-b border-slate-800 pb-4">
+            <button class="tab-link active px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-neon-cyan" data-target="tab-overview">
+                🌟 OVERVIEW & SPOTLIGHT
+            </button>
+            <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white" data-target="tab-top50-products">
+                💊 TOP 50 BIO-PRODUCTS (CODE ANCHOR)
+            </button>
+            <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-purple-500 text-slate-300 hover:text-white" data-target="tab-top50-mpos">
+                👔 TOP 50 MPO PHOTONS (PARTY & INVOICE)
+            </button>
+            <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-white" data-target="tab-top20-fms">
+                🏆 TOP 20 FM & SECTOR NEXUS
+            </button>
+            <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-amber-500 text-slate-300 hover:text-white" data-target="tab-monthly-trends">
+                📈 TEMPORAL GROWTH TRAJECTORY
+            </button>
+        </nav>
+
+        <!-- TAB 1: OVERVIEW & SPOTLIGHT -->
+        <section id="tab-overview" class="tab-content active space-y-8">
+            <!-- Top 5 Spotlight Grid -->
+            <div>
+                <div class="flex justify-between items-end mb-4">
+                    <div>
+                        <h3 class="font-cyber font-bold text-lg text-cyan-300">🌟 TOP 5 BIO-PRODUCT CORE SPOTLIGHT</h3>
+                        <p class="font-tech text-xs text-slate-400">Strictly computed by unique product_code across Jan-Jun 2026 dataset.</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4" id="spotlight-cards-container">
+                    <div class="col-span-full text-center py-10 font-cyber text-cyan-400 animate-pulse">LOADING QUANTUM SPOTLIGHT DATA...</div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl">
+                    <h3 class="font-cyber font-bold text-sm text-purple-300 mb-4">TEMPORAL REVENUE TRAJECTORY (JAN - JUN 2026)</h3>
+                    <div class="h-[320px] relative"><canvas id="chart-overview-monthly"></canvas></div>
+                </div>
+                <div class="backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl">
+                    <h3 class="font-cyber font-bold text-sm text-cyan-300 mb-4">TOP 5 BIO-VECTORS SHARE</h3>
+                    <div class="h-[320px] relative"><canvas id="chart-overview-doughnut"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: TOP 50 PRODUCTS -->
+        <section id="tab-top50-products" class="tab-content space-y-4">
+            <div class="flex flex-wrap justify-between items-center gap-4 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+                <div class="flex items-center gap-2 bg-slate-900 border border-cyan-500/40 rounded-lg px-3 py-2 flex-1 max-w-md">
+                    <span class="text-cyan-400">🔍</span>
+                    <input type="text" id="search-product" placeholder="Search Product Code (e.g. DEJ1) or Name..." class="bg-transparent border-none text-sm font-tech text-white w-full focus:outline-none">
+                </div>
+                <div class="flex gap-2">
+                    <button class="pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold" data-filter-prod="all">ALL 50 VECTORS</button>
+                    <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-prod="top10">TOP 10 ONLY</button>
+                    <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-prod="top25">TOP 25 ONLY</button>
+                </div>
+                <button class="px-4 py-2 rounded bg-purple-900/60 border border-purple-500/50 text-purple-200 font-tech font-bold text-xs hover:bg-purple-800 transition-all" onclick="exportTableToCSV('table-top50-products', 'Top_50_Quantum_Products.csv')">
+                    📥 EXPORT CSV
+                </button>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-800/80 backdrop-blur-xl bg-slate-950/70">
+                <table id="table-top50-products" class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900/90 border-b border-cyan-500/30 text-cyan-300 font-cyber text-xs">
+                            <th class="p-3">#</th>
+                            <th class="p-3">CODE 🔒</th>
+                            <th class="p-3">PRODUCT VECTOR NAME</th>
+                            <th class="p-3">NET REVENUE (৳)</th>
+                            <th class="p-3">QTY SOLD</th>
+                            <th class="p-3">INVOICE PULSES</th>
+                            <th class="p-3">VISITED PARTIES</th>
+                            <th class="p-3">CONTRIB %</th>
+                            <th class="p-3">TELEMETRY</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-top50-products" class="font-tech text-sm divide-y divide-slate-800/60">
+                        <!-- JS Loaded -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 3: TOP 50 MPOS -->
+        <section id="tab-top50-mpos" class="tab-content space-y-4">
+            <div class="flex flex-wrap justify-between items-center gap-4 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+                <div class="flex items-center gap-2 bg-slate-900 border border-purple-500/40 rounded-lg px-3 py-2 flex-1 max-w-md">
+                    <span class="text-purple-400">👔</span>
+                    <input type="text" id="search-mpo" placeholder="Search MPO Code, Zone or Depot..." class="bg-transparent border-none text-sm font-tech text-white w-full focus:outline-none">
+                </div>
+                <div class="flex gap-2">
+                    <button class="pill active px-3 py-1.5 rounded bg-purple-600 text-white font-tech text-xs font-bold" data-filter-mpo="all">ALL ZONES</button>
+                    <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-mpo="CTG">CHITTAGONG</button>
+                    <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-mpo="DHK">DHAKA</button>
+                    <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-mpo="RAJ">RAJSHAHI</button>
+                </div>
+                <button class="px-4 py-2 rounded bg-purple-900/60 border border-purple-500/50 text-purple-200 font-tech font-bold text-xs hover:bg-purple-800 transition-all" onclick="exportTableToCSV('table-top50-mpos', 'Top_50_Quantum_MPOs.csv')">
+                    📥 EXPORT CSV
+                </button>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-slate-800/80 backdrop-blur-xl bg-slate-950/70">
+                <table id="table-top50-mpos" class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900/90 border-b border-purple-500/30 text-purple-300 font-cyber text-xs">
+                            <th class="p-3">#</th>
+                            <th class="p-3">MPO PHOTON CODE</th>
+                            <th class="p-3">ASSIGNED ZONE</th>
+                            <th class="p-3">CORE DEPOT</th>
+                            <th class="p-3">NET REVENUE (৳)</th>
+                            <th class="p-3">QTY SOLD</th>
+                            <th class="p-3">VISITED PARTIES 👥</th>
+                            <th class="p-3">INVOICES BILLED 🧾</th>
+                            <th class="p-3">TELEMETRY</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-top50-mpos" class="font-tech text-sm divide-y divide-slate-800/60">
+                        <!-- JS Loaded -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 4: TOP 20 FMS & SECTORS -->
+        <section id="tab-top20-fms" class="tab-content grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Top 20 FMs -->
+            <div class="backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-cyber font-bold text-lg text-amber-300">🏆 TOP 20 FIELD MANAGERS (FM/AM)</h3>
+                    <button class="px-3 py-1 rounded bg-slate-900 border border-amber-500/40 text-amber-300 text-xs font-tech font-bold" onclick="exportTableToCSV('table-fms', 'Top_20_FMs.csv')">CSV</button>
+                </div>
+                <div class="max-h-[500px] overflow-y-auto border border-slate-800 rounded-xl">
+                    <table id="table-fms" class="w-full text-left">
+                        <thead class="bg-slate-900 text-amber-200 font-cyber text-xs sticky top-0">
+                            <tr><th class="p-3">#</th><th class="p-3">FM / AM NAME</th><th class="p-3">MPOS</th><th class="p-3">REVENUE (৳)</th><th class="p-3">PARTIES</th><th class="p-3">INVOICES</th></tr>
+                        </thead>
+                        <tbody id="tbody-fms" class="font-tech text-sm divide-y divide-slate-800/60"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Top 5 Sectors -->
+            <div class="backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-cyber font-bold text-lg text-emerald-300">🌐 TOP 5 SECTOR HEADS / ZONES</h3>
+                    <button class="px-3 py-1 rounded bg-slate-900 border border-emerald-500/40 text-emerald-300 text-xs font-tech font-bold" onclick="exportTableToCSV('table-sectors', 'Top_5_Sectors.csv')">CSV</button>
+                </div>
+                <div class="max-h-[300px] overflow-y-auto border border-slate-800 rounded-xl">
+                    <table id="table-sectors" class="w-full text-left">
+                        <thead class="bg-slate-900 text-emerald-200 font-cyber text-xs sticky top-0">
+                            <tr><th class="p-3">#</th><th class="p-3">SECTOR / ZONE NAME</th><th class="p-3">MPOS</th><th class="p-3">REVENUE (৳)</th><th class="p-3">PARTIES</th></tr>
+                        </thead>
+                        <tbody id="tbody-sectors" class="font-tech text-sm divide-y divide-slate-800/60"></tbody>
+                    </table>
+                </div>
+                <div class="mt-6">
+                    <h4 class="font-cyber text-xs text-slate-400 mb-2">SECTOR REVENUE DISTRIBUTION</h4>
+                    <div class="h-[220px] relative"><canvas id="chart-sector-bar"></canvas></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: MONTHLY TRENDS -->
+        <section id="tab-monthly-trends" class="tab-content space-y-6">
+            <div class="backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl">
+                <h3 class="font-cyber font-bold text-lg text-cyan-300 mb-4">📈 TEMPORAL SYSTEM GROWTH TRAJECTORY</h3>
+                <div class="h-[400px] relative"><canvas id="chart-monthly-dual"></canvas></div>
+            </div>
+            
+            <div class="overflow-x-auto rounded-xl border border-slate-800/80 backdrop-blur-xl bg-slate-950/70">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900/90 border-b border-cyan-500/30 text-cyan-300 font-cyber text-xs">
+                            <th class="p-3">MONTH</th>
+                            <th class="p-3">TOTAL REVENUE (৳)</th>
+                            <th class="p-3">TOTAL QUANTITY</th>
+                            <th class="p-3">INVOICE PULSES</th>
+                            <th class="p-3">UNIQUE PARTIES BILLED</th>
+                            <th class="p-3">AVG ORDER VALUE (৳)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-monthly-table" class="font-tech text-sm divide-y divide-slate-800/60"></tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Interactive Drill-Down Modal -->
+    <div id="drill-modal" class="modal-overlay fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="backdrop-blur-2xl bg-slate-950 border border-cyan-500/50 rounded-2xl p-6 max-w-3xl w-full shadow-neon-cyan transform scale-95 transition-all duration-300">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 id="modal-title" class="font-cyber font-bold text-lg text-cyan-300">TELEMETRY DRILLDOWN</h3>
+                <button class="text-slate-400 hover:text-white font-mono text-xl" onclick="closeModal()">✕</button>
+            </div>
+            <p id="modal-subtitle" class="font-tech text-xs text-slate-400 my-3"></p>
+            <div class="h-[280px] w-full my-4 relative"><canvas id="modal-chart"></canvas></div>
+            <div class="max-h-[200px] overflow-y-auto border border-slate-800 rounded-lg">
+                <table class="w-full text-left font-tech text-xs">
+                    <thead class="bg-slate-900 text-slate-300 sticky top-0">
+                        <tr><th class="p-2">MONTH</th><th class="p-2">REVENUE (৳)</th><th class="p-2">INVOICES</th><th class="p-2">PARTIES VISITED</th><th class="p-2">QTY</th></tr>
+                    </thead>
+                    <tbody id="modal-tbody" class="divide-y divide-slate-800/60"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-16 border-t border-slate-900 bg-black/60 py-6 text-center font-tech text-xs text-slate-500">
+        <p>© YEAR 50,000 ALCO PHARMA QUANTUM NEXUS // POWERED BY THREE.JS, TAILWIND CSS & DIJKSTRA OPTIMIZER // PYTHONANYWHERE READY.</p>
+    </footer>
+
+    <!-- Custom Logic Scripts -->
+    <script src="js/script.js"></script>
+    <script src="js/quantum_3d.js"></script>
+    <script src="js/dijkstra_network.js"></script>
+</body>
+</html>

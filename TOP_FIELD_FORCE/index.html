@@ -252,6 +252,9 @@
             <button class="tab-link active px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-neon-cyan" data-target="tab-overview">
                 📊 OVERVIEW & SPOTLIGHT
             </button>
+            <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-cyan-400 text-cyan-300 hover:text-white shadow-sm" data-target="tab-strategic-6">
+                🏆 6 STRATEGIC PRODUCTS (MPO BY UNIT)
+            </button>
             <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white" data-target="tab-top50-products">
                 💊 TOP 50 PRODUCTS (CODE ANCHOR)
             </button>
@@ -291,6 +294,60 @@
                     <h3 class="font-cyber font-bold text-sm text-cyan-300 mb-4">TOP 5 PRODUCTS REVENUE SHARE</h3>
                     <div class="h-[320px] relative"><canvas id="chart-overview-doughnut"></canvas></div>
                 </div>
+            </div>
+        </section>
+
+        <!-- TAB: 6 STRATEGIC PRODUCTS (TOP 50 MPO BY UNIT) -->
+        <section id="tab-strategic-6" class="tab-content space-y-6">
+            <!-- Strategic 6 Product Selector Cards/Buttons -->
+            <div class="backdrop-blur-xl bg-slate-950/80 cyber-border p-6 rounded-2xl relative overflow-hidden">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <span class="text-[10px] font-cyber tracking-[0.4em] text-cyan-400 uppercase bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-500/30">Strategic Hierarchy</span>
+                        <h3 class="font-cyber font-bold text-xl text-white mt-2">🏆 6 STRATEGIC PRODUCT GROUPS (MPO RANKING BY UNIT)</h3>
+                        <p class="font-tech text-xs text-slate-400 mt-1">Select a product button below to view the Top 50 MPOs ranked strictly by Quantity Sold (UNIT). MPO Market Name and Month-wise breakdown are fully integrated.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" id="strategic-6-buttons-container">
+                    <div class="col-span-full text-center py-6 text-cyan-400 font-cyber animate-pulse">LOADING STRATEGIC PRODUCTS...</div>
+                </div>
+            </div>
+
+            <!-- Month Filter & Active Product Banner -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-950/90 p-4 rounded-xl border border-cyan-500/40 shadow-neon-cyan">
+                <div>
+                    <div class="font-cyber text-xs text-cyan-400">ACTIVE STRATEGIC VIEW:</div>
+                    <h4 id="strategic-active-title" class="font-cyber font-black text-xl text-white">MOKAST 10 TAB</h4>
+                    <p id="strategic-active-subtitle" class="font-tech text-xs text-slate-400">Merged Product Codes: MON1, MOO1, MOP1</p>
+                </div>
+                
+                <!-- Month Filter Pills -->
+                <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800" id="strategic-month-pills">
+                    <button class="strat-month-pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold shadow-neon-cyan" data-month="ALL">ALL MONTHS (JAN - JUN)</button>
+                </div>
+            </div>
+
+            <!-- Top 50 MPO Table for Selected Strategic Product & Month -->
+            <div class="overflow-x-auto rounded-xl border border-cyan-500/30 backdrop-blur-xl bg-slate-950/70 shadow-lg">
+                <table id="table-strategic-mpos" class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900/90 border-b border-cyan-500/40 text-cyan-300 font-cyber text-xs">
+                            <th class="p-3.5"># RANK (BY UNIT) 🏆</th>
+                            <th class="p-3.5">MPO CODE 👤</th>
+                            <th class="p-3.5">MARKET NAME 📍</th>
+                            <th class="p-3.5">ZONE / DEPOT</th>
+                            <th class="p-3.5 bg-cyan-950/50 text-cyan-200">TOTAL UNITS SOLD 📦</th>
+                            <th class="p-3.5">VISITED PARTIES 👥</th>
+                            <th class="p-3.5">INVOICES BILLED 🧾</th>
+                            <th class="p-3.5">NET REVENUE (৳)</th>
+                            <th class="p-3.5">ACTION</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-strategic-mpos" class="font-tech text-sm divide-y divide-slate-800/60">
+                        <!-- Loaded by JS -->
+                    </tbody>
+                </table>
             </div>
         </section>
 

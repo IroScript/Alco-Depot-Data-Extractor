@@ -12,6 +12,39 @@ DATA_OUT_DIR = os.path.join(BASE_DIR, "data")
 
 os.makedirs(DATA_OUT_DIR, exist_ok=True)
 
+# 6 Strategic Product Groups defined by user
+STRATEGIC_6_MAPPING = {
+    'ALAGRA 120 TAB': ['ALK1', 'ALM1', 'ZA04', 'ZA05'],
+    'ALAGRA 180 TAB': ['ALN1', 'ALP1'],
+    'AMDIN PLUS TAB': ['AMK3', 'AMM3', 'ZA11'],
+    'DERMA CAP': ['DEJ1', 'DEK1', 'DEM1', 'DEN1', 'ZD01'],
+    'MOKAST 10 TAB': ['MON1', 'MOO1', 'MOP1'],
+    'TOLEC TAB': ['TOL2']
+}
+
+def load_excel_mappings():
+    excel_path = os.path.join(PARENT_DIR, "PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx")
+    code_to_subgroup = {}
+    if os.path.exists(excel_path):
+        try:
+            import pandas as pd
+            df_map = pd.read_excel(excel_path)
+            df_map["Product_Code_ffill"] = df_map["Product_Code"].ffill()
+            for _, row in df_map.iterrows():
+                code = str(row["Product_Code_ffill"]).strip().upper()
+                subg = str(row["SUB_GROUP_STANDARD"]).strip() if pd.notna(row["SUB_GROUP_STANDARD"]) else ""
+                if code and code != "NAN" and subg and subg != "nan":
+                    code_to_subgroup[code] = subg
+        except Exception as e:
+            print(f"Note: Could not read Excel mapping via pandas: {e}")
+            
+    # Always ensure strategic 6 mappings exist
+    for grp_name, codes in STRATEGIC_6_MAPPING.items():
+        for c in codes:
+            code_to_subgroup[c] = grp_name
+            
+    return code_to_subgroup
+
 class DataEngine:
     def __init__(self, db_path=DEFAULT_DB_PATH):
         self.db_path = db_path
@@ -23,8 +56,8 @@ class DataEngine:
 
     def generate_all_data(self):
         """
-        Executes all SQL calculations emphasizing PRODUCT CODE as primary identifier
-        and user-defined Top 50 product calculation & field force metrics.
+        Executes all SQL calculations emphasizing PRODUCT CODE as primary identifier,
+        grouping by SUB_GROUP_STANDARD, and calculating the 6 Strategic Products Top 50 MPO by UNIT.
         """
         conn = self.get_connection()
         conn.row_factory = sqlite3.Row
@@ -34,7 +67,7 @@ class DataEngine:
             "meta": {
                 "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "db_path": self.db_path,
-                "note": "Product calculations are strictly anchored on product_code as per system rules."
+                "note": "Product calculations are anchored on product_code and grouped by SUB_GROUP_STANDARD."
             },
             "kpis": {},
             "top_50_products": [],
@@ -42,7 +75,8 @@ class DataEngine:
             "top_50_mpos": [],
             "top_20_fms": [],
             "top_5_sector_heads": [],
-            "monthly_trends": []
+            "monthly_trends": [],
+            "strategic_6_products": {}
         }
 
         try:
@@ -93,7 +127,9 @@ class DataEngine:
                     "quantity": round(float(r["quantity"] or 0), 2)
                 })
 
-            # 3. TOP 50 PRODUCTS CALCULATION (Strictly grouped by product_code)
+            # 3. TOP 50 PRODUCTS CALCULATION (Grouped/merged by SUB_GROUP_STANDARD as per user rule)
+            code_to_subgroup = load_excel_mappings()
+
             cur.execute("""
                 SELECT 
                     product_code,
@@ -103,19 +139,37 @@ class DataEngine:
                     COUNT(DISTINCT invoice_no) as total_invoices,
                     COUNT(DISTINCT customer_id) as total_parties
                 FROM sales
+                WHERE product_code IS NOT NULL AND product_code != ''
                 GROUP BY product_code
-                ORDER BY SUM(line_amount) DESC
-                LIMIT 50
             """)
-            top_50_prod_rows = cur.fetchall()
+            raw_prod_rows = cur.fetchall()
             
-            # For each top product, calculate month-wise breakdown (sales, invoices, party count)
-            for idx, r in enumerate(top_50_prod_rows, 1):
-                p_code = r["product_code"]
-                p_sales = float(r["total_sales"] or 0)
-                
-                # Month-wise drill for this product_code
-                cur.execute("""
+            # Group/merge by SUB_GROUP_STANDARD
+            grouped_prods = {}
+            for r in raw_prod_rows:
+                p_code = str(r["product_code"]).strip().upper()
+                grp_name = code_to_subgroup.get(p_code, r["product_name"] or p_code)
+                if grp_name not in grouped_prods:
+                    grouped_prods[grp_name] = {
+                        "group_name": grp_name,
+                        "codes": [],
+                        "total_sales": 0.0,
+                        "total_quantity": 0.0,
+                        "total_invoices": 0,
+                        "total_parties": 0
+                    }
+                grouped_prods[grp_name]["codes"].append(p_code)
+                grouped_prods[grp_name]["total_sales"] += float(r["total_sales"] or 0)
+                grouped_prods[grp_name]["total_quantity"] += float(r["total_quantity"] or 0)
+                grouped_prods[grp_name]["total_invoices"] += int(r["total_invoices"] or 0)
+                grouped_prods[grp_name]["total_parties"] += int(r["total_parties"] or 0)
+
+            # Sort descending by total_sales and take Top 50
+            sorted_groups = sorted(grouped_prods.values(), key=lambda x: x["total_sales"], reverse=True)[:50]
+            
+            for idx, g in enumerate(sorted_groups, 1):
+                placeholders = ",".join(["?"] * len(g["codes"]))
+                cur.execute(f"""
                     SELECT 
                         month,
                         SUM(line_amount) as m_sales,
@@ -123,10 +177,10 @@ class DataEngine:
                         COUNT(DISTINCT invoice_no) as m_invoices,
                         COUNT(DISTINCT customer_id) as m_parties
                     FROM sales
-                    WHERE product_code = ?
+                    WHERE product_code IN ({placeholders})
                     GROUP BY month
                     ORDER BY month ASC
-                """, (p_code,))
+                """, g["codes"])
                 m_breakdown = []
                 for mb in cur.fetchall():
                     m_breakdown.append({
@@ -139,25 +193,26 @@ class DataEngine:
 
                 prod_item = {
                     "rank": idx,
-                    "product_code": p_code,
-                    "product_name": r["product_name"] or f"Product {p_code}",
-                    "total_sales": round(p_sales, 2),
-                    "total_quantity": round(float(r["total_quantity"] or 0), 2),
-                    "total_invoices": int(r["total_invoices"] or 0),
-                    "total_parties": int(r["total_parties"] or 0),
-                    "contribution_pct": round((p_sales / total_sales) * 100, 2) if total_sales > 0 else 0,
+                    "product_code": ", ".join(g["codes"]),
+                    "product_name": g["group_name"],
+                    "total_sales": round(g["total_sales"], 2),
+                    "total_quantity": round(g["total_quantity"], 2),
+                    "total_invoices": g["total_invoices"],
+                    "total_parties": g["total_parties"],
+                    "contribution_pct": round((g["total_sales"] / total_sales) * 100, 2) if total_sales > 0 else 0,
                     "monthly_breakdown": m_breakdown
                 }
                 data["top_50_products"].append(prod_item)
                 if idx <= 5:
                     data["top_5_products_deep"].append(prod_item)
 
-            # 4. TOP 50 MPO CALCULATION (With month-wise party and invoice visits as requested)
+            # 4. TOP 50 MPO CALCULATION
             cur.execute("""
                 SELECT 
                     mpo_code,
                     MAX(zone) as zone,
                     MAX(depot) as depot,
+                    MAX(market) as market,
                     SUM(line_amount) as total_sales,
                     SUM(quantity) as total_quantity,
                     COUNT(DISTINCT invoice_no) as total_invoices,
@@ -174,7 +229,6 @@ class DataEngine:
                 m_code = r["mpo_code"]
                 m_sales = float(r["total_sales"] or 0)
                 
-                # Month-wise drill for this MPO
                 cur.execute("""
                     SELECT 
                         month,
@@ -198,6 +252,7 @@ class DataEngine:
                 data["top_50_mpos"].append({
                     "rank": idx,
                     "mpo_code": m_code,
+                    "market": r["market"] or r["zone"] or "Unknown",
                     "zone": r["zone"] or "Unknown",
                     "depot": r["depot"] or "Unknown",
                     "total_sales": round(m_sales, 2),
@@ -259,6 +314,126 @@ class DataEngine:
                     "total_parties": int(r["total_parties"] or 0),
                     "contribution_pct": round((sec_sales / total_sales) * 100, 2) if total_sales > 0 else 0
                 })
+
+            # 7. STRATEGIC 6 PRODUCTS (TOP 50 MPO HIERARCHY BY UNIT WITH MONTH-WISE DATA)
+            distinct_months = [t["month"] for t in data["monthly_trends"]]
+            
+            for prod_name, codes in STRATEGIC_6_MAPPING.items():
+                placeholders = ",".join(["?"] * len(codes))
+                
+                # Overall stats
+                cur.execute(f"""
+                    SELECT 
+                        SUM(quantity) as tot_units,
+                        SUM(line_amount) as tot_sales,
+                        COUNT(DISTINCT customer_id) as tot_parties,
+                        COUNT(DISTINCT invoice_no) as tot_invoices
+                    FROM sales
+                    WHERE product_code IN ({placeholders})
+                """, codes)
+                stat_row = cur.fetchone()
+                
+                # Top 50 MPOs overall sorted by UNIT DESC (Hierarchy by unit)
+                cur.execute(f"""
+                    SELECT 
+                        mpo_code,
+                        MAX(market) as market,
+                        MAX(zone) as zone,
+                        MAX(depot) as depot,
+                        SUM(quantity) as units,
+                        COUNT(DISTINCT customer_id) as parties,
+                        COUNT(DISTINCT invoice_no) as invoices,
+                        SUM(line_amount) as sales
+                    FROM sales
+                    WHERE product_code IN ({placeholders}) AND mpo_code IS NOT NULL AND mpo_code != ''
+                    GROUP BY mpo_code
+                    ORDER BY SUM(quantity) DESC
+                    LIMIT 50
+                """, codes)
+                
+                mpo_list_all = []
+                for idx, mr in enumerate(cur.fetchall(), 1):
+                    m_code = mr["mpo_code"]
+                    
+                    cur.execute(f"""
+                        SELECT 
+                            month,
+                            SUM(quantity) as m_units,
+                            COUNT(DISTINCT customer_id) as m_parties,
+                            COUNT(DISTINCT invoice_no) as m_invoices,
+                            SUM(line_amount) as m_sales
+                        FROM sales
+                        WHERE product_code IN ({placeholders}) AND mpo_code = ?
+                        GROUP BY month
+                        ORDER BY month ASC
+                    """, (*codes, m_code))
+                    m_break = []
+                    for mb in cur.fetchall():
+                        m_break.append({
+                            "month": mb["month"],
+                            "units": round(float(mb["m_units"] or 0), 2),
+                            "parties": int(mb["m_parties"] or 0),
+                            "invoices": int(mb["m_invoices"] or 0),
+                            "sales": round(float(mb["m_sales"] or 0), 2)
+                        })
+                        
+                    mpo_list_all.append({
+                        "rank": idx,
+                        "mpo_code": m_code,
+                        "market": mr["market"] or mr["zone"] or "Unknown",
+                        "zone": mr["zone"] or "Unknown",
+                        "depot": mr["depot"] or "Unknown",
+                        "units": round(float(mr["units"] or 0), 2),
+                        "parties": int(mr["parties"] or 0),
+                        "invoices": int(mr["invoices"] or 0),
+                        "sales": round(float(mr["sales"] or 0), 2),
+                        "monthly_breakdown": m_break
+                    })
+                    
+                # Month-wise Top 50 MPOs (by unit)
+                mpo_by_month = {}
+                for m_val in distinct_months:
+                    cur.execute(f"""
+                        SELECT 
+                            mpo_code,
+                            MAX(market) as market,
+                            MAX(zone) as zone,
+                            MAX(depot) as depot,
+                            SUM(quantity) as units,
+                            COUNT(DISTINCT customer_id) as parties,
+                            COUNT(DISTINCT invoice_no) as invoices,
+                            SUM(line_amount) as sales
+                        FROM sales
+                        WHERE product_code IN ({placeholders}) AND month = ? AND mpo_code IS NOT NULL AND mpo_code != ''
+                        GROUP BY mpo_code
+                        ORDER BY SUM(quantity) DESC
+                        LIMIT 50
+                    """, (*codes, m_val))
+                    mpo_list_month = []
+                    for idx, mr in enumerate(cur.fetchall(), 1):
+                        mpo_list_month.append({
+                            "rank": idx,
+                            "mpo_code": mr["mpo_code"],
+                            "market": mr["market"] or mr["zone"] or "Unknown",
+                            "zone": mr["zone"] or "Unknown",
+                            "depot": mr["depot"] or "Unknown",
+                            "units": round(float(mr["units"] or 0), 2),
+                            "parties": int(mr["parties"] or 0),
+                            "invoices": int(mr["invoices"] or 0),
+                            "sales": round(float(mr["sales"] or 0), 2)
+                        })
+                    mpo_by_month[m_val] = mpo_list_month
+                    
+                data["strategic_6_products"][prod_name] = {
+                    "product_name": prod_name,
+                    "merged_codes": codes,
+                    "total_units": round(float(stat_row["tot_units"] or 0), 2),
+                    "total_sales": round(float(stat_row["tot_sales"] or 0), 2),
+                    "total_parties": int(stat_row["tot_parties"] or 0),
+                    "total_invoices": int(stat_row["tot_invoices"] or 0),
+                    "mpo_top50_all": mpo_list_all,
+                    "mpo_top50_by_month": mpo_by_month
+                }
 
         except Exception as e:
             print(f"Error executing SQL calculations: {e}")

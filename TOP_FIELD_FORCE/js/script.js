@@ -143,6 +143,7 @@ function renderAllComponents() {
     renderFMsTable(GLOBAL_DATA.top_20_fms);
     renderSectorsTable(GLOBAL_DATA.top_5_sector_heads);
     renderMonthlyTable(GLOBAL_DATA.monthly_trends);
+    renderStrategic6Products();
     
     renderCharts();
 }
@@ -359,6 +360,118 @@ function renderMonthlyTable(trends) {
             </tr>
         `;
     }).join('');
+}
+
+/* ==========================================================================
+   STRATEGIC 6 PRODUCTS // TOP 50 MPO BY UNIT HIERARCHY ENGINE
+   ========================================================================== */
+let ACTIVE_STRATEGIC_PROD = "MOKAST 10 TAB";
+let ACTIVE_STRATEGIC_MONTH = "ALL";
+
+function renderStrategic6Products() {
+    if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
+    const stratData = GLOBAL_DATA.strategic_6_products;
+    const container = document.getElementById("strategic-6-buttons-container");
+    if (!container) return;
+
+    const keys = Object.keys(stratData);
+    if (keys.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center py-6 text-cyan-400 font-cyber">NO STRATEGIC PRODUCTS FOUND.</div>`;
+        return;
+    }
+
+    if (!stratData[ACTIVE_STRATEGIC_PROD] && keys.length > 0) {
+        ACTIVE_STRATEGIC_PROD = keys[0];
+    }
+
+    container.innerHTML = keys.map(prodName => {
+        const item = stratData[prodName];
+        const isActive = (prodName === ACTIVE_STRATEGIC_PROD);
+        return `
+            <button class="strat-btn p-3 rounded-xl border text-left transition-all ${isActive ? 'bg-gradient-to-tr from-cyan-600/40 via-indigo-600/40 to-purple-600/40 border-cyan-400 shadow-neon-cyan transform scale-105' : 'bg-slate-900/80 border-slate-800 hover:border-cyan-500/50'}" onclick="selectStrategicProduct('${prodName.replace(/'/g, "\\'")}')">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-[10px] font-cyber tracking-wider text-purple-400 bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-500/30">TOP 50 MPO</span>
+                    <span class="font-mono text-[10px] text-emerald-400">📦 ${Number(item.total_units).toLocaleString()} U</span>
+                </div>
+                <div class="font-cyber font-bold text-sm text-white truncate my-1" title="${prodName}">💊 ${prodName}</div>
+                <div class="flex justify-between items-center text-[11px] font-tech text-slate-400 border-t border-slate-800/80 pt-1 mt-1">
+                    <span>👥 ${Number(item.total_parties).toLocaleString()} Parties</span>
+                    <span>🧾 ${Number(item.total_invoices).toLocaleString()} Inv</span>
+                </div>
+            </button>
+        `;
+    }).join('');
+
+    const monthPillsEl = document.getElementById("strategic-month-pills");
+    if (monthPillsEl && GLOBAL_DATA.monthly_trends) {
+        const months = GLOBAL_DATA.monthly_trends.map(t => t.month);
+        monthPillsEl.innerHTML = `
+            <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH === 'ALL' ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonth('ALL')">ALL MONTHS (JAN - JUN)</button>
+            ${months.map(m => `
+                <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH === m ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonth('${m}')">[ ${m} ]</button>
+            `).join('')}
+        `;
+    }
+
+    renderStrategicMPOTable();
+}
+
+function selectStrategicProduct(prodName) {
+    ACTIVE_STRATEGIC_PROD = prodName;
+    renderStrategic6Products();
+}
+
+function selectStrategicMonth(monthVal) {
+    ACTIVE_STRATEGIC_MONTH = monthVal;
+    renderStrategic6Products();
+}
+
+function renderStrategicMPOTable() {
+    if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
+    const stratData = GLOBAL_DATA.strategic_6_products;
+    const prodItem = stratData[ACTIVE_STRATEGIC_PROD];
+    if (!prodItem) return;
+
+    const titleEl = document.getElementById("strategic-active-title");
+    const subEl = document.getElementById("strategic-active-subtitle");
+    if (titleEl) titleEl.textContent = `💊 ${prodItem.product_name} [ MONTH: ${ACTIVE_STRATEGIC_MONTH} ]`;
+    if (subEl) subEl.textContent = `Merged Product Codes: ${(prodItem.merged_codes || []).join(', ')} // Total Units Sold: ${Number(prodItem.total_units).toLocaleString()} Units`;
+
+    let mpos = [];
+    if (ACTIVE_STRATEGIC_MONTH === "ALL") {
+        mpos = prodItem.mpo_top50_all || [];
+    } else {
+        mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
+    }
+
+    const tbody = document.getElementById("tbody-strategic-mpos");
+    if (!tbody) return;
+    if (!mpos || mpos.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">No MPO records found for this product and month selection.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = mpos.map(m => `
+        <tr class="hover:bg-cyan-950/20 transition-colors">
+            <td><strong class="font-cyber text-cyan-300 text-base">#${m.rank}</strong></td>
+            <td>
+                <span class="code-badge" style="background: rgba(6, 182, 212, 0.25); border-color: #06b6d4; color: #cffafe;">
+                    👤 ${m.mpo_code}
+                </span>
+            </td>
+            <td><strong class="text-white font-bold text-sm bg-purple-950/60 px-2 py-1 rounded border border-purple-500/30">📍 ${m.market}</strong></td>
+            <td><span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono text-xs">${m.zone} // ${m.depot}</span></td>
+            <td class="bg-cyan-950/40 font-cyber font-bold text-emerald-400 text-base border-l border-r border-cyan-500/30">📦 ${Number(m.units).toLocaleString()} U</td>
+            <td><span class="badge-party">${Number(m.parties).toLocaleString()} Parties 👥</span></td>
+            <td><span class="badge-invoice">${Number(m.invoices).toLocaleString()} Invoices 🧾</span></td>
+            <td class="val-highlight font-cyber text-sm">${formatBDT(m.sales)}</td>
+            <td>
+                <button class="btn-action text-xs py-1 px-3 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">
+                    📈 MONTHLY VISITS
+                </button>
+            </td>
+        </tr>
+    `).join('');
 }
 
 /* Render Chart.js Visualizations */

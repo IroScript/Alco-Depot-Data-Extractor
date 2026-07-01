@@ -1,7 +1,7 @@
 /* ==========================================================================
-   YEAR 50,000 AD - QUANTUM CORE 3D HOLOGRAPHIC ENGINE
+   ALCO PHARMA // 3D NETWORK & DEPOT VISUALIZATION ENGINE
    Powered by Three.js & WebGL
-   Simulates Neural Field Force Entanglement & Depot Node Interconnections
+   Simulates Field Force Interconnections & Regional Depot Grid
    ========================================================================== */
 
 let scene, camera, renderer, particles, globe, lines;

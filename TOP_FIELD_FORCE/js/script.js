@@ -1,6 +1,6 @@
 /* ==========================================================================
-   ALCO PHARMA // YEAR 50,000 QUANTUM NEXUS - TELEMETRY & UI ENGINE
-   Dynamic JavaScript Frontend Logic with Futuristic Formatting & Chart FX
+   ALCO PHARMA // ADVANCED FIELD FORCE ANALYTICS - TELEMETRY & UI ENGINE
+   Dynamic JavaScript Frontend Logic with Professional Corporate Formatting
    ========================================================================== */
 
 let GLOBAL_DATA = null;
@@ -39,9 +39,9 @@ function initEventListeners() {
     const btnRefresh = document.getElementById("btn-refresh-api");
     if (btnRefresh) {
         btnRefresh.addEventListener("click", () => {
-            btnRefresh.innerHTML = `⏳ RESYNCING MATRIX...`;
+            btnRefresh.innerHTML = `⏳ RESYNCING DATA...`;
             loadDashboardData(true).finally(() => {
-                btnRefresh.innerHTML = `⚡ RESYNC MATRIX`;
+                btnRefresh.innerHTML = `⚡ RESYNC DATA`;
             });
         });
     }
@@ -101,7 +101,7 @@ async function loadDashboardData(forceRefresh = false) {
             GLOBAL_DATA = await res.json();
             if (statusBadge && statusText) {
                 statusBadge.className = "px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 font-tech font-semibold text-xs flex items-center gap-2 shadow-neon-cyan";
-                statusText.textContent = "QUANTUM SQL CORE: ACTIVE";
+                statusText.textContent = "LIVE SQL ENGINE: ACTIVE";
             }
         } else {
             throw new Error("API server returned status " + res.status);
@@ -114,7 +114,7 @@ async function loadDashboardData(forceRefresh = false) {
                 GLOBAL_DATA = await resStatic.json();
                 if (statusBadge && statusText) {
                     statusBadge.className = "px-3 py-1 rounded-full bg-amber-950/60 border border-amber-500/50 text-amber-300 font-tech font-semibold text-xs flex items-center gap-2 shadow-neon-purple";
-                    statusText.textContent = "HOLOGRAPHIC CACHE: STATIC";
+                    statusText.textContent = "STATIC DATA CACHE";
                 }
             } else {
                 throw new Error("Static JSON unreachable");
@@ -123,7 +123,7 @@ async function loadDashboardData(forceRefresh = false) {
             console.error("Failed to load dashboard data:", staticErr);
             if (statusBadge && statusText) {
                 statusBadge.className = "px-3 py-1 rounded-full bg-rose-950/60 border border-rose-500/50 text-rose-300 font-tech font-semibold text-xs flex items-center gap-2";
-                statusText.textContent = "MATRIX SYNC FAILED";
+                statusText.textContent = "DATA SYNC FAILED";
             }
             return;
         }
@@ -147,7 +147,7 @@ function renderAllComponents() {
     renderCharts();
 }
 
-/* Format Currency in Year 50,000 Style */
+/* Format Currency in Bangladesh Standard */
 function formatBDT(val) {
     return "৳ " + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -163,26 +163,26 @@ function renderKPIs(kpis) {
     const elAov = document.getElementById("kpi-aov"); if (elAov) elAov.textContent = formatBDT(kpis.avg_invoice_val);
 }
 
-/* Render Top 5 Spotlight Cards with Quantum Progress Bars */
+/* Render Top 5 Spotlight Cards */
 function renderSpotlight(top5) {
     const container = document.getElementById("spotlight-cards-container");
     if (!container) return;
     if (!top5 || top5.length === 0) {
-        container.innerHTML = `<div class="col-span-full text-center py-10 font-cyber text-cyan-400">NO SPOTLIGHT VECTORS AVAILABLE.</div>`;
+        container.innerHTML = `<div class="col-span-full text-center py-10 font-cyber text-cyan-400">NO SPOTLIGHT DATA AVAILABLE.</div>`;
         return;
     }
 
     container.innerHTML = top5.map(p => `
         <div class="spotlight-card">
             <div class="spotlight-header">
-                <span class="spotlight-rank" title="Quantum Vector Rank">#${p.rank}</span>
-                <span class="spotlight-code" title="Strict Product Code Calculation">${p.product_code}</span>
+                <span class="spotlight-rank" title="Product Performance Rank">#${p.rank}</span>
+                <span class="spotlight-code" title="Strict Product Code Anchor">${p.product_code}</span>
             </div>
             <div class="spotlight-title">${p.product_name}</div>
             
             <div class="space-y-1 my-1">
                 <div class="flex justify-between text-[11px] font-tech text-cyan-300">
-                    <span>BIO-SHARE INDEX</span>
+                    <span>REVENUE SHARE INDEX</span>
                     <span class="font-bold">${p.contribution_pct}%</span>
                 </div>
                 <div class="w-full bg-slate-900 rounded-full h-2 border border-cyan-500/30 overflow-hidden">
@@ -200,24 +200,24 @@ function renderSpotlight(top5) {
                     <span class="stat-val"><span class="badge-party">${Number(p.total_parties).toLocaleString()} Parties</span></span>
                 </div>
                 <div class="stat-item col-span-full">
-                    <span class="stat-label">INVOICE PULSES 🧾</span>
-                    <span class="stat-val"><span class="badge-invoice w-full justify-center">${Number(p.total_invoices).toLocaleString()} Generated Beams</span></span>
+                    <span class="stat-label">INVOICES BILLED 🧾</span>
+                    <span class="stat-val"><span class="badge-invoice w-full justify-center">${Number(p.total_invoices).toLocaleString()} Invoices Generated</span></span>
                 </div>
             </div>
 
             <button class="btn-action w-full justify-center mt-2" onclick="openDrillModal('product', '${p.product_code}')">
-                ⚡ TELEMETRY MATRIX // MONTHLY VISITS
+                📊 VIEW MONTHLY PARTY & INVOICE TREND
             </button>
         </div>
     `).join('');
 }
 
-/* Render Top 50 Products Table with Laser Telemetry */
+/* Render Top 50 Products Table */
 function renderProductsTable(products) {
     const tbody = document.getElementById("tbody-top50-products");
     if (!tbody) return;
     if (!products || products.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">No product vectors found</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">No product lines found</td></tr>`;
         return;
     }
 
@@ -228,7 +228,7 @@ function renderProductsTable(products) {
             <td><strong class="text-white text-base font-bold">${p.product_name}</strong> <span class="text-[10px] text-cyan-400 font-mono ml-2">[🔒 CODE ANCHOR]</span></td>
             <td class="val-highlight font-cyber text-base">${formatBDT(p.total_sales)}</td>
             <td class="font-mono text-cyan-200">${Number(p.total_quantity).toLocaleString()}</td>
-            <td><span class="badge-invoice">${Number(p.total_invoices).toLocaleString()} Beams</span></td>
+            <td><span class="badge-invoice">${Number(p.total_invoices).toLocaleString()} Invoices</span></td>
             <td><span class="badge-party">${Number(p.total_parties).toLocaleString()} Parties</span></td>
             <td>
                 <div class="flex items-center gap-2">
@@ -240,7 +240,7 @@ function renderProductsTable(products) {
             </td>
             <td>
                 <button class="btn-action text-xs py-1 px-3" onclick="openDrillModal('product', '${p.product_code}')">
-                    🔍 QUANTUM DRILLDOWN
+                    🔍 MONTHLY BREAKDOWN
                 </button>
             </td>
         </tr>
@@ -264,12 +264,12 @@ function filterProducts(query, pill) {
     });
 }
 
-/* Render Top 50 MPOs Table with Photon Status */
+/* Render Top 50 MPOs Table */
 function renderMPOsTable(mpos) {
     const tbody = document.getElementById("tbody-top50-mpos");
     if (!tbody) return;
     if (!mpos || mpos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">No MPO photons found</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">No MPO records found</td></tr>`;
         return;
     }
 
@@ -278,7 +278,7 @@ function renderMPOsTable(mpos) {
             <td><strong class="font-cyber text-purple-400">#${m.rank}</strong></td>
             <td>
                 <span class="code-badge" style="background: rgba(168, 85, 247, 0.25); border-color: #a855f7; color: #f3e8ff;">
-                    ⚡ ${m.mpo_code}
+                    👤 ${m.mpo_code}
                 </span>
             </td>
             <td><span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300 font-mono text-xs">${m.zone}</span></td>
@@ -289,7 +289,7 @@ function renderMPOsTable(mpos) {
             <td><span class="badge-invoice">${Number(m.total_invoices).toLocaleString()} Invoices 🧾</span></td>
             <td>
                 <button class="btn-action text-xs py-1 px-3" onclick="openDrillModal('mpo', '${m.mpo_code}')">
-                    📈 TELEPORTATION VISITS
+                    📈 MONTHLY VISITS
                 </button>
             </td>
         </tr>
@@ -320,7 +320,7 @@ function renderFMsTable(fms) {
         <tr class="hover:bg-amber-950/20 transition-colors">
             <td><strong class="font-cyber text-amber-400">#${f.rank}</strong></td>
             <td><strong class="text-white font-bold text-base">${f.fm_name}</strong></td>
-            <td><span class="px-2 py-0.5 rounded bg-amber-950/50 border border-amber-500/40 text-amber-300 font-mono text-xs">${f.active_mpos} Nodes</span></td>
+            <td><span class="px-2 py-0.5 rounded bg-amber-950/50 border border-amber-500/40 text-amber-300 font-mono text-xs">${f.active_mpos} MPOs</span></td>
             <td class="val-highlight font-cyber">${formatBDT(f.total_sales)}</td>
             <td><span class="badge-party text-xs">${Number(f.total_parties).toLocaleString()}</span></td>
             <td><span class="badge-invoice text-xs">${Number(f.total_invoices).toLocaleString()}</span></td>
@@ -353,7 +353,7 @@ function renderMonthlyTable(trends) {
                 <td><strong class="font-cyber text-cyan-300 text-base">[ ${t.month} ]</strong></td>
                 <td class="val-highlight font-cyber text-base">${formatBDT(t.sales)}</td>
                 <td class="font-mono text-cyan-100">${Number(t.quantity).toLocaleString()}</td>
-                <td><span class="badge-invoice">${Number(t.invoices).toLocaleString()} Pulses</span></td>
+                <td><span class="badge-invoice">${Number(t.invoices).toLocaleString()} Invoices</span></td>
                 <td><span class="badge-party">${Number(t.parties).toLocaleString()} Parties</span></td>
                 <td class="font-mono text-purple-300 font-bold">${formatBDT(aov)}</td>
             </tr>
@@ -361,7 +361,7 @@ function renderMonthlyTable(trends) {
     }).join('');
 }
 
-/* Render Chart.js Visualizations with Year 50,000 Neon Glow */
+/* Render Chart.js Visualizations */
 function renderCharts() {
     if (!GLOBAL_DATA || !window.Chart) return;
 
@@ -370,7 +370,6 @@ function renderCharts() {
     const monthlyParties = GLOBAL_DATA.monthly_trends.map(t => t.parties);
     const monthlyInvoices = GLOBAL_DATA.monthly_trends.map(t => t.invoices);
 
-    // Quantum Neon Chart Styling
     Chart.defaults.color = "#cbd5e1";
     Chart.defaults.font.family = "Rajdhani";
     Chart.defaults.font.size = 13;
@@ -396,7 +395,7 @@ function renderCharts() {
             data: {
                 labels: months,
                 datasets: [{
-                    label: "Quantum Revenue (৳)",
+                    label: "Net Revenue (৳)",
                     data: monthlySales,
                     borderColor: "#06b6d4",
                     backgroundColor: "rgba(6, 182, 212, 0.2)",
@@ -434,7 +433,7 @@ function renderCharts() {
         charts.doughnut = new Chart(ctxDoughnut, {
             type: "doughnut",
             data: {
-                labels: [...top5.map(p => p.product_name), "Other Bio-Vectors"],
+                labels: [...top5.map(p => p.product_name), "Other Products"],
                 datasets: [{
                     data: [...top5.map(p => p.total_sales), otherSales],
                     backgroundColor: [
@@ -516,7 +515,7 @@ function renderCharts() {
                         yAxisID: 'y1'
                     },
                     {
-                        label: "Invoice Pulses 🧾",
+                        label: "Invoices Billed 🧾",
                         data: monthlyInvoices,
                         type: "line",
                         borderColor: "#f59e0b",
@@ -537,7 +536,7 @@ function renderCharts() {
                         type: 'linear',
                         display: true,
                         position: 'left',
-                        title: { display: true, text: 'Quantum Revenue (৳)', color: '#6366f1' },
+                        title: { display: true, text: 'Net Revenue (৳)', color: '#6366f1' },
                         grid: { color: "rgba(99, 102, 241, 0.15)" },
                         ticks: { color: '#6366f1' }
                     },
@@ -545,7 +544,7 @@ function renderCharts() {
                         type: 'linear',
                         display: true,
                         position: 'right',
-                        title: { display: true, text: 'Entanglements (Parties / Invoices)', color: '#10b981' },
+                        title: { display: true, text: 'Visits & Memos (Parties / Invoices)', color: '#10b981' },
                         grid: { display: false },
                         ticks: { color: '#10b981' }
                     },
@@ -556,7 +555,7 @@ function renderCharts() {
     }
 }
 
-/* Open Modal for Detailed Drilldown with Telemetry Chart */
+/* Open Modal for Detailed Drilldown */
 function openDrillModal(type, code) {
     const modal = document.getElementById("drill-modal");
     const title = document.getElementById("modal-title");
@@ -575,7 +574,7 @@ function openDrillModal(type, code) {
     } else if (type === "mpo") {
         item = GLOBAL_DATA.top_50_mpos.find(m => m.mpo_code === code);
         if (item) {
-            title.innerHTML = `👔 MPO TELEMETRY: <span class="text-purple-300">${item.mpo_code}</span>`;
+            title.innerHTML = `👔 MPO PERFORMANCE: <span class="text-purple-300">${item.mpo_code}</span>`;
             subtitle.innerHTML = `ASSIGNED ZONE: <span class="text-cyan-400 font-bold">${item.zone}</span> // CORE DEPOT: <span class="text-white font-bold">${item.depot}</span> // NET REVENUE: <span class="text-emerald-400 font-cyber">${formatBDT(item.total_sales)}</span>`;
         }
     }
@@ -590,7 +589,7 @@ function openDrillModal(type, code) {
         <tr class="hover:bg-cyan-950/30 transition-colors">
             <td><strong class="font-cyber text-cyan-300">[ ${mb.month} ]</strong></td>
             <td class="val-highlight font-cyber">${formatBDT(mb.sales)}</td>
-            <td><span class="badge-invoice text-xs">${Number(mb.invoices).toLocaleString()} Pulses</span></td>
+            <td><span class="badge-invoice text-xs">${Number(mb.invoices).toLocaleString()} Invoices</span></td>
             <td><span class="badge-party text-xs">${Number(mb.parties).toLocaleString()} Parties</span></td>
             <td class="font-mono text-slate-300">${Number(mb.quantity || 0).toLocaleString()}</td>
         </tr>
@@ -669,8 +668,7 @@ function exportTableToCSV(tableId, filename) {
         const cols = row.querySelectorAll("th, td");
         let rowData = [];
         cols.forEach((col, idx) => {
-            // Skip action columns
-            if (col.textContent.includes("QUANTUM DRILLDOWN") || col.textContent.includes("TELEPORTATION VISITS") || col.textContent.includes("TELEMETRY")) return;
+            if (col.textContent.includes("MONTHLY BREAKDOWN") || col.textContent.includes("MONTHLY VISITS") || col.textContent.includes("ACTION")) return;
             let text = col.innerText.replace(/(\r\n|\n|\r)/gm, " ").replace(/৳/g, "").replace(/,/g, "").replace(/\[🔒 CODE ANCHOR\]/g, "").trim();
             rowData.push('"' + text + '"');
         });

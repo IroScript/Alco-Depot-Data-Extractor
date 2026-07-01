@@ -191,4 +191,33 @@ LIMIT 50;
 * **মার্কেট নেম ও মাসওয়ারি ফিল্টার:** প্রতিটি এম.পি.ও-র নামের সাথে তাদের মার্কেট নেম (`MAX(market)`) এবং জানুয়ারি থেকে জুন পর্যন্ত মাসভিত্তিক ফিল্টার বাটন যুক্ত করা হয়েছে, যাতে ইউজার যেকোনো মাসের (যেমন শুধু মার্চ বা এপ্রিলের) টপ এম.পি.ও-দের ইউনিট, পার্টি ও ইনভয়েস এক ক্লিকে দেখতে পারেন।
 
 ---
+
+## ১২. MPO → মার্কেট নাম রিজোলিউশন (Field-Force ডেটার ভিত্তিতে)
+
+### 🔹 সমস্যা ও সমাধান:
+`sales` টেবিলের `market` কলামটি মূল এক্সট্র্যাকশনের সময় `archive/recent/mpo_code.xlsx` এর সাথে LEFT JOIN করে তৈরি করা হয়েছিল (যাতে ৪৪৭টি কোড আছে)। ফলে যেসব MPO কোড ওই ফাইলে নেই, তাদের `market` ফিল্ড `NULL` থেকে যায় (৭৩০টি কোডের মধ্যে ~৪০২টি)। আগের ভার্সনে এই NULL মার্কেটের জায়গায় `zone` দেখানো হতো — যার ফলে **`DK.A` / `DK.B`** (যা আসলে **Zone কোড** — Dhaka-A / Dhaka-B, কোনো মার্কেটের নাম নয়) মার্কেটের জায়গায় চলে আসত। 
+
+এখন `data_engine.py` এর `load_mpo_market_lookup()` ফিল্ড-ফোর্স ডেটার মানব-স্তরের বোঝাপড়ার ভিত্তিতে **একাধিক অথেনটিক সোর্সের Union** ব্যবহার করে সঠিক মার্কেট নাম বের করে (যেখানে একই কোডের একাধিক alias — `NEW CODE`, `OLD CODE`, `DREAM APPS MPO CODE`, `DEPOTMPO CODE`, `APP CODE (FINAL)` — সবই একই মার্কেটে map হয়):
+
+### 🔹 সোর্স প্রায়োরিটি (priority order, first match wins):
+1. **লাইভ FieldEdit Google Sheet** (সম্পূর্ণ source of truth) — credentials active থাকলে প্রথমে চেষ্টা করা হয়; key revoke/অফলাইন থাকলে নীরবে local union-এ fallback।
+2. **`FieldEdit/Archive/FIELD.xlsx`** — সেই Google Sheet-এরই flat export (সবচেয়ে সমৃদ্ধ local সোর্স; MARKET কলাম সহ ৫টি কোড কলাম)।
+3. **`02E_FINAL_MPO_Target_vs_Achievement_Values_*.xlsx`** (col5 = code → col4 = market)।
+4. **`archive/03_Zone_Wise_Sales_Grouped_Report_*.xlsx`** — **সঠিক column**: col9 `DREAM APPS MPO CODE` → col3 `MARKET` (আগের কোডে ভুল করে col4 পড়া হতো, যা আসলে `FM/AM, ZONE` টেক্সট)।
+5. **`archive/recent/mpo_code.xlsx`** (col5 = MPO CODE → col3 = MARKET) — যে ফাইলটি দিয়ে মূল DB তৈরি হয়েছিল।
+
+### 🔹 ফলব্যাক নিয়ম (যদি কোনো সোর্সেও না পাওয়া যায়):
+কিছু সক্রিয় MPO (যেমন `BG##`, `BB##`, `BC##` — RAJSHAHI/CUMILLA depot) এমন যাদের কোনো local ফাইলেই মার্কেট নাম নেই। এদের জন্য:
+* ❌ আর কখনো `zone` (যেমন `DK.A`) দেখানো হয় না।
+* ❌ "Vacant / Unassigned" লেখা হয় না (এরা active, বিক্রি আছে)।
+* ✅ ঐ MPO-র আসল **Depot নাম** (যেমন `RAJSHAHI`, `CUMILLA`, `RANGPUR`) দেখানো হয় — যা ১০০% সত্য ডেটা এবং কখনো বিভ্রান্তিকর zone কোড নয়।
+* মার্কেট নামগুলো `clean_market_name` (UPPERCASE, whitespace normalize, `HATIBANDHA` override) দিয়ে standardize করা হয় — FieldEdit-এর human-level format-এর সাথে হুবহু মিল রাখার জন্য।
+
+### 🔹 ফলাফল:
+* ড্যাশবোর্ডে এখন আর কোনো `market` ফিল্ডে `DK.A` / `DK.B` / `Vacant` দেখা যায় না।
+* ~৫০টি NULL-market MPO পেয়েছে আসল মার্কেট নাম (যেমন `B007`→`MMCH`, `C009`→`DOHAZARI`)।
+* বাকি active MPO-রা পেয়েছে তাদের আসল Depot নাম fallback হিসেবে।
+
+
+---
 *এই ডকুমেন্টটি আপনার প্রজেক্টের `TOP_FIELD_FORCE` ফোল্ডারে `CALCULATION_METHODOLOGY_BN.md` নামে সেভ করা হয়েছে।*

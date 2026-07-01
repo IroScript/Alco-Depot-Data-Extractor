@@ -45,6 +45,189 @@ def load_excel_mappings():
             
     return code_to_subgroup
 
+def _clean_cell(val):
+    """Normalise a cell value to a trimmed string; '' for None/blank/'None'."""
+    if val is None:
+        return ''
+    s = str(val).strip()
+    return '' if s in ('None', 'nan', 'NaN') else s
+
+
+def _clean_market_name(name):
+    """Human-level market name formatting (mirrors FieldEdit's clean_market_name)."""
+    if not name:
+        return ''
+    name = _clean_cell(name).upper()
+    import re
+    name = re.sub(r'\s+', ' ', name)
+    if name == 'HATIBANDHA (HATIB.)':
+        return 'HATIBANDHA (HATIBANDHA-1)'
+    return name
+
+
+def _add_from_excel(mpo_map, fpath, header_row, code_cols, market_col, skip_if_present=True):
+    """Generic helper: read one workbook and union code->market entries.
+
+    code_cols / market_col are 1-based column numbers as seen in Excel.
+    Multiple code columns (aliases) all map to the same market.
+    """
+    try:
+        import openpyxl
+        if not os.path.exists(fpath):
+            return
+        wb = openpyxl.load_workbook(fpath, data_only=True)
+        ws = wb.active
+        for r in range(header_row + 1, ws.max_row + 1):
+            mkt = _clean_market_name(ws.cell(row=r, column=market_col).value)
+            if not mkt:
+                continue
+            for cc in code_cols:
+                code = _clean_cell(ws.cell(row=r, column=cc).value)
+                if code and (not skip_if_present or code not in mpo_map):
+                    mpo_map[code] = mkt
+    except Exception as e:
+        print(f"Note: Could not read {os.path.basename(fpath)}: {e}")
+
+
+def _try_google_sheet_market_map(mpo_map):
+    """Attempt the live FieldEdit Google Sheet (complete source of truth).
+
+    Replicates FieldEdit/field_formatter_updated_gui_active_data.py:process_excel
+    auth flow + cutoff logic + clean_market_name. Silent no-op if credentials
+    are unavailable or the service-account key is revoked.
+    """
+    try:
+        import json
+        fe_dir = os.path.join(PARENT_DIR, "FieldEdit")
+        config_path = os.path.join(fe_dir, "config.json")
+        if not os.path.exists(config_path):
+            return
+        with open(config_path, 'r') as f:
+            cfg = json.load(f)
+        creds_path = cfg.get('credentials_file', 'alco-pharma-cf4b49e394bb.json')
+        if not os.path.isabs(creds_path):
+            creds_path = os.path.join(fe_dir, creds_path)
+        if not os.path.exists(creds_path):
+            return
+
+        import gspread
+        from google.oauth2.service_account import Credentials
+        scopes = [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive'
+        ]
+        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        client = gspread.authorize(creds)
+        sheet = client.open_by_key(cfg['spreadsheet_id'])
+
+        worksheet = None
+        target_gid = str(cfg.get('gid', '1918615875'))
+        for ws in sheet.worksheets():
+            if str(ws.id) == target_gid:
+                worksheet = ws
+                break
+        if not worksheet:
+            worksheet = sheet.get_worksheet(0)
+
+        all_values = worksheet.get_all_values()
+
+        # cutoff at the secondary data block marker (FieldEdit logic)
+        cutoff_idx = len(all_values)
+        for r_idx in range(1, len(all_values)):
+            row_str = " ".join([str(c) for c in all_values[r_idx] if c is not None])
+            if "FM (SELF APP CODE)" in row_str or "FM (SELF" in row_str:
+                cutoff_idx = r_idx
+                break
+        all_values = all_values[:cutoff_idx]
+        while len(all_values) > 1:
+            if all(c is None or str(c).strip() == "" for c in all_values[-1]):
+                all_values.pop()
+            else:
+                break
+
+        def gv(row, idx):
+            return row[idx] if idx < len(row) else ""
+
+        added = 0
+        for row in all_values[1:]:
+            mkt = _clean_market_name(gv(row, 3))  # MARKET (idx3)
+            if not mkt:
+                continue
+            # All code aliases present in the sheet schema
+            for ci in (2, 4, 12, 13, 15):  # NEW CODE, OLD CODE, DREAM, DEPOTMPO, APP CODE FINAL
+                code = _clean_cell(gv(row, ci))
+                if code and code not in mpo_map:
+                    mpo_map[code] = mkt
+                    added += 1
+        print(f"Live Google Sheet: enriched {added} additional MPO->market entries.")
+    except Exception as e:
+        print(f"Note: Live Google Sheet unavailable ({str(e)[:80]}). Using local Excel union + depot fallback.")
+
+
+def load_mpo_market_lookup():
+    """
+    Build the canonical MPO_CODE -> MARKET_NAME map.
+
+    Field-force understanding (source priority):
+      1. Live FieldEdit Google Sheet (complete source of truth) — attempted first;
+         silently falls back if the service account key is revoked/unavailable.
+      2. FieldEdit/Archive/FIELD.xlsx  — flat export of that same Google Sheet
+         (DEPOT, ZONE, NEW CODE, MARKET, OLD CODE, ..., DREAM APPS MPO CODE,
+          DEPOTMPO CODE, APP CODE (FINAL)). Multiple code columns all map to MARKET.
+      3. 02E_FINAL_MPO_Target_vs_Achievement (col5 code -> col4 market).
+      4. archive/03_Zone_Wise_Sales_Grouped_Report (FIXED: col9 DREAM APPS MPO CODE
+         -> col3 MARKET). NOTE: the previous code wrongly read col4 (FM/AM,ZONE text)
+         as the code; the real MPO code lives in col9.
+      5. archive/recent/mpo_code.xlsx (the file init_db.py joins against).
+
+    Market names are normalised via clean_market_name (uppercase / whitespace /
+    HATIBANDHA override) to match the human-level standard formatting used by
+    the field-force reports.
+    """
+    mpo_map = {}
+
+    # 1. Live Google Sheet (best-effort; enriches on top of local union)
+    _try_google_sheet_market_map(mpo_map)
+
+    # 2. FIELD.xlsx — flat export of the live Google Sheet (richest local source)
+    _add_from_excel(
+        mpo_map,
+        os.path.join(PARENT_DIR, "FieldEdit", "Archive", "FIELD.xlsx"),
+        header_row=1,
+        code_cols=[3, 5, 13, 14, 16],   # NEW CODE, OLD CODE, DREAM, DEPOTMPO, APP CODE FINAL
+        market_col=4,                    # MARKET
+    )
+
+    # 3. 02E achievement report (code col5 -> market col4)
+    _add_from_excel(
+        mpo_map,
+        os.path.join(PARENT_DIR, "02E_FINAL_MPO_Target_vs_Achievement_Values_24_Jun_2026_02.13_PM.xlsx"),
+        header_row=3,
+        code_cols=[5],
+        market_col=4,
+    )
+
+    # 4. 03_Zone_Wise — FIXED: real MPO code is in col9 (DREAM APPS MPO CODE), market in col3
+    _add_from_excel(
+        mpo_map,
+        os.path.join(PARENT_DIR, "archive", "03_Zone_Wise_Sales_Grouped_Report_23_Jun_2026_09.30_AM.xlsx"),
+        header_row=1,
+        code_cols=[9],   # was wrongly 4
+        market_col=3,
+    )
+
+    # 5. mpo_code.xlsx — the file the init pipeline LEFT JOINs against
+    #    Schema: col1 DEPOT, col2 ZONE, col3 MARKET, col4 FM/AM, col5 MPO CODE
+    _add_from_excel(
+        mpo_map,
+        os.path.join(PARENT_DIR, "archive", "recent", "mpo_code.xlsx"),
+        header_row=1,
+        code_cols=[5],   # MPO CODE
+        market_col=3,     # MARKET
+    )
+
+    return mpo_map
+
 class DataEngine:
     def __init__(self, db_path=DEFAULT_DB_PATH):
         self.db_path = db_path
@@ -62,6 +245,25 @@ class DataEngine:
         conn = self.get_connection()
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
+        
+        mpo_market_map = load_mpo_market_lookup()
+
+        # CRITICAL: Enrich with the DB's own market data. For MPO codes where some
+        # rows have a non-null market, the most common market is the real answer
+        # (the DB already got it from init_db.py's LEFT JOIN against mpo_code.xlsx).
+        # Only codes with ALL-null rows need the external lookup.
+        cur.execute("""
+            SELECT mpo_code, market, COUNT(*) as cnt
+            FROM sales
+            WHERE market IS NOT NULL AND TRIM(market) != ''
+            GROUP BY mpo_code, market
+            ORDER BY mpo_code, cnt DESC
+        """)
+        for row in cur.fetchall():
+            code = _clean_cell(row[0])
+            mkt = _clean_market_name(row[1])
+            if code and mkt and code not in mpo_market_map:
+                mpo_market_map[code] = mkt
 
         data = {
             "meta": {
@@ -249,10 +451,16 @@ class DataEngine:
                         "parties": int(mb["m_parties"] or 0)
                     })
 
+                raw_mkt = r["market"]
+                if not raw_mkt or str(raw_mkt).strip() in ['', 'None', 'Unknown'] or str(raw_mkt).strip().startswith('DK.'):
+                    # Zone codes like 'DK.A'/'DK.B' are NOT market names (they mean Dhaka-A/B);
+                    # fall back to the mapped market, then to the real DEPOT name (never the zone).
+                    raw_mkt = mpo_market_map.get(m_code) or _clean_cell(r["depot"]) or "Unknown"
+
                 data["top_50_mpos"].append({
                     "rank": idx,
                     "mpo_code": m_code,
-                    "market": r["market"] or r["zone"] or "Unknown",
+                    "market": raw_mkt,
                     "zone": r["zone"] or "Unknown",
                     "depot": r["depot"] or "Unknown",
                     "total_sales": round(m_sales, 2),
@@ -377,10 +585,14 @@ class DataEngine:
                             "sales": round(float(mb["m_sales"] or 0), 2)
                         })
                         
+                    raw_mkt = mr["market"]
+                    if not raw_mkt or str(raw_mkt).strip() in ['', 'None', 'Unknown'] or str(raw_mkt).strip().startswith('DK.'):
+                        raw_mkt = mpo_market_map.get(m_code) or _clean_cell(mr["depot"]) or "Unknown"
+
                     mpo_list_all.append({
                         "rank": idx,
                         "mpo_code": m_code,
-                        "market": mr["market"] or mr["zone"] or "Unknown",
+                        "market": raw_mkt,
                         "zone": mr["zone"] or "Unknown",
                         "depot": mr["depot"] or "Unknown",
                         "units": round(float(mr["units"] or 0), 2),
@@ -411,10 +623,14 @@ class DataEngine:
                     """, (*codes, m_val))
                     mpo_list_month = []
                     for idx, mr in enumerate(cur.fetchall(), 1):
+                        raw_mkt = mr["market"]
+                        if not raw_mkt or str(raw_mkt).strip() in ['', 'None', 'Unknown'] or str(raw_mkt).strip().startswith('DK.'):
+                            raw_mkt = mpo_market_map.get(mr["mpo_code"]) or _clean_cell(mr["depot"]) or "Unknown"
+
                         mpo_list_month.append({
                             "rank": idx,
                             "mpo_code": mr["mpo_code"],
-                            "market": mr["market"] or mr["zone"] or "Unknown",
+                            "market": raw_mkt,
                             "zone": mr["zone"] or "Unknown",
                             "depot": mr["depot"] or "Unknown",
                             "units": round(float(mr["units"] or 0), 2),

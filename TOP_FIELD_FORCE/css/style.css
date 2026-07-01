@@ -1,7 +1,9 @@
 /* ==========================================================================
-   ALCO PHARMA // YEAR 50,000 QUANTUM NEXUS - EXTREME BEAUTIFICATION CSS
+   ALCO PHARMA // ADVANCED FIELD FORCE ANALYTICS - HIGH PERFORMANCE CSS
    Aesthetics: Deep Cyber Space Void, Neon Hologram Glows, Laser Scanners,
                Sci-Fi Bracket Corners, Animated Plasma Gradients, Google Fonts
+   Performance: GPU Hardware Acceleration (translateZ/will-change), 
+                Fixed Compositor Layers, Optimized Reflows (60 FPS Smooth)
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=Outfit:wght@400;600;700&display=swap');
@@ -46,14 +48,6 @@
 
 body {
     background-color: var(--bg-main);
-    background-image: 
-        radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.15) 0px, transparent 45%),
-        radial-gradient(circle at 85% 75%, rgba(6, 182, 212, 0.15) 0px, transparent 45%),
-        radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.1) 0px, transparent 50%),
-        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
-    background-attachment: fixed;
     color: var(--text-primary);
     font-family: var(--font-body);
     font-size: 14px;
@@ -62,6 +56,25 @@ body {
     display: flex;
     flex-direction: column;
     overflow-x: hidden;
+    position: relative;
+}
+
+/* GPU Composited Background Layer (Eliminates Scroll Lag 100%) */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-image: 
+        radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.15) 0px, transparent 45%),
+        radial-gradient(circle at 85% 75%, rgba(6, 182, 212, 0.15) 0px, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.1) 0px, transparent 50%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+    z-index: -1;
+    pointer-events: none;
+    will-change: transform;
+    transform: translateZ(0);
 }
 
 /* ==========================================
@@ -83,8 +96,8 @@ body {
 }
 
 @keyframes float-node {
-    0%, 100% { transform: translateY(0px) scale(1); }
-    50% { transform: translateY(-5px) scale(1.02); }
+    0%, 100% { transform: translate3d(0, 0px, 0); }
+    50% { transform: translate3d(0, -4px, 0); }
 }
 
 /* ==========================================
@@ -92,14 +105,16 @@ body {
    ========================================== */
 .glass {
     background: var(--bg-panel);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border: 1px solid var(--border-color);
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
     border-radius: var(--radius-lg);
     position: relative;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
     overflow: hidden;
+    will-change: transform;
+    transform: translateZ(0);
 }
 
 .glass::before {
@@ -113,7 +128,7 @@ body {
 .glass:hover {
     border-color: var(--border-highlight);
     box-shadow: var(--shadow-purple);
-    transform: translateY(-2px);
+    transform: translate3d(0, -2px, 0);
 }
 
 /* Sci-Fi Corner Brackets */
@@ -126,7 +141,7 @@ body {
     border-right: 2px solid var(--neon-cyan);
     opacity: 0.5;
     pointer-events: none;
-    transition: all 0.3s;
+    transition: width 0.3s ease, height 0.3s ease, border-color 0.3s ease, opacity 0.3s ease;
 }
 
 .glass:hover::after {
@@ -149,6 +164,8 @@ body {
     border: 1px solid var(--border-color);
     overflow-x: auto;
     box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+    will-change: transform;
+    transform: translateZ(0);
 }
 
 .tab-link {
@@ -165,7 +182,7 @@ body {
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.25s ease;
     white-space: nowrap;
     position: relative;
     overflow: hidden;
@@ -210,7 +227,7 @@ body {
 }
 
 /* ==========================================
-   SPOTLIGHT CARDS (EXTREME YEAR 50,000 FX)
+   SPOTLIGHT CARDS (HIGH PERFORMANCE FX)
    ========================================== */
 .spotlight-grid {
     display: grid;
@@ -228,19 +245,15 @@ body {
     border-radius: var(--radius-lg);
     position: relative;
     box-shadow: 0 10px 30px rgba(0,0,0,0.7), inset 0 0 20px rgba(6, 182, 212, 0.05);
-    transition: all 0.4s ease;
-    animation: float-node 6s ease-in-out infinite;
+    transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    will-change: transform;
+    transform: translateZ(0);
 }
 
-.spotlight-card:nth-child(2) { animation-delay: 1.2s; }
-.spotlight-card:nth-child(3) { animation-delay: 2.4s; }
-.spotlight-card:nth-child(4) { animation-delay: 3.6s; }
-.spotlight-card:nth-child(5) { animation-delay: 4.8s; }
-
 .spotlight-card:hover {
-    transform: translateY(-8px) scale(1.02);
+    transform: translate3d(0, -6px, 0);
     border-color: var(--neon-cyan);
-    box-shadow: 0 0 35px rgba(6, 182, 212, 0.5), inset 0 0 25px rgba(6, 182, 212, 0.2);
+    box-shadow: 0 0 30px rgba(6, 182, 212, 0.5), inset 0 0 25px rgba(6, 182, 212, 0.2);
 }
 
 .spotlight-header {
@@ -324,7 +337,7 @@ body {
 }
 
 /* ==========================================
-   NEON BADGES & QUANTUM PILLS
+   NEON BADGES & PILLS
    ========================================== */
 .badge-party {
     background: rgba(16, 185, 129, 0.2);
@@ -388,7 +401,7 @@ body {
     letter-spacing: 1px;
     text-transform: uppercase;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -397,28 +410,16 @@ body {
     box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
 }
 
-.btn-action::before {
-    content: '';
-    position: absolute;
-    top: 0; left: -100%; width: 100%; height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    transition: left 0.5s ease;
-}
-
-.btn-action:hover::before {
-    left: 100%;
-}
-
 .btn-action:hover {
     background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple));
     border-color: #fff;
     color: #fff;
     box-shadow: 0 0 25px rgba(6, 182, 212, 0.8), 0 0 35px rgba(168, 85, 247, 0.6);
-    transform: scale(1.05);
+    transform: scale(1.03);
 }
 
 /* ==========================================
-   HOLOGRAPHIC DATA TABLES
+   HOLOGRAPHIC DATA TABLES (GPU OPTIMIZED)
    ========================================== */
 .table-container {
     overflow-x: auto;
@@ -427,6 +428,8 @@ body {
     background: rgba(6, 10, 20, 0.85);
     box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 30px rgba(6, 182, 212, 0.05);
     position: relative;
+    will-change: transform;
+    transform: translateZ(0);
 }
 
 /* Laser Scanner Effect inside Table Container */
@@ -439,6 +442,7 @@ body {
     animation: laser-scan 4s linear infinite;
     pointer-events: none;
     z-index: 5;
+    will-change: top, opacity;
 }
 
 table {
@@ -471,12 +475,12 @@ td {
     font-size: 0.95rem;
     font-weight: 600;
     color: #e2e8f0;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Row Hover Laser Glow */
 tr {
-    transition: all 0.25s ease;
+    transition: background-color 0.2s ease;
 }
 
 tr:hover td {
@@ -492,21 +496,22 @@ tr:hover td:first-child {
 }
 
 /* ==========================================
-   MODAL OVERLAY & CYBER HUD WINDOW
+   MODAL OVERLAY & HUD WINDOW
    ========================================== */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(2, 4, 10, 0.85);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
     opacity: 0;
     pointer-events: none;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: opacity 0.25s ease;
+    will-change: opacity;
 }
 
 .modal-overlay.active {
@@ -521,12 +526,13 @@ tr:hover td:first-child {
     overflow-y: auto;
     padding: 2.5rem;
     position: relative;
-    transform: scale(0.9);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: scale(0.95);
+    transition: transform 0.25s ease;
     background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(6, 10, 20, 0.98));
     border: 2px solid var(--neon-cyan);
     border-radius: var(--radius-lg);
     box-shadow: 0 0 50px rgba(6, 182, 212, 0.5), inset 0 0 30px rgba(168, 85, 247, 0.2);
+    will-change: transform;
 }
 
 .modal-overlay.active .modal-content {

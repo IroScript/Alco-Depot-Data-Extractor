@@ -386,6 +386,89 @@ function renderCharts() {
         usePointStyle: true
     };
 
+    // 0. Futuristic Velocity Matrix (Hero Left Panel)
+    const ctxMatrix = document.getElementById("chart-futuristic-matrix");
+    if (ctxMatrix) {
+        if (charts.matrix) charts.matrix.destroy();
+        charts.matrix = new Chart(ctxMatrix, {
+            type: "line",
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: "Net Revenue Trajectory (৳)",
+                        data: monthlySales,
+                        borderColor: "#06b6d4",
+                        backgroundColor: (context) => {
+                            const ctx = context.chart.ctx;
+                            const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+                            gradient.addColorStop(0, "rgba(6, 182, 212, 0.45)");
+                            gradient.addColorStop(1, "rgba(6, 182, 212, 0.0)");
+                            return gradient;
+                        },
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.45,
+                        pointBackgroundColor: "#06b6d4",
+                        pointBorderColor: "#fff",
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 9,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: "Party Visits Frequency 👥",
+                        data: monthlyParties,
+                        borderColor: "#a855f7",
+                        backgroundColor: (context) => {
+                            const ctx = context.chart.ctx;
+                            const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+                            gradient.addColorStop(0, "rgba(168, 85, 247, 0.35)");
+                            gradient.addColorStop(1, "rgba(168, 85, 247, 0.0)");
+                            return gradient;
+                        },
+                        borderWidth: 3,
+                        borderDash: [4, 4],
+                        fill: true,
+                        tension: 0.45,
+                        pointBackgroundColor: "#a855f7",
+                        pointBorderColor: "#fff",
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 9,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: commonTooltip
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        position: 'left',
+                        grid: { color: "rgba(6, 182, 212, 0.15)" },
+                        ticks: { color: "#06b6d4", font: { family: 'Orbitron', size: 11 } }
+                    },
+                    y1: {
+                        type: 'linear',
+                        position: 'right',
+                        grid: { display: false },
+                        ticks: { color: "#a855f7", font: { family: 'Orbitron', size: 11 } }
+                    },
+                    x: {
+                        grid: { color: "rgba(255, 255, 255, 0.05)" },
+                        ticks: { color: "#cbd5e1", font: { family: 'Orbitron', size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+
     // 1. Overview Monthly Trajectory
     const ctxOverview = document.getElementById("chart-overview-monthly");
     if (ctxOverview) {

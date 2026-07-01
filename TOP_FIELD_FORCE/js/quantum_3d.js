@@ -1,9 +1,7 @@
 /* ==========================================================================
-   ALCO PHARMA // 3D NETWORK & DEPOT VISUALIZATION ENGINE (GPU OPTIMIZED)
+   ALCO PHARMA // 3D EMBLEM & NETWORK ENGINE (NAVBAR COMPACT EDITION)
    Powered by Three.js & WebGL
-   Simulates Field Force Interconnections & Regional Depot Grid
-   Performance: IntersectionObserver (Pauses off-screen), Scoped Mouse FX,
-                Optimized PixelRatio & BufferGeometry (60 FPS Ultra Smooth)
+   Simulates Field Force Interconnections as a live holographic brand emblem
    ========================================================================== */
 
 let scene, camera, renderer, particles, globe, lines;
@@ -20,32 +18,31 @@ function initQuantum3D() {
 
     // 1. Scene Setup
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x02040a, 0.0022);
 
-    // 2. Camera Setup
+    // 2. Camera Setup for compact 56x56 container
     camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
-    camera.position.z = 250;
+    camera.position.z = 180;
 
-    // 3. Renderer Setup (Cap pixelRatio at 1.5 for ultra-smooth 60 FPS on Retina/4K displays)
+    // 3. Renderer Setup
     renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "high-performance" });
     renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
     // 4. Create Core Globe (Inner Sphere)
-    const globeGeometry = new THREE.SphereGeometry(70, 24, 24); // Optimized geometry segments
+    const globeGeometry = new THREE.SphereGeometry(65, 16, 16);
     const globeMaterial = new THREE.MeshBasicMaterial({
         color: 0x06b6d4,
         wireframe: true,
         transparent: true,
-        opacity: 0.15
+        opacity: 0.25
     });
     globe = new THREE.Mesh(globeGeometry, globeMaterial);
     scene.add(globe);
 
     // 5. Create Particle Cloud (Field Force Nodes)
-    const particleCount = 450; // Optimized from 600 for zero GPU stutter
+    const particleCount = 180; // Optimized for compact navbar badge
     const geometry = new THREE.BufferGeometry();
     const positions = new Float32Array(particleCount * 3);
     const colors = new Float32Array(particleCount * 3);
@@ -62,7 +59,7 @@ function initQuantum3D() {
         const v = Math.random();
         const theta = u * 2.0 * Math.PI;
         const phi = Math.acos(2.0 * v - 1.0);
-        const r = 75 + Math.random() * 80;
+        const r = 70 + Math.random() * 50;
 
         positions[i] = r * Math.sin(phi) * Math.cos(theta);
         positions[i + 1] = r * Math.sin(phi) * Math.sin(theta);
@@ -81,30 +78,30 @@ function initQuantum3D() {
         size: 3.5,
         vertexColors: true,
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.9,
         blending: THREE.AdditiveBlending
     });
 
     particles = new THREE.Points(geometry, particleMaterial);
     scene.add(particles);
 
-    // 6. Create Interconnection Beams (Dijkstra Network Graph)
+    // 6. Create Interconnection Beams
     const lineMaterial = new THREE.LineBasicMaterial({
         color: 0x22d3ee,
         transparent: true,
-        opacity: 0.18,
+        opacity: 0.25,
         blending: THREE.AdditiveBlending
     });
 
     const lineGeometry = new THREE.BufferGeometry();
     const linePositions = [];
 
-    for (let i = 0; i < particleCount; i += 4) {
+    for (let i = 0; i < particleCount; i += 3) {
         const x1 = positions[i * 3];
         const y1 = positions[i * 3 + 1];
         const z1 = positions[i * 3 + 2];
 
-        const nextIdx = ((i + 3) % particleCount) * 3;
+        const nextIdx = ((i + 2) % particleCount) * 3;
         const x2 = positions[nextIdx];
         const y2 = positions[nextIdx + 1];
         const z2 = positions[nextIdx + 2];
@@ -117,37 +114,22 @@ function initQuantum3D() {
     lines = new THREE.LineSegments(lineGeometry, lineMaterial);
     scene.add(lines);
 
-    // 7. Scoped Event Listeners & IntersectionObserver
+    // 7. Event Listeners
     window.addEventListener('resize', onWindowResize, { passive: true });
     
-    // Scoped mouse move: only track when cursor is inside the hero container
-    const heroSection = container.closest('.grid');
-    if (heroSection) {
-        heroSection.addEventListener('mousemove', onMouseMove, { passive: true });
-    } else {
-        container.addEventListener('mousemove', onMouseMove, { passive: true });
-    }
+    // Slight tilt when hovering the navbar emblem
+    container.addEventListener('mousemove', (e) => {
+        const rect = container.getBoundingClientRect();
+        mouseX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+        mouseY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+    }, { passive: true });
 
-    // IntersectionObserver: Automatically pause Three.js rendering when canvas is scrolled out of view!
-    if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                isRendering = entry.isIntersecting;
-                if (isRendering && !animationFrameId) {
-                    animate();
-                }
-            });
-        }, { threshold: 0.05 });
-        observer.observe(container);
-    }
+    container.addEventListener('mouseleave', () => {
+        mouseX = 0;
+        mouseY = 0;
+    }, { passive: true });
 
     animate();
-}
-
-function onMouseMove(event) {
-    if (!isRendering) return;
-    mouseX = (event.clientX - window.innerWidth / 2) * 0.001;
-    mouseY = (event.clientY - window.innerHeight / 2) * 0.001;
 }
 
 function onWindowResize() {
@@ -159,29 +141,24 @@ function onWindowResize() {
 }
 
 function animate() {
-    if (!isRendering) {
-        animationFrameId = null;
-        return; // Stop CPU/GPU loop when scrolled away!
-    }
-
     animationFrameId = requestAnimationFrame(animate);
 
-    targetRotationX += (mouseX - targetRotationX) * 0.05;
-    targetRotationY += (mouseY - targetRotationY) * 0.05;
+    targetRotationX += (mouseX - targetRotationX) * 0.08;
+    targetRotationY += (mouseY - targetRotationY) * 0.08;
 
     if (globe) {
-        globe.rotation.y += 0.003;
-        globe.rotation.x += 0.001;
+        globe.rotation.y += 0.006;
+        globe.rotation.x += 0.002;
     }
 
     if (particles) {
-        particles.rotation.y -= 0.002;
+        particles.rotation.y -= 0.004;
         particles.rotation.x += targetRotationY * 0.5;
         particles.rotation.y += targetRotationX * 0.5;
     }
 
     if (lines) {
-        lines.rotation.y -= 0.002;
+        lines.rotation.y -= 0.004;
         lines.rotation.x += targetRotationY * 0.5;
         lines.rotation.y += targetRotationX * 0.5;
     }

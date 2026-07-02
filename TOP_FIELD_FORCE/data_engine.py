@@ -3,6 +3,7 @@ import sys
 import sqlite3
 import json
 from datetime import datetime
+import openpyxl
 
 # Define base directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -12,33 +13,121 @@ DATA_OUT_DIR = os.path.join(BASE_DIR, "data")
 
 os.makedirs(DATA_OUT_DIR, exist_ok=True)
 
-# 6 Strategic Product Groups defined by user
-STRATEGIC_6_MAPPING = {
-    'ALAGRA 120 TAB': ['ALK1', 'ALM1', 'ZA04', 'ZA05'],
-    'ALAGRA 180 TAB': ['ALN1', 'ALP1'],
-    'AMDIN PLUS TAB': ['AMK3', 'AMM3', 'ZA11'],
-    'DERMA CAP': ['DEJ1', 'DEK1', 'DEM1', 'DEN1', 'ZD01'],
-    'MOKAST 10 TAB': ['MON1', 'MOO1', 'MOP1'],
-    'TOLEC TAB': ['TOL2']
-}
+# Google Sheets primary loader for product mappings (gid=1219133636)
+def _try_google_sheet_products():
+    if hasattr(_try_google_sheet_products, "_cache"):
+        return _try_google_sheet_products._cache
+    try:
+        fe_dir = os.path.join(PARENT_DIR, "FieldEdit")
+        config_path = os.path.join(fe_dir, "config.json")
+        if not os.path.exists(config_path):
+            return None, None
+        with open(config_path, 'r') as f:
+            cfg = json.load(f)
+        creds_path = cfg.get('credentials_file', 'alco-pharma-cf4b49e394bb.json')
+        if not os.path.isabs(creds_path):
+            creds_path = os.path.join(fe_dir, creds_path)
+        if not os.path.exists(creds_path):
+            return None, None
 
-def load_excel_mappings():
+        import gspread
+        from google.oauth2.service_account import Credentials
+        scopes = [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive'
+        ]
+        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        client = gspread.authorize(creds)
+        sheet = client.open_by_key('1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
+        ws = sheet.get_worksheet_by_id(1219133636)
+        if not ws:
+            return None, None
+        
+        rows = ws.get_all_records()
+        code_to_subgroup = {}
+        dyn_s6 = {}
+        last_code = ""
+        for r in rows:
+            code = str(r.get('Product_Code', '')).strip().upper()
+            if code and code != "NAN":
+                last_code = code
+            elif last_code:
+                code = last_code
+                
+            subg = str(r.get('SUB_GROUP_STANDARD', '')).strip()
+            if code and subg and subg != "NAN":
+                code_to_subgroup[code] = subg
+                
+            s6_val = str(r.get('TOP_50_CALCULATION', '')).strip()
+            if code and s6_val and s6_val != "NAN":
+                dyn_s6.setdefault(s6_val, []).append(code)
+                
+        strategic_6_map = {k: sorted(list(set(v))) for k, v in dyn_s6.items()} if dyn_s6 else None
+        print(f"Live Google Sheet (gid=1219133636): loaded {len(code_to_subgroup)} product subgroups and {len(strategic_6_map or {})} strategic groups.")
+        _try_google_sheet_products._cache = (code_to_subgroup, strategic_6_map)
+        return code_to_subgroup, strategic_6_map
+    except Exception as e:
+        print(f"Note: Live Google Sheet for products unavailable ({str(e)[:80]}). Using resilient fallback.")
+        _try_google_sheet_products._cache = (None, None)
+        return None, None
+
+# 6 Strategic Product Groups defined by user (dynamically loaded from Google Sheet / TOP_50_CALCULATION column)
+def load_strategic_6_mapping():
+    _, gs_s6 = _try_google_sheet_products()
+    if gs_s6:
+        return gs_s6
+
+    # Resilient fallback if Google API offline
     excel_path = os.path.join(PARENT_DIR, "PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx")
-    code_to_subgroup = {}
+    mapping = {
+        'ALAGRA 120 TAB': ['ALK1', 'ALM1', 'ZA04', 'ZA05'],
+        'ALAGRA 180 TAB': ['ALN1', 'ALP1'],
+        'AMDIN PLUS TAB': ['AMK3', 'AMM3', 'ZA11'],
+        'DERMA CAP': ['DEJ1', 'DEK1', 'DEM1', 'DEN1', 'ZD01'],
+        'MOKAST 10 TAB': ['MON1', 'MOO1', 'MOP1'],
+        'TOLEC TAB': ['TOL2']
+    }
     if os.path.exists(excel_path):
         try:
             import pandas as pd
-            df_map = pd.read_excel(excel_path)
-            df_map["Product_Code_ffill"] = df_map["Product_Code"].ffill()
-            for _, row in df_map.iterrows():
-                code = str(row["Product_Code_ffill"]).strip().upper()
-                subg = str(row["SUB_GROUP_STANDARD"]).strip() if pd.notna(row["SUB_GROUP_STANDARD"]) else ""
-                if code and code != "NAN" and subg and subg != "nan":
-                    code_to_subgroup[code] = subg
-        except Exception as e:
-            print(f"Note: Could not read Excel mapping via pandas: {e}")
+            df = pd.read_excel(excel_path)
+            if "TOP_50_CALCULATION" in df.columns:
+                df["Product_Code_ffill"] = df["Product_Code"].ffill()
+                dyn_map = {}
+                for _, row in df.dropna(subset=["TOP_50_CALCULATION"]).iterrows():
+                    code = str(row["Product_Code_ffill"]).strip().upper()
+                    grp = str(row["TOP_50_CALCULATION"]).strip()
+                    if code and code != "NAN" and grp and grp != "nan":
+                        dyn_map.setdefault(grp, []).append(code)
+                if dyn_map:
+                    mapping = {k: sorted(list(set(v))) for k, v in dyn_map.items()}
+        except Exception:
+            pass
+    return mapping
+
+STRATEGIC_6_MAPPING = load_strategic_6_mapping()
+
+def load_excel_mappings():
+    gs_subg, _ = _try_google_sheet_products()
+    code_to_subgroup = gs_subg or {}
+    
+    if not code_to_subgroup:
+        # Resilient fallback if Google API offline
+        excel_path = os.path.join(PARENT_DIR, "PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx")
+        if os.path.exists(excel_path):
+            try:
+                import pandas as pd
+                df_map = pd.read_excel(excel_path)
+                df_map["Product_Code_ffill"] = df_map["Product_Code"].ffill()
+                for _, row in df_map.iterrows():
+                    code = str(row["Product_Code_ffill"]).strip().upper()
+                    subg = str(row["SUB_GROUP_STANDARD"]).strip() if pd.notna(row["SUB_GROUP_STANDARD"]) else ""
+                    if code and code != "NAN" and subg and subg != "nan":
+                        code_to_subgroup[code] = subg
+            except Exception as e:
+                print(f"Note: Could not read fallback mapping via pandas: {e}")
             
-    # Always ensure strategic 6 mappings exist
+    # Always ensure strategic 6 mappings exist in subgroup dict
     for grp_name, codes in STRATEGIC_6_MAPPING.items():
         for c in codes:
             code_to_subgroup[c] = grp_name
@@ -153,8 +242,8 @@ def _try_google_sheet_market_map(mpo_map):
             mkt = _clean_market_name(gv(row, 3))  # MARKET (idx3)
             if not mkt:
                 continue
-            # All code aliases present in the sheet schema
-            for ci in (2, 4, 12, 13, 15):  # NEW CODE, OLD CODE, DREAM, DEPOTMPO, APP CODE FINAL
+            # Strictly use Dream Apps MPO Code (idx 12) per user instruction
+            for ci in (12,):  # DREAM APPS MPO CODE ONLY
                 code = _clean_cell(gv(row, ci))
                 if code and code not in mpo_map:
                     mpo_map[code] = mkt
@@ -194,7 +283,7 @@ def load_mpo_market_lookup():
         mpo_map,
         os.path.join(PARENT_DIR, "FieldEdit", "Archive", "FIELD.xlsx"),
         header_row=1,
-        code_cols=[3, 5, 13, 14, 16],   # NEW CODE, OLD CODE, DREAM, DEPOTMPO, APP CODE FINAL
+        code_cols=[13],                  # DREAM APPS MPO CODE ONLY (strictly col M per user instruction)
         market_col=4,                    # MARKET
     )
 
@@ -228,6 +317,134 @@ def load_mpo_market_lookup():
 
     return mpo_map
 
+
+def load_vacant_mpos():
+    """
+    Returns a set of canonical Dream Apps MPO Codes that are marked as VACANT
+    in the master field forces sheets (checking column I / VACANT (JUN'26)? / VACANT (JAN'26)?).
+    Per user instruction: Vacant status is strictly determined by Column I, never by
+    ambiguous text labels like 'DK.A' or 'Vacant' in market names.
+    """
+    vacant_codes = set()
+    
+    # 1. Try Live Google Sheet
+    try:
+        import json
+        fe_dir = os.path.join(PARENT_DIR, "FieldEdit")
+        config_path = os.path.join(fe_dir, "config.json")
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                cfg = json.load(f)
+            creds_path = cfg.get('credentials_file', 'alco-pharma-cf4b49e394bb.json')
+            if not os.path.isabs(creds_path):
+                creds_path = os.path.join(fe_dir, creds_path)
+            if os.path.exists(creds_path):
+                import gspread
+                from google.oauth2.service_account import Credentials
+                scopes = [
+                    'https://www.googleapis.com/auth/spreadsheets',
+                    'https://www.googleapis.com/auth/drive'
+                ]
+                creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+                client = gspread.authorize(creds)
+                sheet = client.open_by_key(cfg['spreadsheet_id'])
+                worksheet = None
+                target_gid = str(cfg.get('gid', '1918615875'))
+                for ws in sheet.worksheets():
+                    if str(ws.id) == target_gid:
+                        worksheet = ws
+                        break
+                if not worksheet:
+                    worksheet = sheet.get_worksheet(0)
+                all_values = worksheet.get_all_values()
+                
+                def gv(row, idx):
+                    return row[idx] if idx < len(row) else ""
+                
+                for row in all_values[1:]:
+                    vac_val = _clean_cell(gv(row, 8)) # Col I (index 8)
+                    if vac_val in ('Y', 'YES', 'TRUE', '1'):
+                        code = _clean_cell(gv(row, 12)) # Dream Apps MPO Code (index 12)
+                        if code:
+                            vacant_codes.add(code)
+    except Exception as e:
+        pass
+
+    # 2. Try FIELD.xlsx
+    try:
+        import openpyxl
+        fpath = os.path.join(PARENT_DIR, "FieldEdit", "Archive", "FIELD.xlsx")
+        if os.path.exists(fpath):
+            wb = openpyxl.load_workbook(fpath, data_only=True)
+            ws = wb.active
+            for r in range(2, ws.max_row + 1):
+                vac_val = _clean_cell(ws.cell(row=r, column=9).value) # Col I (column 9)
+                if vac_val in ('Y', 'YES', 'TRUE', '1'):
+                    code = _clean_cell(ws.cell(row=r, column=13).value) # Dream Apps MPO Code (col 13)
+                    if code:
+                        vacant_codes.add(code)
+    except Exception as e:
+        pass
+
+    return vacant_codes
+
+
+def load_valid_master_filters(mpo_market_map):
+    """
+    Returns (valid_mpos, valid_fms, valid_zones) loaded strictly from Master Sheets
+    (Google Sheet, FIELD.xlsx, 03_Zone_Wise, 02E).
+    This ensures we filter out all non-field / institutional / bulk DB records like D203, D204
+    and dummy text strings across all queries.
+    """
+    valid_mpos = set(mpo_market_map.keys())
+    valid_fms = set()
+    valid_zones = set()
+
+    # 1. From FIELD.xlsx
+    fe_xlsx = os.path.join(PARENT_DIR, "FieldEdit", "Archive", "FIELD.xlsx")
+    if os.path.exists(fe_xlsx):
+        try:
+            wb = openpyxl.load_workbook(fe_xlsx, data_only=True)
+            ws = wb.active
+            for r in range(2, ws.max_row + 1):
+                c13 = _clean_cell(ws.cell(row=r, column=13).value)
+                if c13:
+                    valid_mpos.add(c13)
+                c7 = _clean_cell(ws.cell(row=r, column=7).value)
+                if c7 and "VACANT" not in c7.upper():
+                    valid_fms.add(c7)
+                c2 = _clean_cell(ws.cell(row=r, column=2).value)
+                if c2:
+                    valid_zones.add(c2)
+        except Exception:
+            pass
+
+    # 2. From 03_Zone_Wise
+    for path in [os.path.join(PARENT_DIR, "03_Zone_Wise_Sales_Grouped_Report_24_Jun_2026_02.14_PM.xlsx"),
+                 os.path.join(PARENT_DIR, "archive", "03_Zone_Wise_Sales_Grouped_Report_24_Jun_2026_02.14_PM.xlsx"),
+                 os.path.join(PARENT_DIR, "archive", "03_Zone_Wise_Sales_Grouped_Report_23_Jun_2026_09.30_AM.xlsx")]:
+        if os.path.exists(path):
+            try:
+                wb = openpyxl.load_workbook(path, data_only=True)
+                ws = wb.active
+                for r in range(2, ws.max_row + 1):
+                    c9 = _clean_cell(ws.cell(row=r, column=9).value)
+                    if c9:
+                        valid_mpos.add(c9)
+                    c4 = _clean_cell(ws.cell(row=r, column=4).value)
+                    if c4:
+                        fm_part = c4.split(',')[0].strip()
+                        if fm_part and "VACANT" not in fm_part.upper():
+                            valid_fms.add(fm_part)
+                    c2 = _clean_cell(ws.cell(row=r, column=2).value)
+                    if c2:
+                        valid_zones.add(c2)
+            except Exception:
+                pass
+
+    return sorted(list(valid_mpos)), sorted(list(valid_fms)), sorted(list(valid_zones))
+
+
 class DataEngine:
     def __init__(self, db_path=DEFAULT_DB_PATH):
         self.db_path = db_path
@@ -247,23 +464,12 @@ class DataEngine:
         cur = conn.cursor()
         
         mpo_market_map = load_mpo_market_lookup()
-
-        # CRITICAL: Enrich with the DB's own market data. For MPO codes where some
-        # rows have a non-null market, the most common market is the real answer
-        # (the DB already got it from init_db.py's LEFT JOIN against mpo_code.xlsx).
-        # Only codes with ALL-null rows need the external lookup.
-        cur.execute("""
-            SELECT mpo_code, market, COUNT(*) as cnt
-            FROM sales
-            WHERE market IS NOT NULL AND TRIM(market) != ''
-            GROUP BY mpo_code, market
-            ORDER BY mpo_code, cnt DESC
-        """)
-        for row in cur.fetchall():
-            code = _clean_cell(row[0])
-            mkt = _clean_market_name(row[1])
-            if code and mkt and code not in mpo_market_map:
-                mpo_market_map[code] = mkt
+        vacant_mpo_codes = load_vacant_mpos()
+        valid_mpos, valid_fms, valid_zones = load_valid_master_filters(mpo_market_map)
+        
+        ph_mpos = ",".join(["?"] * len(valid_mpos))
+        ph_fms = ",".join(["?"] * len(valid_fms))
+        ph_zones = ",".join(["?"] * len(valid_zones))
 
         data = {
             "meta": {
@@ -283,7 +489,7 @@ class DataEngine:
 
         try:
             # 1. OVERVIEW KPIS
-            cur.execute("""
+            cur.execute(f"""
                 SELECT 
                     SUM(line_amount) as total_sales,
                     COUNT(DISTINCT invoice_no) as total_invoices,
@@ -292,7 +498,8 @@ class DataEngine:
                     COUNT(DISTINCT product_code) as total_products,
                     COUNT(DISTINCT fm_am) as total_fms
                 FROM sales
-            """)
+                WHERE mpo_code IN ({ph_mpos})
+            """, valid_mpos)
             row = cur.fetchone()
             total_sales = float(row["total_sales"] or 0)
             total_invoices = int(row["total_invoices"] or 0)
@@ -309,7 +516,7 @@ class DataEngine:
             }
 
             # 2. MONTHLY TRENDS (Overall)
-            cur.execute("""
+            cur.execute(f"""
                 SELECT 
                     month,
                     SUM(line_amount) as sales,
@@ -317,9 +524,10 @@ class DataEngine:
                     COUNT(DISTINCT customer_id) as parties,
                     SUM(quantity) as quantity
                 FROM sales
+                WHERE mpo_code IN ({ph_mpos})
                 GROUP BY month
                 ORDER BY month ASC
-            """)
+            """, valid_mpos)
             for r in cur.fetchall():
                 data["monthly_trends"].append({
                     "month": r["month"],
@@ -332,7 +540,7 @@ class DataEngine:
             # 3. TOP 50 PRODUCTS CALCULATION (Grouped/merged by SUB_GROUP_STANDARD as per user rule)
             code_to_subgroup = load_excel_mappings()
 
-            cur.execute("""
+            cur.execute(f"""
                 SELECT 
                     product_code,
                     MAX(product_name) as product_name,
@@ -341,9 +549,9 @@ class DataEngine:
                     COUNT(DISTINCT invoice_no) as total_invoices,
                     COUNT(DISTINCT customer_id) as total_parties
                 FROM sales
-                WHERE product_code IS NOT NULL AND product_code != ''
+                WHERE product_code IS NOT NULL AND product_code != '' AND mpo_code IN ({ph_mpos})
                 GROUP BY product_code
-            """)
+            """, valid_mpos)
             raw_prod_rows = cur.fetchall()
             
             # Group/merge by SUB_GROUP_STANDARD
@@ -379,10 +587,10 @@ class DataEngine:
                         COUNT(DISTINCT invoice_no) as m_invoices,
                         COUNT(DISTINCT customer_id) as m_parties
                     FROM sales
-                    WHERE product_code IN ({placeholders})
+                    WHERE product_code IN ({placeholders}) AND mpo_code IN ({ph_mpos})
                     GROUP BY month
                     ORDER BY month ASC
-                """, g["codes"])
+                """, (*g["codes"], *valid_mpos))
                 m_breakdown = []
                 for mb in cur.fetchall():
                     m_breakdown.append({
@@ -409,7 +617,7 @@ class DataEngine:
                     data["top_5_products_deep"].append(prod_item)
 
             # 4. TOP 50 MPO CALCULATION
-            cur.execute("""
+            cur.execute(f"""
                 SELECT 
                     mpo_code,
                     MAX(zone) as zone,
@@ -420,11 +628,11 @@ class DataEngine:
                     COUNT(DISTINCT invoice_no) as total_invoices,
                     COUNT(DISTINCT customer_id) as total_parties
                 FROM sales
-                WHERE mpo_code IS NOT NULL AND mpo_code != ''
+                WHERE mpo_code IN ({ph_mpos})
                 GROUP BY mpo_code
                 ORDER BY SUM(line_amount) DESC
                 LIMIT 50
-            """)
+            """, valid_mpos)
             top_50_mpo_rows = cur.fetchall()
             
             for idx, r in enumerate(top_50_mpo_rows, 1):
@@ -463,6 +671,7 @@ class DataEngine:
                     "market": raw_mkt,
                     "zone": r["zone"] or "Unknown",
                     "depot": r["depot"] or "Unknown",
+                    "is_vacant": m_code in vacant_mpo_codes,
                     "total_sales": round(m_sales, 2),
                     "total_quantity": round(float(r["total_quantity"] or 0), 2),
                     "total_invoices": int(r["total_invoices"] or 0),
@@ -472,7 +681,7 @@ class DataEngine:
                 })
 
             # 5. TOP 20 FM (Field Managers)
-            cur.execute("""
+            cur.execute(f"""
                 SELECT 
                     fm_am as fm_name,
                     SUM(line_amount) as total_sales,
@@ -480,11 +689,11 @@ class DataEngine:
                     COUNT(DISTINCT invoice_no) as total_invoices,
                     COUNT(DISTINCT customer_id) as total_parties
                 FROM sales
-                WHERE fm_am IS NOT NULL AND fm_am != ''
+                WHERE fm_am IN ({ph_fms}) AND mpo_code IN ({ph_mpos})
                 GROUP BY fm_am
                 ORDER BY SUM(line_amount) DESC
                 LIMIT 20
-            """)
+            """, (*valid_fms, *valid_mpos))
             for idx, r in enumerate(cur.fetchall(), 1):
                 fm_sales = float(r["total_sales"] or 0)
                 data["top_20_fms"].append({
@@ -498,7 +707,7 @@ class DataEngine:
                 })
 
             # 6. TOP 5 SECTOR HEADS / ZONES
-            cur.execute("""
+            cur.execute(f"""
                 SELECT 
                     zone as sector_name,
                     SUM(line_amount) as total_sales,
@@ -506,11 +715,11 @@ class DataEngine:
                     COUNT(DISTINCT invoice_no) as total_invoices,
                     COUNT(DISTINCT customer_id) as total_parties
                 FROM sales
-                WHERE zone IS NOT NULL AND zone != ''
+                WHERE zone IN ({ph_zones}) AND mpo_code IN ({ph_mpos})
                 GROUP BY zone
                 ORDER BY SUM(line_amount) DESC
                 LIMIT 5
-            """)
+            """, (*valid_zones, *valid_mpos))
             for idx, r in enumerate(cur.fetchall(), 1):
                 sec_sales = float(r["total_sales"] or 0)
                 data["top_5_sector_heads"].append({
@@ -537,8 +746,8 @@ class DataEngine:
                         COUNT(DISTINCT customer_id) as tot_parties,
                         COUNT(DISTINCT invoice_no) as tot_invoices
                     FROM sales
-                    WHERE product_code IN ({placeholders})
-                """, codes)
+                    WHERE product_code IN ({placeholders}) AND mpo_code IN ({ph_mpos})
+                """, (*codes, *valid_mpos))
                 stat_row = cur.fetchone()
                 
                 # Top 50 MPOs overall sorted by UNIT DESC (Hierarchy by unit)
@@ -553,11 +762,11 @@ class DataEngine:
                         COUNT(DISTINCT invoice_no) as invoices,
                         SUM(line_amount) as sales
                     FROM sales
-                    WHERE product_code IN ({placeholders}) AND mpo_code IS NOT NULL AND mpo_code != ''
+                    WHERE product_code IN ({placeholders}) AND mpo_code IN ({ph_mpos})
                     GROUP BY mpo_code
                     ORDER BY SUM(quantity) DESC
                     LIMIT 50
-                """, codes)
+                """, (*codes, *valid_mpos))
                 
                 mpo_list_all = []
                 for idx, mr in enumerate(cur.fetchall(), 1):
@@ -595,6 +804,7 @@ class DataEngine:
                         "market": raw_mkt,
                         "zone": mr["zone"] or "Unknown",
                         "depot": mr["depot"] or "Unknown",
+                        "is_vacant": m_code in vacant_mpo_codes,
                         "units": round(float(mr["units"] or 0), 2),
                         "parties": int(mr["parties"] or 0),
                         "invoices": int(mr["invoices"] or 0),
@@ -616,11 +826,11 @@ class DataEngine:
                             COUNT(DISTINCT invoice_no) as invoices,
                             SUM(line_amount) as sales
                         FROM sales
-                        WHERE product_code IN ({placeholders}) AND month = ? AND mpo_code IS NOT NULL AND mpo_code != ''
+                        WHERE product_code IN ({placeholders}) AND month = ? AND mpo_code IN ({ph_mpos})
                         GROUP BY mpo_code
                         ORDER BY SUM(quantity) DESC
                         LIMIT 50
-                    """, (*codes, m_val))
+                    """, (*codes, m_val, *valid_mpos))
                     mpo_list_month = []
                     for idx, mr in enumerate(cur.fetchall(), 1):
                         raw_mkt = mr["market"]
@@ -633,6 +843,7 @@ class DataEngine:
                             "market": raw_mkt,
                             "zone": mr["zone"] or "Unknown",
                             "depot": mr["depot"] or "Unknown",
+                            "is_vacant": mr["mpo_code"] in vacant_mpo_codes,
                             "units": round(float(mr["units"] or 0), 2),
                             "parties": int(mr["parties"] or 0),
                             "invoices": int(mr["invoices"] or 0),

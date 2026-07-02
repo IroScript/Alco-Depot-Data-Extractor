@@ -612,24 +612,48 @@ def find_product_code(target_product, product_code_dict):
     else:
         return None
 
-# Load target to code mapping from Excel sheet
-excel_path = r'c:\Users\Irak\Desktop\Barishal April Data\PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'
+# Load target to code mapping from Google Sheet (gid=1219133636) or fallback to Excel
 excel_mapping = {}
-if os.path.exists(excel_path):
-    try:
-        df_excel = pd.read_excel(excel_path)
-        # We can map from Product_Name -> PRODUCT_CODE_ALL_ROW
-        df_excel['Product_Name_clean'] = df_excel['Product_Name'].astype(str).str.strip().str.upper()
-        df_excel['PRODUCT_CODE_ALL_ROW'] = df_excel['PRODUCT_CODE_ALL_ROW'].astype(str).str.strip().str.upper()
-        excel_mapping = dict(zip(df_excel['Product_Name_clean'], df_excel['PRODUCT_CODE_ALL_ROW']))
-        
-        # Also map from Product_Name.1 -> PRODUCT_CODE_ALL_ROW to be extra sure
-        df_excel['Product_Name.1_clean'] = df_excel['Product_Name.1'].astype(str).str.strip().str.upper()
-        for k, v in zip(df_excel['Product_Name.1_clean'], df_excel['PRODUCT_CODE_ALL_ROW']):
-            if k not in excel_mapping:
-                excel_mapping[k] = v
-    except Exception as ex:
-        print(f"Error loading Excel mapping for step 2: {ex}")
+try:
+    print("\n4.2: Loading Product Code mapping from Google Sheet (gid=1219133636)...")
+    config_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\config.json'
+    creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
+    scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    client = gspread.authorize(creds)
+    sheet = client.open_by_key('1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
+    ws_prod = sheet.get_worksheet_by_id(1219133636)
+    if ws_prod:
+        data_prod = ws_prod.get_all_records()
+        for r in data_prod:
+            pname = str(r.get('Product_Name', '')).strip().upper()
+            pcode = str(r.get('PRODUCT_CODE_ALL_ROW', '')).strip().upper()
+            if pname and pname != 'NAN' and pcode and pcode != 'NAN':
+                excel_mapping[pname] = pcode
+            pname1 = str(r.get('Product_Name.1', '')).strip().upper()
+            if pname1 and pname1 != 'NAN' and pcode and pcode != 'NAN' and pname1 not in excel_mapping:
+                excel_mapping[pname1] = pcode
+        print(f"  - Successfully loaded {len(excel_mapping)} product mappings from Google Sheet.")
+except Exception as ex:
+    print(f"  - Note: Could not load Product mapping from Google Sheet ({str(ex)[:80]}). Using resilient fallback...")
+
+if not excel_mapping:
+    excel_path = r'c:\Users\Irak\Desktop\Barishal April Data\PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'
+    if os.path.exists(excel_path):
+        try:
+            df_excel = pd.read_excel(excel_path)
+            # We can map from Product_Name -> PRODUCT_CODE_ALL_ROW
+            df_excel['Product_Name_clean'] = df_excel['Product_Name'].astype(str).str.strip().str.upper()
+            df_excel['PRODUCT_CODE_ALL_ROW'] = df_excel['PRODUCT_CODE_ALL_ROW'].astype(str).str.strip().str.upper()
+            excel_mapping = dict(zip(df_excel['Product_Name_clean'], df_excel['PRODUCT_CODE_ALL_ROW']))
+            
+            # Also map from Product_Name.1 -> PRODUCT_CODE_ALL_ROW to be extra sure
+            df_excel['Product_Name.1_clean'] = df_excel['Product_Name.1'].astype(str).str.strip().str.upper()
+            for k, v in zip(df_excel['Product_Name.1_clean'], df_excel['PRODUCT_CODE_ALL_ROW']):
+                if k not in excel_mapping:
+                    excel_mapping[k] = v
+        except Exception as ex:
+            print(f"Error loading Excel mapping for step 2: {ex}")
 
 target_to_code = {}
 for prod in product_cols:

@@ -507,36 +507,61 @@ class ZoneReportApp:
             idx_max = prod_name_counts.groupby('Product_Code')['count'].idxmax()
             standard_names = prod_name_counts.loc[idx_max, ['Product_Code', 'Product_Name']]
             
-            # Load subgroup mapping and standard name mapping from excel file
+            # Load subgroup mapping and standard name mapping from Google Sheet (gid=1219133636) or fallback to excel file
             subgroup_mapping = {}
             standard_name_mapping = {}
-            excel_path = None
-            paths_to_try = [
-                os.path.join(os.path.dirname(os.path.abspath(__file__)), 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'),
-                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'),
-                r'c:\Users\Irak\Desktop\Barishal April Data\PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'
-            ]
-            for p in paths_to_try:
-                if os.path.exists(p):
-                    excel_path = p
-                    break
-            if excel_path:
-                try:
-                    df_excel = pd.read_excel(excel_path)
-                    
-                    # 1. Map PRODUCT_CODE_ALL_ROW -> SUB_GROUP_STANDARD (takes the first unique match)
-                    df_sub = df_excel.dropna(subset=['PRODUCT_CODE_ALL_ROW', 'SUB_GROUP_STANDARD']).copy()
-                    df_sub['PRODUCT_CODE_ALL_ROW'] = df_sub['PRODUCT_CODE_ALL_ROW'].astype(str).str.strip().str.upper()
-                    df_sub['SUB_GROUP_STANDARD'] = df_sub['SUB_GROUP_STANDARD'].astype(str).str.strip()
-                    subgroup_mapping = dict(zip(df_sub['PRODUCT_CODE_ALL_ROW'], df_sub['SUB_GROUP_STANDARD']))
-                    
-                    # 2. Map Product_Code -> Product_Name (from rows where Product_Code is NOT null)
-                    df_name = df_excel.dropna(subset=['Product_Code', 'Product_Name']).copy()
-                    df_name['Product_Code'] = df_name['Product_Code'].astype(str).str.strip().str.upper()
-                    df_name['Product_Name'] = df_name['Product_Name'].astype(str).str.strip()
-                    standard_name_mapping = dict(zip(df_name['Product_Code'], df_name['Product_Name']))
-                except Exception as ex:
-                    print(f"Error loading Excel mapping: {ex}")
+            try:
+                print("Loading Product Code mapping from Google Sheet (gid=1219133636)...")
+                config_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\config.json'
+                creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
+                scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
+                creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+                client = gspread.authorize(creds)
+                sheet = client.open_by_key('1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
+                ws_prod = sheet.get_worksheet_by_id(1219133636)
+                if ws_prod:
+                    rows_prod = ws_prod.get_all_records()
+                    for r in rows_prod:
+                        pcode_all = str(r.get('PRODUCT_CODE_ALL_ROW', '')).strip().upper()
+                        subg = str(r.get('SUB_GROUP_STANDARD', '')).strip()
+                        if pcode_all and pcode_all != 'NAN' and subg and subg != 'NAN':
+                            subgroup_mapping[pcode_all] = subg
+                        pcode = str(r.get('Product_Code', '')).strip().upper()
+                        pname = str(r.get('Product_Name', '')).strip()
+                        if pcode and pcode != 'NAN' and pname and pname != 'NAN':
+                            standard_name_mapping[pcode] = pname
+                    print(f"Loaded {len(subgroup_mapping)} subgroups and {len(standard_name_mapping)} product names from Google Sheet.")
+            except Exception as ex:
+                print(f"Note: Could not load Product mapping from Google Sheet ({str(ex)[:80]}). Using resilient fallback...")
+
+            if not subgroup_mapping:
+                excel_path = None
+                paths_to_try = [
+                    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'),
+                    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'),
+                    r'c:\Users\Irak\Desktop\Barishal April Data\PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'
+                ]
+                for p in paths_to_try:
+                    if os.path.exists(p):
+                        excel_path = p
+                        break
+                if excel_path:
+                    try:
+                        df_excel = pd.read_excel(excel_path)
+                        
+                        # 1. Map PRODUCT_CODE_ALL_ROW -> SUB_GROUP_STANDARD (takes the first unique match)
+                        df_sub = df_excel.dropna(subset=['PRODUCT_CODE_ALL_ROW', 'SUB_GROUP_STANDARD']).copy()
+                        df_sub['PRODUCT_CODE_ALL_ROW'] = df_sub['PRODUCT_CODE_ALL_ROW'].astype(str).str.strip().str.upper()
+                        df_sub['SUB_GROUP_STANDARD'] = df_sub['SUB_GROUP_STANDARD'].astype(str).str.strip()
+                        subgroup_mapping = dict(zip(df_sub['PRODUCT_CODE_ALL_ROW'], df_sub['SUB_GROUP_STANDARD']))
+                        
+                        # 2. Map Product_Code -> Product_Name (from rows where Product_Code is NOT null)
+                        df_name = df_excel.dropna(subset=['Product_Code', 'Product_Name']).copy()
+                        df_name['Product_Code'] = df_name['Product_Code'].astype(str).str.strip().str.upper()
+                        df_name['Product_Name'] = df_name['Product_Name'].astype(str).str.strip()
+                        standard_name_mapping = dict(zip(df_name['Product_Code'], df_name['Product_Name']))
+                    except Exception as ex:
+                        print(f"Error loading Excel mapping: {ex}")
 
             # Sort products by code
             sorted_prods = standard_names.sort_values(by='Product_Code')

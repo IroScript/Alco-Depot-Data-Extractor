@@ -197,26 +197,33 @@ LIMIT 50;
 ### 🔹 সমস্যা ও সমাধান:
 `sales` টেবিলের `market` কলামটি মূল এক্সট্র্যাকশনের সময় `archive/recent/mpo_code.xlsx` এর সাথে LEFT JOIN করে তৈরি করা হয়েছিল (যাতে ৪৪৭টি কোড আছে)। ফলে যেসব MPO কোড ওই ফাইলে নেই, তাদের `market` ফিল্ড `NULL` থেকে যায় (৭৩০টি কোডের মধ্যে ~৪০২টি)। আগের ভার্সনে এই NULL মার্কেটের জায়গায় `zone` দেখানো হতো — যার ফলে **`DK.A` / `DK.B`** (যা আসলে **Zone কোড** — Dhaka-A / Dhaka-B, কোনো মার্কেটের নাম নয়) মার্কেটের জায়গায় চলে আসত। 
 
-এখন `data_engine.py` এর `load_mpo_market_lookup()` ফিল্ড-ফোর্স ডেটার মানব-স্তরের বোঝাপড়ার ভিত্তিতে **একাধিক অথেনটিক সোর্সের Union** ব্যবহার করে সঠিক মার্কেট নাম বের করে (যেখানে একই কোডের একাধিক alias — `NEW CODE`, `OLD CODE`, `DREAM APPS MPO CODE`, `DEPOTMPO CODE`, `APP CODE (FINAL)` — সবই একই মার্কেটে map হয়):
+এখন `data_engine.py` এর `load_mpo_market_lookup()` ও `load_vacant_mpos()` ফিল্ড-ফোর্স ডেটার মানব-স্তরের বোঝাপড়ার ভিত্তিতে কাজ করে:
 
-### 🔹 সোর্স প্রায়োরিটি (priority order, first match wins):
-1. **লাইভ FieldEdit Google Sheet** (সম্পূর্ণ source of truth) — credentials active থাকলে প্রথমে চেষ্টা করা হয়; key revoke/অফলাইন থাকলে নীরবে local union-এ fallback।
-2. **`FieldEdit/Archive/FIELD.xlsx`** — সেই Google Sheet-এরই flat export (সবচেয়ে সমৃদ্ধ local সোর্স; MARKET কলাম সহ ৫টি কোড কলাম)।
-3. **`02E_FINAL_MPO_Target_vs_Achievement_Values_*.xlsx`** (col5 = code → col4 = market)।
-4. **`archive/03_Zone_Wise_Sales_Grouped_Report_*.xlsx`** — **সঠিক column**: col9 `DREAM APPS MPO CODE` → col3 `MARKET` (আগের কোডে ভুল করে col4 পড়া হতো, যা আসলে `FM/AM, ZONE` টেক্সট)।
-5. **`archive/recent/mpo_code.xlsx`** (col5 = MPO CODE → col3 = MARKET) — যে ফাইলটি দিয়ে মূল DB তৈরি হয়েছিল।
+### 🔹 ১. সর্বক্ষেত্রে শুধুমাত্র "Dream Apps MPO Code" ব্যবহার (Strict Identifier):
+* ইউজারের সুস্পষ্ট নির্দেশ অনুযায়ী সকল শিটে শুধুমাত্র **Dream Apps MPO Code** (যা মূলত **M কলামে / 13th column / index 12**-এ থাকে) প্রধান আইডেন্টিফায়ার হিসেবে ব্যবহার করা হচ্ছে।
+* অন্যান্য alias কোড (যেমন `NEW CODE`, `OLD CODE`, `DEPOTMPO CODE`, `APP CODE (FINAL)`) বাদ দেওয়া হয়েছে, যাতে কোনো ভুল বা অস্পষ্ট ম্যাপিং না ঘটে।
 
-### 🔹 ফলব্যাক নিয়ম (যদি কোনো সোর্সেও না পাওয়া যায়):
-কিছু সক্রিয় MPO (যেমন `BG##`, `BB##`, `BC##` — RAJSHAHI/CUMILLA depot) এমন যাদের কোনো local ফাইলেই মার্কেট নাম নেই। এদের জন্য:
-* ❌ আর কখনো `zone` (যেমন `DK.A`) দেখানো হয় না।
-* ❌ "Vacant / Unassigned" লেখা হয় না (এরা active, বিক্রি আছে)।
-* ✅ ঐ MPO-র আসল **Depot নাম** (যেমন `RAJSHAHI`, `CUMILLA`, `RANGPUR`) দেখানো হয় — যা ১০০% সত্য ডেটা এবং কখনো বিভ্রান্তিকর zone কোড নয়।
-* মার্কেট নামগুলো `clean_market_name` (UPPERCASE, whitespace normalize, `HATIBANDHA` override) দিয়ে standardize করা হয় — FieldEdit-এর human-level format-এর সাথে হুবহু মিল রাখার জন্য।
+### 🔹 ২. ভ্যাক্যান্ট (Vacant) পজিশন নির্ধারণে "VACANT (JUN'26)?" কলাম ব্যবহার:
+* কোনো মার্কেট বা MPO ভ্যাক্যান্ট কিনা, তা নির্ধারণ করতে কখনোই অস্পষ্ট টেক্সট লেবেল (যেমন মার্কেট বা জোন ফিল্ডে `DK.A` বা `Vacant` লেখা) ব্যবহার করা হয় না।
+* এর পরিবর্তে মাস্টার শিটগুলোর **I কলাম / `VACANT (JUN'26)?` / `VACANT (JAN'26)?`** (index 8 / column 9) সরাসরি চেক করা হয়। যদি এই কলামে `Y`, `YES`, `TRUE` বা `1` থাকে, তবেই সেই MPO কোডটিকে `is_vacant: True` হিসেবে চিহ্নিত করা হয়।
+* ভ্যাক্যান্ট হলেও MPO-র আসল মার্কেট নাম (যেমন `HIZLA`, `TANORE`, `SEED STORE`) বজায় থাকে এবং ড্যাশবোর্ডে নামের পাশে একটি স্পষ্ট `[VACANT]` ব্যাজ দেখানো হয়।
+
+### 🔹 ৩. সোর্স প্রায়োরিটি (priority order, first match wins):
+1. **লাইভ FieldEdit Google Sheet** (সম্পূর্ণ source of truth) — col M (`DREAM APPS MPO CODE`) → col D (`MARKET`), এবং col I (`VACANT`) চেক।
+2. **`FieldEdit/Archive/FIELD.xlsx`** — সেই Google Sheet-এরই flat export (col 13 → col 4, এবং col 9 চেক)।
+3. **`02E_FINAL_MPO_Target_vs_Achievement_Values_*.xlsx`** (col 5 = code → col 4 = market)।
+4. **`archive/03_Zone_Wise_Sales_Grouped_Report_*.xlsx`** — col 9 `DREAM APPS MPO CODE` → col 3 `MARKET`।
+5. **`archive/recent/mpo_code.xlsx`** (col 5 = MPO CODE → col 3 = MARKET)।
+
+### 🔹 ৪. ফলব্যাক নিয়ম (যদি কোনো সোর্সেও না পাওয়া যায়):
+কিছু সক্রিয় MPO (যেমন `D203`, `D204`, `BG##`, `BB##`) এমন যাদের কোনো local ফাইলেই মার্কেট নাম নেই। এদের জন্য:
+* ❌ আর কখনো `zone` (যেমন `DK.A`) মার্কেট হিসেবে দেখানো হয় না।
+* ❌ "Vacant / Unassigned" লেখা হয় না (কারণ ভ্যাক্যান্ট নির্ধারণ শুধুমাত্র I কলাম দিয়ে হয়)।
+* ✅ ঐ MPO-র আসল **Depot নাম** (যেমন `DHAKA-1`, `RAJSHAHI`, `CUMILLA`) দেখানো হয় — যা ১০০% সত্য ডেটা এবং কখনো বিভ্রান্তিকর zone কোড নয়।
 
 ### 🔹 ফলাফল:
-* ড্যাশবোর্ডে এখন আর কোনো `market` ফিল্ডে `DK.A` / `DK.B` / `Vacant` দেখা যায় না।
-* ~৫০টি NULL-market MPO পেয়েছে আসল মার্কেট নাম (যেমন `B007`→`MMCH`, `C009`→`DOHAZARI`)।
-* বাকি active MPO-রা পেয়েছে তাদের আসল Depot নাম fallback হিসেবে।
+* ড্যাশবোর্ডে এখন আর কোনো `market` ফিল্ডে `DK.A` / `DK.B` বা ভুল `Vacant` দেখা যায় না।
+* Overall Top 50 MPO এবং Strategic 6 Products উভয় টেবিলেই এখন MPO কোডের সাথে তাদের আসল মার্কেট নাম (`📍 MARKET`) এবং প্রযোজ্য ক্ষেত্রে `[VACANT]` ব্যাজ প্রদর্শিত হচ্ছে।
 
 
 ---

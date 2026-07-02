@@ -282,6 +282,10 @@ function renderMPOsTable(mpos) {
                     👤 ${m.mpo_code}
                 </span>
             </td>
+            <td>
+                <strong class="text-white font-bold text-sm bg-purple-950/60 px-2.5 py-1 rounded border border-purple-500/30">📍 ${m.market||'Unknown'}</strong>
+                ${m.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-xs px-1.5 py-0.5 rounded border border-amber-500/40 ml-1 font-mono">VACANT</span>' : ''}
+            </td>
             <td><span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300 font-mono text-xs">${m.zone}</span></td>
             <td><span class="text-slate-300 font-tech font-bold">${m.depot}</span></td>
             <td class="val-highlight font-cyber text-base">${formatBDT(m.total_sales)}</td>
@@ -459,7 +463,10 @@ function renderStrategicMPOTable() {
                     👤 ${m.mpo_code}
                 </span>
             </td>
-            <td><strong class="text-white font-bold text-sm bg-purple-950/60 px-2 py-1 rounded border border-purple-500/30">📍 ${m.market}</strong></td>
+            <td>
+                <strong class="text-white font-bold text-sm bg-purple-950/60 px-2 py-1 rounded border border-purple-500/30">📍 ${m.market}</strong>
+                ${m.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-xs px-1.5 py-0.5 rounded border border-amber-500/40 ml-1 font-mono">VACANT</span>' : ''}
+            </td>
             <td><span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono text-xs">${m.zone} // ${m.depot}</span></td>
             <td class="bg-cyan-950/40 font-cyber font-bold text-emerald-400 text-base border-l border-r border-cyan-500/30">📦 ${Number(m.units).toLocaleString()} U</td>
             <td><span class="badge-party">${Number(m.parties).toLocaleString()} Parties 👥</span></td>
@@ -770,7 +777,7 @@ function openDrillModal(type, code) {
     } else if (type === "mpo") {
         item = GLOBAL_DATA.top_50_mpos.find(m => m.mpo_code === code);
         if (item) {
-            title.innerHTML = `👔 MPO PERFORMANCE: <span class="text-purple-300">${item.mpo_code}</span>`;
+            title.innerHTML = `👔 MPO PERFORMANCE: <span class="text-purple-300">${item.mpo_code}</span> // <span class="text-emerald-400 font-bold">📍 ${item.market||'Unknown'}</span> ${item.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-xs px-2 py-0.5 rounded border border-amber-500/40 ml-1 font-mono">VACANT</span>' : ''}`;
             subtitle.innerHTML = `ASSIGNED ZONE: <span class="text-cyan-400 font-bold">${item.zone}</span> // CORE DEPOT: <span class="text-white font-bold">${item.depot}</span> // NET REVENUE: <span class="text-emerald-400 font-cyber">${formatBDT(item.total_sales)}</span>`;
         }
     }

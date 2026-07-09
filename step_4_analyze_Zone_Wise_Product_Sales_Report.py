@@ -55,7 +55,8 @@ class ZoneDataAnalyzerApp:
         self.auto_detect_latest_report()
 
     def auto_detect_latest_report(self):
-        reports = glob.glob(r'c:\Users\Irak\Desktop\Barishal April Data\03_Zone_Wise_Sales_Grouped_Report*.xlsx')
+        _project_dir = os.path.dirname(os.path.abspath(__file__))
+        reports = glob.glob(os.path.join(_project_dir, '03_Zone_Wise_Sales_Grouped_Report*.xlsx'))
         if reports:
             latest = max(reports, key=os.path.getmtime)
             self.input_file.set(latest)

@@ -23,8 +23,10 @@ def grant_sql_server_permissions(folder_path):
 def main():
     server = r'.\SQLEXPRESS'
     db_name = 'TEMP_TEST_DATE_DB'
-    mdf_path = r'c:\Users\Irak\Desktop\Barishal April Data\Barishal_Temp\Data\ERPonTheNet_Data.MDF'
-    ldf_path = r'c:\Users\Irak\Desktop\Barishal April Data\Barishal_Temp\Data\ERPonTheNet_log.LDF'
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    barishal_temp_data = os.path.join(project_dir, 'Barishal_Temp', 'Data')
+    mdf_path = os.path.join(barishal_temp_data, 'ERPonTheNet_Data.MDF')
+    ldf_path = os.path.join(barishal_temp_data, 'ERPonTheNet_log.LDF')
     
     if not os.path.exists(mdf_path):
         print(f"File not found: {mdf_path}")

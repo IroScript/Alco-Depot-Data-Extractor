@@ -461,11 +461,28 @@ class ZoneReportApp:
 
     # ── Auto detect latest CSV ──────────────────────────────────────────
     def auto_detect_latest_csv(self):
-        csv_files = glob.glob(r'c:\Users\Irak\Desktop\Barishal April Data\*Product_Level_Net_Sales*.csv')
+        # Search the project's own folder dynamically (no hard-coded paths)
+        _script_dir = os.path.dirname(os.path.abspath(__file__))
+        _search_dirs = [_script_dir]
+        # Also check one level up in case the script lives in a subfolder
+        _parent = os.path.dirname(_script_dir)
+        if _parent and _parent != _script_dir:
+            _search_dirs.append(_parent)
+        # Also check the well-known original location as a last-resort fallback
+        # (only used for first-time discovery; output is always saved to script dir)
+        _legacy = r'c:\Users\Irak\Desktop\Barishal April Data'
+        if os.path.isdir(_legacy):
+            _search_dirs.append(_legacy)
+
+        csv_files = []
+        for d in _search_dirs:
+            csv_files.extend(glob.glob(os.path.join(d, '*Product_Level_Net_Sales*.csv')))
+
         if csv_files:
             latest_csv = max(csv_files, key=os.path.getmtime)
             self.input_file.set(latest_csv)
-            self.output_dir.set(os.path.dirname(latest_csv))
+            # Always save output into the script's own project folder
+            self.output_dir.set(_script_dir)
             self.lbl_file_msg.configure(text="✓ LATEST WORKFLOW FILE AUTO-SELECTED", fg=_C['green'])
             self.load_products_from_csv(latest_csv)
 
@@ -512,36 +529,55 @@ class ZoneReportApp:
             standard_name_mapping = {}
             try:
                 print("Loading Product Code mapping from Google Sheet (gid=1219133636)...")
-                config_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\config.json'
-                creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
-                scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-                creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
-                client = gspread.authorize(creds)
-                sheet = client.open_by_key('1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
-                ws_prod = sheet.get_worksheet_by_id(1219133636)
-                if ws_prod:
-                    rows_prod = ws_prod.get_all_records()
-                    for r in rows_prod:
+                # Use direct XLSX export instead of gspread — handles duplicate headers gracefully
+                _sheet_id = '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY'
+                _gid = '1219133636'
+                _url = f'https://docs.google.com/spreadsheets/d/{_sheet_id}/export?format=xlsx&gid={_gid}'
+                df_prod = pd.read_excel(_url, engine='openpyxl')
+                # Normalize column names for easier lookup (handle pandas-added suffixes like .1)
+                df_prod.columns = [str(c).strip() for c in df_prod.columns]
+
+                # Build mappings from whichever column variants exist
+                _cols_set = set(df_prod.columns)
+                for _, r in df_prod.iterrows():
+                    # PRODUCT_CODE_ALL_ROW -> SUB_GROUP_STANDARD
+                    if 'PRODUCT_CODE_ALL_ROW' in _cols_set and 'SUB_GROUP_STANDARD' in _cols_set:
                         pcode_all = str(r.get('PRODUCT_CODE_ALL_ROW', '')).strip().upper()
                         subg = str(r.get('SUB_GROUP_STANDARD', '')).strip()
                         if pcode_all and pcode_all != 'NAN' and subg and subg != 'NAN':
                             subgroup_mapping[pcode_all] = subg
-                        pcode = str(r.get('Product_Code', '')).strip().upper()
-                        pname = str(r.get('Product_Name', '')).strip()
-                        if pcode and pcode != 'NAN' and pname and pname != 'NAN':
-                            standard_name_mapping[pcode] = pname
-                    print(f"Loaded {len(subgroup_mapping)} subgroups and {len(standard_name_mapping)} product names from Google Sheet.")
+                    # Product_Code -> Product_Name (use first non-null pair across .1 variants)
+                    pcode_raw = r.get('Product_Code')
+                    if pd.isna(pcode_raw):
+                        continue
+                    pcode = str(pcode_raw).strip().upper()
+                    if not pcode or pcode == 'NAN':
+                        continue
+                    # Try Product_Name first, then Product_Name.1
+                    pname = r.get('Product_Name')
+                    if pd.isna(pname) or not str(pname).strip():
+                        pname = r.get('Product_Name.1')
+                    if pd.isna(pname):
+                        pname = ''
+                    pname = str(pname).strip()
+                    if pname and pname != 'NAN':
+                        standard_name_mapping[pcode] = pname
+
+                print(f"Loaded {len(subgroup_mapping)} subgroups and {len(standard_name_mapping)} product names from Google Sheet (columns: {list(df_prod.columns)}).")
             except Exception as ex:
-                print(f"Note: Could not load Product mapping from Google Sheet ({str(ex)[:80]}). Using resilient fallback...")
+                print(f"Note: Could not load Product mapping from Google Sheet ({str(ex)[:120]}). Using resilient fallback...")
 
             if not subgroup_mapping:
                 excel_path = None
-                paths_to_try = [
-                    os.path.join(os.path.dirname(os.path.abspath(__file__)), 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'),
-                    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'),
-                    r'c:\Users\Irak\Desktop\Barishal April Data\PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'
+                # Search the script's own folder and parent dynamically (no hard-coded paths)
+                _script_dir = os.path.dirname(os.path.abspath(__file__))
+                _candidates = [
+                    os.path.join(_script_dir, 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'),
+                    os.path.join(os.path.dirname(_script_dir), 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'),
                 ]
-                for p in paths_to_try:
+                # Legacy fallback (only as last resort)
+                _candidates.append(r'c:\Users\Irak\Desktop\Barishal April Data\PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx')
+                for p in _candidates:
                     if os.path.exists(p):
                         excel_path = p
                         break
@@ -898,23 +934,18 @@ class ZoneReportApp:
         def task():
             try:
                 self.root.after(0, lambda: self.set_progress(10, 'CONNECTING API'))
-                
-                # Load config
-                config_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\config.json'
-                creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
-                
-                with open(config_path, 'r') as f:
-                    config = json.load(f)
 
+                # Spreadsheet ID and gid are read from credentials_master.json via the loader.
+                from googleDrive.credentials_loader import get_sheet_service_account_credentials, get_spreadsheet_id
                 scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-                creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+                creds = get_sheet_service_account_credentials(scopes=scopes)
                 client = gspread.authorize(creds)
-                sheet = client.open_by_key(config['spreadsheet_id'])
+                sheet = client.open_by_key(get_spreadsheet_id('master_field_force_sheet') or '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
 
                 # Get worksheet
                 ws = None
                 for w in sheet.worksheets():
-                    if str(w.id) == str(config.get('gid', '1918615875')):
+                    if str(w.id) == '1918615875':
                         ws = w
                         break
                 if not ws:

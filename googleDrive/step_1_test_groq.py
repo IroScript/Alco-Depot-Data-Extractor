@@ -1,17 +1,14 @@
 import os
 import json
 import requests
+import sys
+
+# Add parent dir so we can import the in-memory credentials loader
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from googleDrive.credentials_loader import get_env_var
 
 def main():
-    env_path = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\env'
-    env = {}
-    with open(env_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            if '=' in line:
-                k, v = line.strip().split('=', 1)
-                env[k] = v
-                
-    api_key = env.get("GROQ_API_KEY")
+    api_key = get_env_var("GROQ_API_KEY")
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
         "Authorization": f"Bearer {api_key}",

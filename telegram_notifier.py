@@ -10,7 +10,9 @@ if hasattr(sys.stdout, 'reconfigure'):
     except:
         pass
 
-ENV_PATH = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\env'
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# Telegram credentials now live in googleDrive/credentials_master.json.
+from googleDrive.credentials_loader import get_env_var
 
 # ── SAMPLE DATA FOR FIRST WEEK OF MAY (EXCEPTION REPORT) ──
 SAMPLE_REPORT_TEXT = """🚨 *ALCO PHARMA LTD. - SALES EXCEPTION REPORT* 🚨
@@ -90,18 +92,17 @@ def main():
     print("=" * 60)
     print("  TELEGRAM SALES NOTIFICATION UTILITY")
     print("=" * 60)
-    
-    env = load_env_variables(ENV_PATH)
-    bot_token = env.get("TELEGRAM_BOT_TOKEN")
-    chat_id = env.get("TELEGRAM_CHAT_ID")
-    
+
+    bot_token = get_env_var("TELEGRAM_BOT_TOKEN")
+    chat_id = get_env_var("TELEGRAM_CHAT_ID")
+
     print("\n--- [PREPARED SAMPLE REPORT TEXT] ---")
     print(SAMPLE_REPORT_TEXT)
     print("--------------------------------------\n")
-    
+
     if not bot_token or not chat_id:
-        print("❌ STATUS: Telegram Credentials not set in env file.")
-        print(f"Please add the following lines to your env file at:\n  {ENV_PATH}")
+        print("STATUS: Telegram credentials not set in googleDrive/credentials_master.json (env_file_content).")
+        print("Please add the following keys to the env_file_content section of credentials_master.json:")
         print("\n  TELEGRAM_BOT_TOKEN=your_bot_token_here")
         print("  TELEGRAM_CHAT_ID=your_chat_id_here")
         print("\nOnce you supply these credentials, run this script again to test sending the message.")

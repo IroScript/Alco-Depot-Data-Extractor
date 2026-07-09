@@ -24,8 +24,10 @@ def grant_sql_server_permissions(folder_path):
 def main():
     server = r'.\SQLEXPRESS'
     db_name = 'TEMP_TEST_DUAL_DB'
-    mdf_path = r'c:\Users\Irak\Desktop\Barishal April Data\Barishal_Temp\Data\ERPonTheNet_Data.MDF'
-    ldf_path = r'c:\Users\Irak\Desktop\Barishal April Data\Barishal_Temp\Data\ERPonTheNet_log.LDF'
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    barishal_temp_data = os.path.join(project_dir, 'Barishal_Temp', 'Data')
+    mdf_path = os.path.join(barishal_temp_data, 'ERPonTheNet_Data.MDF')
+    ldf_path = os.path.join(barishal_temp_data, 'ERPonTheNet_log.LDF')
     
     if not os.path.exists(mdf_path):
         print(f"File not found: {mdf_path}")
@@ -144,7 +146,7 @@ def main():
         net_sales['ACTUAL_SALE_AMOUNT'] = net_sales['Sale_Amount'] - net_sales['Return_Amount']
         net_sales['Return_Rate_%'] = (net_sales['Return_Qty'] / net_sales['Sale_Qty'] * 100).round(2)
         
-        f1_path = r'c:\Users\Irak\Desktop\Barishal April Data\01_Product_Level_Net_Sales_Extracted_Data_TEST.csv'
+        f1_path = os.path.join(project_dir, '01_Product_Level_Net_Sales_Extracted_Data_TEST.csv')
         net_sales.to_csv(f1_path, index=False)
         print(f"[SUCCESS] Saved File 1: {f1_path} (Rows: {len(net_sales)}, Size: {os.path.getsize(f1_path)/1024:.2f} KB)")
         
@@ -181,7 +183,7 @@ def main():
         ]
         detailed_grouped = detailed_grouped[col_order]
         
-        f2_path = r'c:\Users\Irak\Desktop\Barishal April Data\01.1_Date_wise_Customer_wise_Product_wise_Net_Sales_Extracted_Data_TEST.csv'
+        f2_path = os.path.join(project_dir, '01.1_Date_wise_Customer_wise_Product_wise_Net_Sales_Extracted_Data_TEST.csv')
         detailed_grouped.to_csv(f2_path, index=False)
         print(f"[SUCCESS] Saved File 2: {f2_path} (Rows: {len(detailed_grouped)}, Size: {os.path.getsize(f2_path)/1024:.2f} KB)")
         

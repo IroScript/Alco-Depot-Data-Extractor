@@ -58,14 +58,13 @@ import json
 # ============================================================================
 
 def load_google_sheet_by_pattern(spreadsheet_id, pattern=None, exact_name=None, has_header=True):
-    config_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\config.json'
-    creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
-    
-    with open(config_path, 'r') as f:
-        config = json.load(f)
-        
+    # Use single-source credentials from master file
+    import sys, os
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from googleDrive.credentials_loader import get_sheet_service_account_credentials
+
     scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    creds = get_sheet_service_account_credentials(scopes=scopes)
     client = gspread.authorize(creds)
     sheet = client.open_by_key(spreadsheet_id)
     
@@ -226,8 +225,10 @@ print("\n2.1: Reading product names from row 3...")
 product_names_row = df_target_raw.iloc[2]
 
 product_names = []
-# There are 17 unique products starting at index 8 (columns 8 to 24)
-for i in range(8, 25):
+# There are 17 unique products starting at index 8 (columns 8 to 24).
+# Use the actual column count to avoid IndexError when the sheet has fewer columns.
+max_idx = min(25, len(product_names_row))
+for i in range(8, max_idx):
     prod_name = product_names_row.iloc[i]
     if pd.notna(prod_name):
         product_names.append(str(prod_name).strip())
@@ -252,15 +253,23 @@ df_target_raw.rename(columns={
     4: 'Confirm_Sales'
 }, inplace=True)
 
-# Extract target for MPO/SMPO (General Party) only, completely skipping FM/AM (Type-1 & PP) Targets in columns AA to AQ (index 26 to 42)
-for i in range(8, 25):
-    prod_name = product_names[i - 8]
+# Extract target for MPO/SMPO (General Party) only.
+# Use the actual number of products found in step 2.1 to avoid IndexError
+# when the source sheet has fewer than 17 product columns.
+_num_products = min(len(product_names), max(0, df_target_raw.shape[1] - 8))
+print(f"  - Using {_num_products} product columns (sheet has {df_target_raw.shape[1]} total cols)")
+for idx in range(_num_products):
+    i = 8 + idx
+    prod_name = product_names[idx]
+    if i >= df_target_raw.shape[1]:
+        break  # Stop if we run out of source columns
     val_gp = pd.to_numeric(df_target_raw[i], errors='coerce').fillna(0)
     df_target_raw[prod_name] = val_gp.round(0).astype(int)
 
-# Keep only columns: metadata + the 17 target columns
+# Keep only columns: metadata + the product target columns that actually exist
 metadata_cols = ['Sl_No', 'Name', 'Designation', 'Market']
-df_target_raw = df_target_raw[metadata_cols + product_names].copy()
+_present_products = [p for p in product_names if p in df_target_raw.columns]
+df_target_raw = df_target_raw[metadata_cols + _present_products].copy()
 
 # Extract zones for every single row from df_raw (header=None) by scanning column 0
 zones_list = []
@@ -285,6 +294,11 @@ print(f"  - Unique zones found: {df_target_filtered['Zone'].nunique()}")
 print("\n2.5: Processing product targets...")
 product_cols = product_names.copy()
 
+# df_target_filtered has the actual product names as columns. df_mpo gets new
+# columns added to it later via df_mpo.at[idx, col]. We keep product_cols as
+# the original names (no suffixing) so that BOTH df_target_filtered and df_mpo
+# share the same column names. The Series-unwrapping in safe_num already handles
+# any duplicate-name edge cases defensively.
 for col in product_cols:
     if col in df_target_filtered.columns:
         try:
@@ -292,9 +306,14 @@ for col in product_cols:
         except:
             df_target_filtered.loc[:, col] = 0
 
-df_target_filtered['Total_Target'] = df_target_filtered[product_cols].sum(axis=1)
-print(f"  - Product columns: {len(product_cols)}")
-print(f"  - Total target quantity: {df_target_filtered['Total_Target'].sum():,.0f}")
+existing_product_cols = [c for c in product_cols if c in df_target_filtered.columns]
+if existing_product_cols:
+    df_target_filtered['Total_Target'] = df_target_filtered[existing_product_cols].sum(axis=1)
+    print(f"  - Product columns (existing in df): {len(existing_product_cols)}/{len(product_cols)}")
+    print(f"  - Total target quantity: {df_target_filtered['Total_Target'].sum():,.0f}")
+else:
+    df_target_filtered['Total_Target'] = 0
+    print(f"  - [WARN] No product columns matched in df_target_filtered; Total_Target=0")
 
 target_data_file = f"02B_Parsed_Target_Data_Summary_{timestamp}.xlsx"
 with pd.ExcelWriter(target_data_file, engine='openpyxl') as writer:
@@ -415,8 +434,32 @@ for idx, row in df_target_filtered.iterrows():
 print("\n3.4: Matching markets (zone-aware two-pass with split-combine support)...")
 
 def safe_num(val):
-    v = pd.to_numeric(val, errors='coerce')
-    return 0 if pd.isna(v) else v
+    """Safely convert any value (scalar, Series, list, NaN) to a numeric value."""
+    # Handle Series by taking the first element
+    if isinstance(val, pd.Series):
+        if len(val) == 0:
+            return 0
+        val = val.iloc[0] if len(val) == 1 else val.iloc[0]
+    # Handle NaN / None
+    if val is None:
+        return 0
+    try:
+        if pd.isna(val):
+            return 0
+    except (ValueError, TypeError):
+        pass
+    # Convert to numeric
+    try:
+        v = pd.to_numeric(val, errors='coerce')
+        # If result is a scalar Series/Numpy value, unwrap it
+        if hasattr(v, 'item') and not isinstance(v, (int, float, str)):
+            try:
+                v = v.item()
+            except (ValueError, AttributeError):
+                pass
+        return 0 if pd.isna(v) else v
+    except (ValueError, TypeError):
+        return 0
 
 matches = []      # List of (mpo_market, target_market, score, type)
 no_matches = []
@@ -447,10 +490,18 @@ for idx, row in df_mpo.iterrows():
             whole_match_row = candidates[0]
             
     if whole_match_row is not None:
-        matches.append((mpo_market, whole_match_row['Market'], whole_score, whole_match_type))
-        df_mpo.at[idx, '_matched_to'] = whole_match_row['Market']
+        # Unwrap Market value to scalar to avoid duplicate-column Series issues
+        _wm_market = whole_match_row['Market']
+        if isinstance(_wm_market, pd.Series):
+            _wm_market = _wm_market.iloc[0]
+        matches.append((mpo_market, _wm_market, whole_score, whole_match_type))
+        df_mpo.at[idx, '_matched_to'] = _wm_market
         for col in product_cols:
-            df_mpo.at[idx, col] = safe_num(whole_match_row[col])
+            _v = whole_match_row[col]
+            # If duplicate column names exist, .col returns a Series — unwrap to scalar
+            if isinstance(_v, pd.Series):
+                _v = _v.iloc[0]
+            df_mpo.at[idx, col] = safe_num(_v)
             
     elif '+' in mpo_market:
         # Fallback to split-combine matching if no whole-name match
@@ -474,11 +525,20 @@ for idx, row in df_mpo.iterrows():
                 matched_rows_for_parts.append(best_t_row)
                 
         if len(matched_rows_for_parts) == len(parts):
-            combined_target_name = ' + '.join([str(r['Market']) for r in matched_rows_for_parts])
+            combined_target_name = ' + '.join([
+                str(r['Market'].iloc[0] if isinstance(r['Market'], pd.Series) else r['Market'])
+                for r in matched_rows_for_parts
+            ])
             matches.append((mpo_market, combined_target_name, 1.0, 'Combined'))
             df_mpo.at[idx, '_matched_to'] = combined_target_name
             for col in product_cols:
-                df_mpo.at[idx, col] = sum(safe_num(r[col]) for r in matched_rows_for_parts)
+                _total = 0
+                for r in matched_rows_for_parts:
+                    _v = r[col]
+                    if isinstance(_v, pd.Series):
+                        _v = _v.iloc[0]
+                    _total += safe_num(_v)
+                df_mpo.at[idx, col] = _total
         else:
             no_matches.append((mpo_market, 0.0))
             df_mpo.at[idx, '_matched_to'] = None
@@ -497,11 +557,17 @@ print(f"  - Fuzzy matches: {sum(1 for m in matches if m[3] == 'Fuzzy')}")
 print(f"  - No matches: {len(no_matches)}")
 
 base_cols = ['DEPOT', 'ZONE', 'FM/AM, ZONE', 'MARKET', 'MPO CODE', 'DEPOT_MPO_CODE']
-final_cols = base_cols + product_cols
+# Only include product_cols that actually exist in df_mpo (others would raise KeyError)
+_existing_products_in_mpo = [c for c in product_cols if c in df_mpo.columns]
+final_cols = base_cols + _existing_products_in_mpo
 # Filter df_mpo to only keep matched rows (exclude unmatched markets from Master Target sheet and final report)
 df_mpo_matched = df_mpo[df_mpo['_matched_to'].notna()].copy()
 df_mpo_final = df_mpo_matched[final_cols].copy()
-df_mpo_final['Total_Target'] = df_mpo_final[product_cols].sum(axis=1)
+_existing_in_mpo = _existing_products_in_mpo
+if _existing_in_mpo:
+    df_mpo_final['Total_Target'] = df_mpo_final[_existing_in_mpo].sum(axis=1)
+else:
+    df_mpo_final['Total_Target'] = 0
 
 mpo_field_targets_file = f"02C_MPO_Matched_Targets_Summary_{timestamp}.xlsx"
 with pd.ExcelWriter(mpo_field_targets_file, engine='openpyxl') as writer:
@@ -616,12 +682,11 @@ def find_product_code(target_product, product_code_dict):
 excel_mapping = {}
 try:
     print("\n4.2: Loading Product Code mapping from Google Sheet (gid=1219133636)...")
-    config_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\config.json'
-    creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
+    from googleDrive.credentials_loader import get_sheet_service_account_credentials, get_spreadsheet_id
     scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    creds = get_sheet_service_account_credentials(scopes=scopes)
     client = gspread.authorize(creds)
-    sheet = client.open_by_key('1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
+    sheet = client.open_by_key(get_spreadsheet_id('master_field_force_sheet') or '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
     ws_prod = sheet.get_worksheet_by_id(1219133636)
     if ws_prod:
         data_prod = ws_prod.get_all_records()
@@ -638,7 +703,8 @@ except Exception as ex:
     print(f"  - Note: Could not load Product mapping from Google Sheet ({str(ex)[:80]}). Using resilient fallback...")
 
 if not excel_mapping:
-    excel_path = r'c:\Users\Irak\Desktop\Barishal April Data\PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'
+    _project_dir = os.path.dirname(os.path.abspath(__file__))
+    excel_path = os.path.join(_project_dir, 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx')
     if os.path.exists(excel_path):
         try:
             df_excel = pd.read_excel(excel_path)

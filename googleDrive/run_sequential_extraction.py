@@ -344,7 +344,7 @@ def check_free_space():
     return free / (1024 * 1024 * 1024) # Return in GB
 
 def main_sequential():
-    base_dir = r'c:\Users\Irak\Desktop\Barishal April Data'
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     print("=" * 80)
     print("  SEQUENTIAL SPACE-SAVING DATA EXTRACTOR PIPELINE")
     print("=" * 80)

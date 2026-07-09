@@ -1,11 +1,14 @@
 import os
 import pyodbc
 
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 def main():
     server = r'.\SQLEXPRESS'
     db_name = 'TEST_BARISHAL_COMPAT_DB'
-    mdf_path = r'c:\Users\Irak\Desktop\Barishal April Data\All_Depots\BARISHAL\Data\ERPonTheNet_Data.MDF'
-    ldf_path = r'c:\Users\Irak\Desktop\Barishal April Data\All_Depots\BARISHAL\Data\ERPonTheNet_log.LDF'
+    barishal_data = os.path.join(PROJECT_DIR, 'All_Depots', 'BARISHAL', 'Data')
+    mdf_path = os.path.join(barishal_data, 'ERPonTheNet_Data.MDF')
+    ldf_path = os.path.join(barishal_data, 'ERPonTheNet_log.LDF')
     
     if not os.path.exists(mdf_path):
         print(f"File not found: {mdf_path}")

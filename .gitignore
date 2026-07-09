@@ -59,6 +59,10 @@ desktop.ini
 *.tmp
 *.temp
 query
+out.txt
+
+# puku-cli local state (IDE/coding assistant cache)
+.puku-cli/
 
 # Sensitive data
 *.shs
@@ -66,4 +70,17 @@ query
 # Google Drive credentials & tokens
 googleDrive/env
 googleDrive/token.pickle
-googleDrive/*.json
+googleDrive/credentials_master.json
+googleDrive/.upload_folder.json
+
+# ─────────────────────────────────────────────────────────────────
+# CREDENTIALS MASTER FILE (single source of truth)
+# Contains real private keys for live Google service accounts.
+# All code reads from this file via googleDrive/credentials_loader.py
+# (in-memory — no scattered .json files are generated anywhere).
+# ─────────────────────────────────────────────────────────────────
+# googleDrive/credentials_master.json   <- already listed above (secrets!)
+
+# Local UI overrides (e.g. uploader folder ID) — gitignored so each
+# developer's local choice doesn't leak into the repo.
+googleDrive/.upload_folder.json

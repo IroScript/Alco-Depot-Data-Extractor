@@ -12,16 +12,18 @@ import subprocess
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+from credentials_loader import get_drive_service_account_credentials, get_env_var, list_depots
 
 
-# Configuration paths
-CLIENT_SECRET_PATH = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\client_secret_1076305260584-t28u3map5uuuqvdk28mrqjk0oigbadh4.apps.googleusercontent.com.json'
-TOKEN_PICKLE_PATH = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\token.pickle'
-EXCEL_PATH = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\gDriveDepotLinks.xlsx'
-ENV_PATH = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\env'
-BASE_DEPOT_DIR = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\All_Depots'
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
+
+# Configuration paths (all project-relative; no machine-specific absolutes)
+TOKEN_PICKLE_PATH = os.path.join(SCRIPT_DIR, 'token.pickle')
+BASE_DEPOT_DIR = os.path.join(PROJECT_DIR, 'googleDrive', 'All_Depots')
 TARGET_UPLOAD_PARENT_ID = '17vBESDDaZL-Gf-0h4MzKZYrVRUxQD_2W'
 RCLONE_REMOTE_NAME = 'grive_new'
+GROQ_API_KEY = get_env_var('GROQ_API_KEY', '')
 
 def find_rclone_executable():
     """Dynamically search for rclone executable in system PATH and common directory locations."""
@@ -62,9 +64,7 @@ def load_env(env_path):
     return env
 
 def get_drive_service():
-    creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
-    scopes = ['https://www.googleapis.com/auth/drive']
-    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    creds = get_drive_service_account_credentials()
     return build('drive', 'v3', credentials=creds)
 
 def list_drive_folder_items(drive_service, folder_id):
@@ -524,29 +524,17 @@ def process_depot(depot_name, folder_url, drive_service, groq_api_key):
 
 def main():
     print("Starting Depot Database Upgrade Pipeline...")
-    env = load_env(ENV_PATH)
-    groq_api_key = env.get("GROQ_API_KEY")
+    groq_api_key = GROQ_API_KEY
     if not groq_api_key:
-        print("Error: GROQ_API_KEY not found in env file.")
+        print("Error: GROQ_API_KEY not found in credentials_master.json (env_file_content).")
         return
-        
-    if not os.path.exists(CLIENT_SECRET_PATH):
-        print(f"Error: Client secret file not found at {CLIENT_SECRET_PATH}")
-        return
-        
+
     drive_service = get_drive_service()
-    
-    df = pd.read_excel(EXCEL_PATH)
-    depot_col = df.columns[0]
-    link_col = df.columns[1]
-    
-    # We will process BARISHAL first to verify the pipeline
-    # Then we will loop and process all depots.
-    depots_to_process = []
-    for idx, row in df.iterrows():
-        depots_to_process.append((row[depot_col].strip(), row[link_col].strip()))
-    
-    print(f"Found {len(depots_to_process)} depots to process in Excel sheet.")
+
+    # Depot list now comes from credentials_master.json via the loader.
+    depots_to_process = [(d['name'], d.get('url') or d.get('folder_id', '')) for d in list_depots()]
+
+    print(f"Found {len(depots_to_process)} depots to process in master file.")
     
     success_count = 0
     fail_count = 0

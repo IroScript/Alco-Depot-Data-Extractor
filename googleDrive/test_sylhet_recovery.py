@@ -7,7 +7,8 @@ conn_str = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABA
 
 def recover_sylhet():
     db_name = "SYLHET_UPGRADE_DB"
-    data_dir = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\All_Depots\SYLHET\Data'
+    project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    data_dir = os.path.join(project_dir, 'All_Depots', 'SYLHET', 'Data')
     mdf_path = os.path.join(data_dir, 'ERPonTheNet_Data.MDF')
     
     dummy_mdf_path = os.path.join(data_dir, 'dummy_ERPonTheNet.mdf')

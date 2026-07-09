@@ -1,9 +1,12 @@
 import os
 import re
 import json
-import pandas as pd
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+from credentials_loader import get_drive_service_account_credentials, list_depots
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_TXT = os.path.join(SCRIPT_DIR, 'all_drive_files.txt')
 
 def list_folder_recursive(drive_service, folder_id, f_out, indent="  ", depth=1, max_depth=4):
     if depth > max_depth:
@@ -37,35 +40,22 @@ def list_folder_recursive(drive_service, folder_id, f_out, indent="  ", depth=1,
         f_out.write(f"{indent}[ERROR] {e}\n")
 
 def main():
-    creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
-    excel_path = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\gDriveDepotLinks.xlsx'
-    output_txt = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\all_drive_files.txt'
-    
-    if not os.path.exists(creds_path):
-        print(f"Credentials not found at {creds_path}")
-        return
-        
-    scopes = ['https://www.googleapis.com/auth/drive']
-    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    creds = get_drive_service_account_credentials()
     drive_service = build('drive', 'v3', credentials=creds)
-    
-    df = pd.read_excel(excel_path)
-    depot_col = df.columns[0]
-    link_col = df.columns[1]
-    
+    output_txt = OUTPUT_TXT
+
+    # Depot list now comes from credentials_master.json via the loader.
+    depots = list_depots()
+
     with open(output_txt, 'w', encoding='utf-8') as f_out:
-        for idx, row in df.iterrows():
-            depot_name = row[depot_col]
-            url = row[link_col]
-            
-            folder_id_match = re.search(r'folders/([a-zA-Z0-9-_]+)', str(url))
-            if not folder_id_match:
+        for depot in depots:
+            depot_name = depot['name']
+            folder_id = depot.get('folder_id')
+            if not folder_id:
                 continue
-                
-            folder_id = folder_id_match.group(1)
             f_out.write(f"\n========================================\nDepot: {depot_name} (ID: {folder_id})\n========================================\n")
             list_folder_recursive(drive_service, folder_id, f_out)
-            
+
     print(f"Done! Written to {output_txt}")
 
 if __name__ == '__main__':

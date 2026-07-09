@@ -18,27 +18,20 @@ def _try_google_sheet_products():
     if hasattr(_try_google_sheet_products, "_cache"):
         return _try_google_sheet_products._cache
     try:
-        fe_dir = os.path.join(PARENT_DIR, "FieldEdit")
-        config_path = os.path.join(fe_dir, "config.json")
-        if not os.path.exists(config_path):
-            return None, None
-        with open(config_path, 'r') as f:
-            cfg = json.load(f)
-        creds_path = cfg.get('credentials_file', 'alco-pharma-cf4b49e394bb.json')
-        if not os.path.isabs(creds_path):
-            creds_path = os.path.join(fe_dir, creds_path)
-        if not os.path.exists(creds_path):
-            return None, None
+        # Use single-source credentials from master file (in-memory)
+        import sys
+        sys.path.insert(0, PARENT_DIR)
+        from googleDrive.credentials_loader import get_sheet_service_account_credentials, get_spreadsheet_id
 
         import gspread
-        from google.oauth2.service_account import Credentials
         scopes = [
             'https://www.googleapis.com/auth/spreadsheets',
             'https://www.googleapis.com/auth/drive'
         ]
-        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        creds = get_sheet_service_account_credentials(scopes=scopes)
         client = gspread.authorize(creds)
-        sheet = client.open_by_key('1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
+        sheet_id = get_spreadsheet_id('master_field_force_sheet') or '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY'
+        sheet = client.open_by_key(sheet_id)
         ws = sheet.get_worksheet_by_id(1219133636)
         if not ws:
             return None, None
@@ -186,31 +179,22 @@ def _try_google_sheet_market_map(mpo_map):
     are unavailable or the service-account key is revoked.
     """
     try:
-        import json
-        fe_dir = os.path.join(PARENT_DIR, "FieldEdit")
-        config_path = os.path.join(fe_dir, "config.json")
-        if not os.path.exists(config_path):
-            return
-        with open(config_path, 'r') as f:
-            cfg = json.load(f)
-        creds_path = cfg.get('credentials_file', 'alco-pharma-cf4b49e394bb.json')
-        if not os.path.isabs(creds_path):
-            creds_path = os.path.join(fe_dir, creds_path)
-        if not os.path.exists(creds_path):
-            return
+        import json, sys
+        sys.path.insert(0, PARENT_DIR)
+        from googleDrive.credentials_loader import get_sheet_service_account_credentials, get_spreadsheet_id
 
         import gspread
-        from google.oauth2.service_account import Credentials
         scopes = [
             'https://www.googleapis.com/auth/spreadsheets',
             'https://www.googleapis.com/auth/drive'
         ]
-        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        creds = get_sheet_service_account_credentials(scopes=scopes)
         client = gspread.authorize(creds)
-        sheet = client.open_by_key(cfg['spreadsheet_id'])
+        sheet_id = get_spreadsheet_id('master_field_force_sheet') or '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY'
+        sheet = client.open_by_key(sheet_id)
 
         worksheet = None
-        target_gid = str(cfg.get('gid', '1918615875'))
+        target_gid = '1918615875'  # from master file's google_sheets.master_field_force_sheet.gid_used
         for ws in sheet.worksheets():
             if str(ws.id) == target_gid:
                 worksheet = ws
@@ -329,41 +313,35 @@ def load_vacant_mpos():
     
     # 1. Try Live Google Sheet
     try:
-        import json
-        fe_dir = os.path.join(PARENT_DIR, "FieldEdit")
-        config_path = os.path.join(fe_dir, "config.json")
-        if os.path.exists(config_path):
-            with open(config_path, 'r') as f:
-                cfg = json.load(f)
-            creds_path = cfg.get('credentials_file', 'alco-pharma-cf4b49e394bb.json')
-            if not os.path.isabs(creds_path):
-                creds_path = os.path.join(fe_dir, creds_path)
-            if os.path.exists(creds_path):
-                import gspread
-                from google.oauth2.service_account import Credentials
-                scopes = [
-                    'https://www.googleapis.com/auth/spreadsheets',
-                    'https://www.googleapis.com/auth/drive'
-                ]
-                creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
-                client = gspread.authorize(creds)
-                sheet = client.open_by_key(cfg['spreadsheet_id'])
-                worksheet = None
-                target_gid = str(cfg.get('gid', '1918615875'))
-                for ws in sheet.worksheets():
-                    if str(ws.id) == target_gid:
-                        worksheet = ws
-                        break
-                if not worksheet:
-                    worksheet = sheet.get_worksheet(0)
-                all_values = worksheet.get_all_values()
-                
-                def gv(row, idx):
-                    return row[idx] if idx < len(row) else ""
-                
-                for row in all_values[1:]:
-                    vac_val = _clean_cell(gv(row, 8)) # Col I (index 8)
-                    if vac_val in ('Y', 'YES', 'TRUE', '1'):
+        import json, sys
+        sys.path.insert(0, PARENT_DIR)
+        from googleDrive.credentials_loader import get_sheet_service_account_credentials, get_spreadsheet_id
+
+        import gspread
+        scopes = [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive'
+        ]
+        creds = get_sheet_service_account_credentials(scopes=scopes)
+        client = gspread.authorize(creds)
+        sheet_id = get_spreadsheet_id('master_field_force_sheet') or '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY'
+        sheet = client.open_by_key(sheet_id)
+        worksheet = None
+        target_gid = '1918615875'  # from credentials_master.json
+        for ws in sheet.worksheets():
+            if str(ws.id) == target_gid:
+                worksheet = ws
+                break
+        if not worksheet:
+            worksheet = sheet.get_worksheet(0)
+        all_values = worksheet.get_all_values()
+
+        def gv(row, idx):
+            return row[idx] if idx < len(row) else ""
+
+        for row in all_values[1:]:
+            vac_val = _clean_cell(gv(row, 8)) # Col I (index 8)
+            if vac_val in ('Y', 'YES', 'TRUE', '1'):
                         code = _clean_cell(gv(row, 12)) # Dream Apps MPO Code (index 12)
                         if code:
                             vacant_codes.add(code)

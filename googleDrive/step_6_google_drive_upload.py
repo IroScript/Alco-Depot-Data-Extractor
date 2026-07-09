@@ -39,10 +39,18 @@ class GoogleDriveUploadApp:
         self.root.configure(bg=_C['void'])
 
         # State Variables
-        self.config_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\config.json'
-        self.creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
-        
-        self.drive_folder_id = tk.StringVar()
+        # Credentials now come from credentials_loader.py (single source of truth).
+        # No more hardcoded JSON paths. The optional user-overridden folder ID is
+        # persisted to <project>/.upload_folder.json (local, gitignored) so users
+        # can override the default depot folder without polluting credentials.
+        try:
+            from googleDrive.credentials_loader import get_drive_folder_id
+            _default_folder = get_drive_folder_id('BARISHAL') or ''
+        except Exception:
+            _default_folder = ''
+        self.config_path = os.path.join(PROJECT_DIR, '.upload_folder.json')
+
+        self.drive_folder_id = tk.StringVar(value=_default_folder)
         self.load_config()
 
         self.files_to_upload = []
@@ -204,9 +212,12 @@ class GoogleDriveUploadApp:
         if not self.files_to_upload:
             messagebox.showerror("Error", "No files found to upload!")
             return
-        
-        if not os.path.exists(self.creds_path):
-            messagebox.showerror("Error", f"Service account key not found at:\n{self.creds_path}")
+
+        # Credentials come from credentials_master.json via credentials_loader — verify it's reachable.
+        try:
+            from credentials_loader import get_drive_service_account_credentials  # noqa: F401
+        except Exception as e:
+            messagebox.showerror("Error", f"credentials_master.json not reachable:\n{e}")
             return
 
         self.btn_upload.configure(state='disabled')
@@ -221,9 +232,10 @@ class GoogleDriveUploadApp:
 
     def upload_thread_proc(self):
         try:
+            from credentials_loader import get_drive_service_account_credentials
             self.log_progress(5, "Connecting to Google Drive API...")
             scopes = ['https://www.googleapis.com/auth/drive']
-            creds = Credentials.from_service_account_file(self.creds_path, scopes=scopes)
+            creds = get_drive_service_account_credentials(scopes=scopes)
             drive_service = build('drive', 'v3', credentials=creds)
 
             # Retrieve Parent Folder ID

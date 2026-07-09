@@ -1,15 +1,10 @@
 import os
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
+from credentials_loader import get_drive_service_account_credentials
 
 def main():
-    creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
-    if not os.path.exists(creds_path):
-        print(f"Credentials not found at {creds_path}")
-        return
-        
-    scopes = ['https://www.googleapis.com/auth/drive']
-    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    creds = get_drive_service_account_credentials()
     drive_service = build('drive', 'v3', credentials=creds)
     
     try:

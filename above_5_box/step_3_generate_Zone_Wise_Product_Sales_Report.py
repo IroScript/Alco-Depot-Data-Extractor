@@ -512,12 +512,13 @@ class ZoneReportApp:
             standard_name_mapping = {}
             try:
                 print("Loading Product Code mapping from Google Sheet (gid=1219133636)...")
-                config_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\config.json'
-                creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
+                import sys, os
+                sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
+                from googleDrive.credentials_loader import get_sheet_service_account_credentials, get_spreadsheet_id
                 scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-                creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+                creds = get_sheet_service_account_credentials(scopes=scopes)
                 client = gspread.authorize(creds)
-                sheet = client.open_by_key('1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
+                sheet = client.open_by_key(get_spreadsheet_id('master_field_force_sheet') or '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
                 ws_prod = sheet.get_worksheet_by_id(1219133636)
                 if ws_prod:
                     rows_prod = ws_prod.get_all_records()
@@ -898,23 +899,18 @@ class ZoneReportApp:
         def task():
             try:
                 self.root.after(0, lambda: self.set_progress(10, 'CONNECTING API'))
-                
-                # Load config
-                config_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\config.json'
-                creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
-                
-                with open(config_path, 'r') as f:
-                    config = json.load(f)
 
+                # Spreadsheet ID and gid are read from credentials_master.json via the loader.
+                from googleDrive.credentials_loader import get_sheet_service_account_credentials, get_spreadsheet_id
                 scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-                creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+                creds = get_sheet_service_account_credentials(scopes=scopes)
                 client = gspread.authorize(creds)
-                sheet = client.open_by_key(config['spreadsheet_id'])
+                sheet = client.open_by_key(get_spreadsheet_id('master_field_force_sheet') or '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
 
                 # Get worksheet
                 ws = None
                 for w in sheet.worksheets():
-                    if str(w.id) == str(config.get('gid', '1918615875')):
+                    if str(w.id) == '1918615875':
                         ws = w
                         break
                 if not ws:

@@ -58,14 +58,12 @@ import json
 # ============================================================================
 
 def load_google_sheet_by_pattern(spreadsheet_id, pattern=None, exact_name=None, has_header=True):
-    config_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\config.json'
-    creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
-    
-    with open(config_path, 'r') as f:
-        config = json.load(f)
-        
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+    from googleDrive.credentials_loader import get_sheet_service_account_credentials
+
     scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    creds = get_sheet_service_account_credentials(scopes=scopes)
     client = gspread.authorize(creds)
     sheet = client.open_by_key(spreadsheet_id)
     
@@ -225,16 +223,22 @@ print("=" * 80)
 print("\n2.1: Reading product names from row 3...")
 product_names_row = df_target_raw.iloc[2]
 
+# Determine safe upper bound: number of columns actually present in row 3
+max_cols_available = len(product_names_row)
 product_names = []
-# There are 17 unique products starting at index 8 (columns 8 to 24)
-for i in range(8, 25):
+# There are 17 unique products starting at index 8 (columns 8 to 24).
+# Use min(25, max_cols_available) so we never read past the end of the row.
+end_index = min(25, max_cols_available)
+# Also ensure start index 8 is within the row
+start_index = min(8, max_cols_available)
+for i in range(start_index, end_index):
     prod_name = product_names_row.iloc[i]
     if pd.notna(prod_name):
         product_names.append(str(prod_name).strip())
     else:
         product_names.append(f"Product_{i}")
 
-print(f"  - Total unique product columns: {len(product_names)}")
+print(f"  - Total unique product columns: {len(product_names)} (row has {max_cols_available} columns, scanned indices {start_index}..{end_index - 1})")
 
 print("\n2.2: Reading data and combining General Party and Type-1 & PP targets...")
 df_raw = df_target_raw.copy()
@@ -253,8 +257,9 @@ df_target_raw.rename(columns={
 }, inplace=True)
 
 # Extract target for MPO/SMPO (General Party) only, completely skipping FM/AM (Type-1 & PP) Targets in columns AA to AQ (index 26 to 42)
-for i in range(8, 25):
-    prod_name = product_names[i - 8]
+# Reuse the safe end_index from above; if the sheet has fewer columns, only iterate what is available.
+for i in range(start_index, end_index):
+    prod_name = product_names[i - start_index]
     val_gp = pd.to_numeric(df_target_raw[i], errors='coerce').fillna(0)
     df_target_raw[prod_name] = val_gp.round(0).astype(int)
 
@@ -415,8 +420,48 @@ for idx, row in df_target_filtered.iterrows():
 print("\n3.4: Matching markets (zone-aware two-pass with split-combine support)...")
 
 def safe_num(val):
-    v = pd.to_numeric(val, errors='coerce')
-    return 0 if pd.isna(v) else v
+    """Coerce a value (or scalar/Series/DataFrame) to a single numeric scalar.
+    Handles three cases:
+      1. scalar number/string  -> converted via to_numeric
+      2. pandas Series/DataFrame (duplicate columns) -> take first non-null element
+      3. dict -> use first value
+    """
+    # If val is a DataFrame or Series (e.g. duplicate column names), collapse to a single scalar
+    if isinstance(val, pd.DataFrame):
+        if val.empty:
+            return 0
+        flat = val.iloc[0, 0]
+    elif isinstance(val, pd.Series):
+        flat = val.iloc[0] if not val.empty else None
+    else:
+        flat = val
+    try:
+        v = pd.to_numeric([flat], errors='coerce')[0]
+    except Exception:
+        v = 0
+    if v is None or pd.isna(v):
+        return 0
+    return v
+
+
+def _scalar(row_like, col, default=None):
+    """Safely read a scalar value from a Series row or DataFrame slice.
+    Used to defend against duplicate column names which make row[col] return
+    a DataFrame instead of a scalar.
+    """
+    try:
+        val = row_like[col]
+    except Exception:
+        return default
+    if isinstance(val, pd.DataFrame):
+        if val.empty:
+            return default
+        return val.iloc[0, 0]
+    if isinstance(val, pd.Series):
+        if val.empty:
+            return default
+        return val.iloc[0]
+    return val
 
 matches = []      # List of (mpo_market, target_market, score, type)
 no_matches = []
@@ -440,18 +485,19 @@ for idx, row in df_mpo.iterrows():
         candidates = target_norm_dict[no_paren]
         
     if candidates:
-        zone_matched = [c for c in candidates if zone_matches(mpo_zone, c['Zone'])]
+        zone_matched = [c for c in candidates if zone_matches(mpo_zone, _scalar(c, 'Zone'))]
         if zone_matched:
             whole_match_row = zone_matched[0]
         else:
             whole_match_row = candidates[0]
-            
+
     if whole_match_row is not None:
-        matches.append((mpo_market, whole_match_row['Market'], whole_score, whole_match_type))
-        df_mpo.at[idx, '_matched_to'] = whole_match_row['Market']
+        matched_market_name = _scalar(whole_match_row, 'Market')
+        matches.append((mpo_market, matched_market_name, whole_score, whole_match_type))
+        df_mpo.at[idx, '_matched_to'] = matched_market_name
         for col in product_cols:
-            df_mpo.at[idx, col] = safe_num(whole_match_row[col])
-            
+            df_mpo.at[idx, col] = safe_num(_scalar(whole_match_row, col))
+
     elif '+' in mpo_market:
         # Fallback to split-combine matching if no whole-name match
         parts = [p.strip() for p in mpo_market.split('+')]
@@ -459,26 +505,26 @@ for idx, row in df_mpo.iterrows():
         for part in parts:
             part_norm = normalize_core(part)
             part_no_paren = remove_all_parens(part_norm)
-            
+
             best_t_row = None
             if part_norm in target_norm_dict:
                 part_cands = target_norm_dict[part_norm]
-                zone_cands = [c for c in part_cands if zone_matches(mpo_zone, c['Zone'])]
+                zone_cands = [c for c in part_cands if zone_matches(mpo_zone, _scalar(c, 'Zone'))]
                 best_t_row = zone_cands[0] if zone_cands else part_cands[0]
             elif part_no_paren in target_norm_dict:
                 part_cands = target_norm_dict[part_no_paren]
-                zone_cands = [c for c in part_cands if zone_matches(mpo_zone, c['Zone'])]
+                zone_cands = [c for c in part_cands if zone_matches(mpo_zone, _scalar(c, 'Zone'))]
                 best_t_row = zone_cands[0] if zone_cands else part_cands[0]
-                    
+
             if best_t_row is not None:
                 matched_rows_for_parts.append(best_t_row)
-                
+
         if len(matched_rows_for_parts) == len(parts):
-            combined_target_name = ' + '.join([str(r['Market']) for r in matched_rows_for_parts])
+            combined_target_name = ' + '.join([str(_scalar(r, 'Market')) for r in matched_rows_for_parts])
             matches.append((mpo_market, combined_target_name, 1.0, 'Combined'))
             df_mpo.at[idx, '_matched_to'] = combined_target_name
             for col in product_cols:
-                df_mpo.at[idx, col] = sum(safe_num(r[col]) for r in matched_rows_for_parts)
+                df_mpo.at[idx, col] = sum(safe_num(_scalar(r, col)) for r in matched_rows_for_parts)
         else:
             no_matches.append((mpo_market, 0.0))
             df_mpo.at[idx, '_matched_to'] = None
@@ -616,12 +662,11 @@ def find_product_code(target_product, product_code_dict):
 excel_mapping = {}
 try:
     print("\n4.2: Loading Product Code mapping from Google Sheet (gid=1219133636)...")
-    config_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\config.json'
-    creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
+    from googleDrive.credentials_loader import get_sheet_service_account_credentials, get_spreadsheet_id
     scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    creds = get_sheet_service_account_credentials(scopes=scopes)
     client = gspread.authorize(creds)
-    sheet = client.open_by_key('1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
+    sheet = client.open_by_key(get_spreadsheet_id('master_field_force_sheet') or '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
     ws_prod = sheet.get_worksheet_by_id(1219133636)
     if ws_prod:
         data_prod = ws_prod.get_all_records()
@@ -638,7 +683,8 @@ except Exception as ex:
     print(f"  - Note: Could not load Product mapping from Google Sheet ({str(ex)[:80]}). Using resilient fallback...")
 
 if not excel_mapping:
-    excel_path = r'c:\Users\Irak\Desktop\Barishal April Data\PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx'
+    _project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    excel_path = os.path.join(_project_dir, 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx')
     if os.path.exists(excel_path):
         try:
             df_excel = pd.read_excel(excel_path)

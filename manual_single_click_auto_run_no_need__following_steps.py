@@ -503,8 +503,68 @@ def main():
             # Drop helper columns
             df_merged.drop(columns=['DEPOT_mpo', 'MPO_CODE_mpo'], errors='ignore', inplace=True)
         else:
-            print("⚠ Warning: mpo_code.xlsx not found. Processing raw detailed data without mapping.")
-            df_merged = detailed_grouped.copy()
+            # Local mpo_code.xlsx not available -> try the Google Sheet
+            # (DREAM APPS MPO CODE column) as the source of truth.
+            print("[WARN] mpo_code.xlsx not found. Trying Google Sheet DREAM APPS MPO CODE column...")
+            try:
+                _gsheet_url = 'https://docs.google.com/spreadsheets/d/1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY/export?format=xlsx&gid=1918615875'
+                df_mpo = pd.read_excel(_gsheet_url, engine='openpyxl')
+                rename_map = {}
+                for c in df_mpo.columns:
+                    cs = str(c).strip().upper()
+                    if cs == 'DREAM APPS MPO CODE':
+                        rename_map[c] = 'MPO CODE'
+                    elif cs == 'DREAM APPS DEPOT':
+                        rename_map[c] = 'DEPOT'
+                    elif cs == 'DREAM APPS ZONE':
+                        rename_map[c] = 'ZONE'
+                if rename_map:
+                    df_mpo.rename(columns=rename_map, inplace=True)
+
+                # Filter blank MPO CODE and DEPOT rows (footer/notes in the sheet)
+                _raw_n = len(df_mpo)
+                if 'MPO CODE' in df_mpo.columns:
+                    df_mpo['MPO CODE'] = df_mpo['MPO CODE'].astype(str).str.strip()
+                    df_mpo = df_mpo[df_mpo['MPO CODE'].notna()
+                                    & (df_mpo['MPO CODE'] != '')
+                                    & (df_mpo['MPO CODE'].str.lower() != 'nan')]
+                if 'DEPOT' in df_mpo.columns:
+                    df_mpo['DEPOT'] = df_mpo['DEPOT'].astype(str).str.strip()
+                    df_mpo = df_mpo[df_mpo['DEPOT'].notna()
+                                    & (df_mpo['DEPOT'] != '')
+                                    & (df_mpo['DEPOT'].str.lower() != 'nan')]
+                print(f"  Filtered blank MPO rows: {_raw_n} -> {len(df_mpo)} valid rows")
+
+                # Normalize keys
+                if 'MPO CODE' in df_mpo.columns:
+                    df_mpo['MPO CODE'] = df_mpo['MPO CODE'].astype(str).str.strip().str.upper()
+                if 'DEPOT' in df_mpo.columns:
+                    df_mpo['DEPOT'] = df_mpo['DEPOT'].astype(str).str.strip().str.upper()
+
+                # Cache locally
+                try:
+                    os.makedirs(os.path.dirname(mpo_code_xlsx), exist_ok=True)
+                    df_mpo.to_excel(mpo_code_xlsx, index=False)
+                except Exception:
+                    pass
+
+                df_mpo_temp = df_mpo.copy()
+                df_mpo_temp.rename(columns={'DEPOT': 'DEPOT_mpo', 'MPO CODE': 'MPO_CODE_mpo'}, inplace=True)
+                df_merged = pd.merge(
+                    detailed_grouped,
+                    df_mpo_temp,
+                    left_on=['Depot', 'MPO_Code'],
+                    right_on=['DEPOT_mpo', 'MPO_CODE_mpo'],
+                    how='left'
+                )
+                if 'ZONE' in df_mpo.columns:
+                    depot_to_zone = df_mpo.groupby('DEPOT')['ZONE'].first().to_dict()
+                    df_merged['ZONE'] = df_merged['ZONE'].fillna(df_merged['Depot'].map(depot_to_zone))
+                df_merged.drop(columns=['DEPOT_mpo', 'MPO_CODE_mpo'], errors='ignore', inplace=True)
+                print(f"  [OK] Enriched {len(df_merged)} rows with MPO mapping from Google Sheet")
+            except Exception as e:
+                print(f"  [WARN] Could not load MPO mapping from Google Sheet: {e}")
+                df_merged = detailed_grouped.copy()
 
         # Load environment credentials for cloud upload
         def load_env_local(e_path):

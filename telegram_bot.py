@@ -55,17 +55,13 @@ if not GROQ_API_KEY:
 # ══════════════════════════════════════════════════════════════════
 
 def download_sales_db_from_gdrive(base_dir):
-    creds_path = os.path.join(base_dir, "FieldEdit", "alco-pharma-cf4b49e394bb.json")
-    if not os.path.exists(creds_path):
-        print(f"❌ Error: Service account key not found at {creds_path}")
-        return False
-        
     try:
+        from googleDrive.credentials_loader import get_drive_service_account_credentials
         print("🔄 Connecting to Google Drive via Service Account...")
         scopes = ['https://www.googleapis.com/auth/drive']
-        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        creds = get_drive_service_account_credentials(scopes=scopes)
         drive_service = build('drive', 'v3', credentials=creds)
-        
+
         # Parent folder ID where sales.db is located
         parent_folder_id = "1fRl-N_fNU_bJfkxH9a_EYLJeHPB43gzv"
         query = f"'{parent_folder_id}' in parents and name = 'sales.db' and trashed = false"

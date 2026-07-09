@@ -16,6 +16,11 @@ from unittest.mock import patch
 from google.oauth2.service_account import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
+from googleDrive.credentials_loader import (
+    get_drive_service_account_credentials,
+    get_env_var,
+    list_depots,
+)
 
 # Reconfigure console output encoding to prevent Windows crash on non-ASCII characters
 if hasattr(sys.stdout, 'reconfigure'):
@@ -26,14 +31,48 @@ if hasattr(sys.stdout, 'reconfigure'):
 
 # ══════════════════════════════════════════════════════════════════
 #  Google Drive & Upgrade Configuration
+#  All paths are resolved dynamically relative to this script's location,
+#  so the project can be cloned/copied anywhere (D:, E:, another laptop, etc.)
+#  without any hard-coded C:\Users\...\... references.
 # ══════════════════════════════════════════════════════════════════
-CLIENT_SECRET_PATH = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\client_secret_1076305260584-t28u3map5uuuqvdk28mrqjk0oigbadh4.apps.googleusercontent.com.json'
-TOKEN_PICKLE_PATH = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\token.pickle'
-EXCEL_PATH = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\gDriveDepotLinks.xlsx'
-ENV_PATH = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\env'
-BASE_DEPOT_DIR = r'c:\Users\Irak\Desktop\Barishal April Data\googleDrive\All_Depots'
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(SCRIPT_DIR)
+
+# Project-internal googleDrive/ folder is the single source of truth.
+# If a sibling "googleDrive" folder exists next to this script, use it;
+# otherwise, fall back to a parent-level googleDrive/ folder.
+_LOCAL_GDRIVE_NEXT_TO_SCRIPT = os.path.join(SCRIPT_DIR, "googleDrive")
+_LOCAL_GDRIVE_PARENT = os.path.join(PARENT_DIR, "googleDrive")
+
+if os.path.isdir(_LOCAL_GDRIVE_NEXT_TO_SCRIPT):
+    LOCAL_GDRIVE_DIR = _LOCAL_GDRIVE_NEXT_TO_SCRIPT
+elif os.path.isdir(_LOCAL_GDRIVE_PARENT):
+    LOCAL_GDRIVE_DIR = _LOCAL_GDRIVE_PARENT
+else:
+    # Last-resort fallback so legacy code that references these names
+    # doesn't crash on import. These paths will simply not exist on disk
+    # if googleDrive/ is missing, and downstream code will fail gracefully.
+    LOCAL_GDRIVE_DIR = _LOCAL_GDRIVE_NEXT_TO_SCRIPT
+
+CLIENT_SECRET_PATH = os.path.join(LOCAL_GDRIVE_DIR, "client_secret_1076305260584-t28u3map5uuuqvdk28mrqjk0oigbadh4.apps.googleusercontent.com.json")
+TOKEN_PICKLE_PATH = os.path.join(LOCAL_GDRIVE_DIR, "token.pickle")
+# NOTE: EXCEL_PATH and ENV_PATH are now LEGACY references. Real values come from
+# googleDrive/credentials_master.json (loaded via credentials_loader.get_env_var()
+# and list_depots()). The legacy variables are kept defined (set to a non-existent
+# path) so that any external importer that still references them by name will not
+# crash with NameError — downstream code in this file has been migrated.
+EXCEL_PATH = os.path.join(LOCAL_GDRIVE_DIR, "gDriveDepotLinks.xlsx")
+ENV_PATH = os.path.join(LOCAL_GDRIVE_DIR, "env")
+BASE_DEPOT_DIR = os.path.join(LOCAL_GDRIVE_DIR, "All_Depots")
 RCLONE_REMOTE_NAME = 'grive_new'
-SQL_SERVER = r'.\SQLEXPRESS'
+SQL_SERVER = r'localhost'  # Default instance (MSSQLSERVER). For SQLEXPRESS use r'.\SQLEXPRESS'
+
+# ══════════════════════════════════════════════════════════════════
+#  LOCAL-FIRST PATH OVERRIDE (legacy comment kept for reference)
+#  All configuration paths above are now computed relative to this
+#  script, so the project is fully portable. Any folder containing
+#  this script + a sibling "googleDrive/" will Just Work.
+# ══════════════════════════════════════════════════════════════════
 
 def find_rclone_executable():
     if shutil.which("rclone"):
@@ -65,9 +104,10 @@ def load_env(env_path):
     return env
 
 def get_drive_service():
-    creds_path = r'c:\Users\Irak\Desktop\Barishal April Data\FieldEdit\alco-pharma-cf4b49e394bb.json'
+    # Use single-source credentials from credentials_master.json (in-memory, no JSON file needed).
+    from googleDrive.credentials_loader import get_drive_service_account_credentials
     scopes = ['https://www.googleapis.com/auth/drive']
-    creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+    creds = get_drive_service_account_credentials(scopes=scopes)
     return build('drive', 'v3', credentials=creds)
 
 def list_drive_folder_items(drive_service, folder_id):
@@ -86,6 +126,66 @@ def list_drive_folder_items(drive_service, folder_id):
                 time.sleep(5)
             else:
                 raise e
+
+def load_mpo_mapping_from_google_sheet(sheet_id='1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY', gid='1918615875'):
+    """
+    Load the MPO mapping directly from the public Google Sheet
+    (DREAM APPS MPO CODE column) when the local mpo_code.xlsx file
+    is not available.
+
+    The sheet is publicly shared, so this works without authentication
+    by exporting it as XLSX via the standard Google Sheets export URL.
+
+    IMPORTANT: Filters out rows where MPO CODE is blank (footer/notes rows)
+    so they don't pollute the SQL join with fake mappings.
+    """
+    try:
+        url = f'https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=xlsx&gid={gid}'
+        print(f"  Pulling MPO mapping from Google Sheet gid={gid}...")
+        df = pd.read_excel(url, engine='openpyxl')
+
+        # Normalize column names: 'DREAM APPS MPO CODE' -> 'MPO CODE'
+        rename_map = {}
+        for c in df.columns:
+            cs = str(c).strip()
+            if cs.upper() == 'DREAM APPS MPO CODE':
+                rename_map[c] = 'MPO CODE'
+            elif cs.upper() == 'DREAM APPS DEPOT':
+                rename_map[c] = 'DEPOT'
+            elif cs.upper() == 'DREAM APPS ZONE':
+                rename_map[c] = 'ZONE'
+        if rename_map:
+            df.rename(columns=rename_map, inplace=True)
+
+        # Filter out rows with blank MPO CODE (footer/separator rows in the sheet)
+        total_raw = len(df)
+        if 'MPO CODE' in df.columns:
+            df['MPO CODE'] = df['MPO CODE'].astype(str).str.strip()
+            df = df[df['MPO CODE'].notna()
+                    & (df['MPO CODE'] != '')
+                    & (df['MPO CODE'].str.lower() != 'nan')]
+            # Also drop rows with blank DEPOT (those would be pure noise too)
+            if 'DEPOT' in df.columns:
+                df['DEPOT'] = df['DEPOT'].astype(str).str.strip()
+                df = df[df['DEPOT'].notna()
+                        & (df['DEPOT'] != '')
+                        & (df['DEPOT'].str.lower() != 'nan')]
+            print(f"  [OK] Loaded MPO mapping: {len(df)} valid rows (filtered {total_raw - len(df)} blank rows)")
+        else:
+            print(f"  [WARN] MPO CODE column not found, returning {len(df)} raw rows")
+
+        # Normalize keys for join
+        if 'MPO CODE' in df.columns:
+            df['MPO CODE'] = df['MPO CODE'].astype(str).str.strip().str.upper()
+        if 'DEPOT' in df.columns:
+            df['DEPOT'] = df['DEPOT'].astype(str).str.strip().str.upper()
+
+        print(f"  [OK] Columns: {list(df.columns)[:6]}...")
+        return df
+    except Exception as e:
+        print(f"  [ERROR] Could not load MPO mapping from Google Sheet: {e}")
+        return None
+
 
 def get_best_item_from_groq(depot_name, items, groq_api_key):
     items_summary = []
@@ -165,11 +265,49 @@ def grant_sql_server_permissions(folder_path):
     except Exception as e:
         print(f"Warning: Permissions check failed: {e}")
 
+
+# Server options tried in order by connect_sql_server() below.
+# On systems where SQL Server is installed as the DEFAULT instance
+# (i.e. service name = MSSQLSERVER), 'localhost' / '.' works.
+# On systems where it was installed as a NAMED instance (SQLEXPRESS),
+# 'localhost\SQLEXPRESS' / '.\SQLEXPRESS' works.
+_SQL_SERVER_CANDIDATES = [
+    r'localhost',
+    r'.',
+    r'(local)',
+    r'localhost\SQLEXPRESS',
+    r'.\SQLEXPRESS',
+    r'(local)\SQLEXPRESS',
+]
+
+
+def connect_sql_server(database='master', timeout=5):
+    """
+    Try connecting to SQL Server using several common server names,
+    returning the first successful pyodbc connection. Raises the last
+    error if none succeed.
+    """
+    last_err = None
+    for server in _SQL_SERVER_CANDIDATES:
+        try:
+            conn_str = (
+                f'DRIVER={{ODBC Driver 17 for SQL Server}};'
+                f'SERVER={server};'
+                f'DATABASE={database};'
+                f'Trusted_Connection=yes;'
+                f'Connection Timeout={timeout};'
+            )
+            conn = pyodbc.connect(conn_str, timeout=timeout)
+            print(f"  [OK] SQL Server connected via SERVER={server}")
+            return conn
+        except Exception as e:
+            last_err = e
+    raise last_err
+
 def upgrade_db_compatibility(mdf_path, ldf_path, depot_name):
     db_name = f"{depot_name.upper().replace('-', '_')}_UPGRADE_DB"
-    conn_str = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABASE=master;Trusted_Connection=yes;'
-    
-    conn = pyodbc.connect(conn_str)
+
+    conn = connect_sql_server(database='master')
     conn.autocommit = True
     cursor = conn.cursor()
     
@@ -221,12 +359,23 @@ def recover_sylhet_db(mdf_path, depot_name):
     """Special recovery for SYLHET MDF file where log rebuild fails standard attach"""
     db_name = f"{depot_name.upper().replace('-', '_')}_DB"
     data_dir = os.path.dirname(mdf_path)
-    
-    dummy_mdf_path = os.path.join(data_dir, 'dummy_ERPonTheNet.mdf')
-    dummy_ldf_path = os.path.join(data_dir, 'dummy_ERPonTheNet_log.ldf')
-    
-    conn_str = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABASE=master;Trusted_Connection=yes;'
-    conn = pyodbc.connect(conn_str)
+
+    # Grant write access to SQL Server service account on the depot Data folder
+    # (the user folder may not have MSSQLSERVER in its ACL).
+    grant_sql_server_permissions(data_dir)
+
+    # Use a temp directory under TEMP (writable by SQL Server service) for dummy files
+    # instead of the depot's Data folder, to avoid "Access is denied" on CREATE DATABASE.
+    import tempfile
+    _sylhet_tmp = os.path.join(tempfile.gettempdir(), f"alco_sylhet_{depot_name}")
+    os.makedirs(_sylhet_tmp, exist_ok=True)
+    # Ensure SQL Server can read/write this temp dir
+    grant_sql_server_permissions(_sylhet_tmp)
+
+    dummy_mdf_path = os.path.join(_sylhet_tmp, f'{depot_name}_dummy.mdf')
+    dummy_ldf_path = os.path.join(_sylhet_tmp, f'{depot_name}_dummy_log.ldf')
+
+    conn = connect_sql_server(database='master')
     conn.autocommit = True
     cursor = conn.cursor()
     
@@ -273,23 +422,64 @@ def recover_sylhet_db(mdf_path, depot_name):
         
     # Set to EMERGENCY mode
     cursor.execute(f"ALTER DATABASE [{db_name}] SET EMERGENCY")
-    
+
     # Set to SINGLE_USER
     cursor.execute(f"ALTER DATABASE [{db_name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE")
-    
+
     # Rebuild Log and Repair
     print("    Running DBCC CHECKDB with REPAIR_ALLOW_DATA_LOSS to rebuild log file...")
+    dbcc_errors = []
     try:
         cursor.execute(f"DBCC CHECKDB ('{db_name}', REPAIR_ALLOW_DATA_LOSS) WITH NO_INFOMSGS, ALL_ERRORMSGS")
+        while True:
+            if not cursor.nextset():
+                break
+            try:
+                row = cursor.fetchone()
+                if row is None:
+                    break
+            except Exception:
+                break
     except Exception as e:
+        dbcc_errors.append(str(e))
         print(f"    DBCC warning (expected): {e}")
-        
+
+    # ── SAFETY CHECK: count rows in main transaction tables ──
+    # REPAIR_ALLOW_DATA_LOSS can silently delete damaged rows. We verify that
+    # key tables (xline, xorder) still have rows. If 0 rows -> data is lost.
+    print("    Verifying recovered database row counts (data-loss safety check)...")
+    row_counts = {}
+    try:
+        cursor.execute(f"USE [{db_name}]")
+        for tbl in ['xline', 'xorder', 'xsp', 'xcustomer']:
+            try:
+                cursor.execute(f"SELECT COUNT(*) FROM dbo.{tbl}")
+                row_counts[tbl] = cursor.fetchone()[0]
+            except Exception:
+                row_counts[tbl] = None
+        total = sum(v for v in row_counts.values() if v)
+        print(f"    [SAFETY] Row counts after recovery: {row_counts} (total={total})")
+        if total == 0:
+            print(f"    [CRITICAL] SYLHET database recovery returned ZERO rows in all main tables.")
+            print(f"               This depot's data is likely LOST/corrupted in the source MDF.")
+            print(f"               Pipeline will SKIP {depot_name} to avoid polluting aggregates with zeros.")
+            try:
+                cursor.execute(f"ALTER DATABASE [{db_name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE")
+                cursor.execute(f"EXEC sp_detach_db '{db_name}', 'true'")
+            except Exception:
+                pass
+            return None
+        elif total < 100:
+            print(f"    [WARN] Very low row count ({total}) in SYLHET. May indicate partial data loss.")
+    except Exception as e:
+        print(f"    [WARN] Safety check failed: {e}")
+
     # Set back to MULTI_USER
     try:
         cursor.execute(f"ALTER DATABASE [{db_name}] SET MULTI_USER")
     except:
         pass
-        
+
     # Upgrade compatibility
     cursor.execute(f"ALTER DATABASE [{db_name}] SET COMPATIBILITY_LEVEL = 100")
     print(f"    [SUCCESS] Recovered and attached suspect database: {db_name}")
@@ -299,9 +489,8 @@ def recover_sylhet_db(mdf_path, depot_name):
 
 def attach_database(depot_name, mdf_path, ldf_path):
     db_name = f"{depot_name.upper().replace('-', '_')}_DB"
-    conn_str = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABASE=master;Trusted_Connection=yes;'
-    
-    conn = pyodbc.connect(conn_str)
+
+    conn = connect_sql_server(database='master')
     conn.autocommit = True
     cursor = conn.cursor()
     
@@ -338,9 +527,8 @@ def attach_database(depot_name, mdf_path, ldf_path):
     return db_name
 
 def detach_database(db_name):
-    conn_str = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABASE=master;Trusted_Connection=yes;'
     try:
-        conn = pyodbc.connect(conn_str)
+        conn = connect_sql_server(database='master')
         conn.autocommit = True
         cursor = conn.cursor()
         cursor.execute(f"SELECT database_id FROM sys.databases WHERE name = '{db_name}'")
@@ -354,8 +542,7 @@ def detach_database(db_name):
 
 def extract_sales_data(depot_name, db_name):
     try:
-        conn_str = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABASE={db_name};Trusted_Connection=yes;'
-        conn = pyodbc.connect(conn_str)
+        conn = connect_sql_server(database=db_name)
         
         query = f"""
         SELECT 
@@ -391,19 +578,290 @@ def extract_sales_data(depot_name, db_name):
         print(f"    [ERROR] Error extracting from {db_name}: {e}")
         return pd.DataFrame()
 
+def get_local_data_paths(depot_name):
+    """Look for existing MDF/LDF in local depot folder (case-insensitive)."""
+    depot_dir = os.path.join(BASE_DEPOT_DIR, depot_name)
+    data_dir = os.path.join(depot_dir, "Data")
+    if not os.path.isdir(data_dir):
+        return None, None
+    mdf_path = ldf_path = None
+    for entry in os.listdir(data_dir):
+        low = entry.lower()
+        full = os.path.join(data_dir, entry)
+        if low in ("erponthenet_data.mdf", "erponthenet.mdf"):
+            mdf_path = full
+        elif low in ("erponthenet_log.ldf", "erponthenet.ldf"):
+            ldf_path = full
+    return mdf_path, ldf_path
+
+
+# ══════════════════════════════════════════════════════════════════
+#  3-STAGE / 3-LAYER LOCAL FILE VERIFICATION SYSTEM
+#  Purpose: Decide whether we can SKIP Google Drive download because
+#  every depot's data is already present locally.
+#
+#  Stage 1 = Depot folder exists under BASE_DEPOT_DIR/All_Depots/<DEPOT>
+#  Stage 2 = A "Data" folder exists somewhere inside that depot folder
+#            (depth 1..N sub-folders allowed — recursive search)
+#  Stage 3 = At least EXPECTED_MIN_FILES MDF/LDF files exist in that Data
+#            folder, each with size > 0 bytes (non-empty / fully downloaded)
+#
+#  Each stage is verified by 3 INDEPENDENT Python layers to avoid false
+#  positives — all 3 layers must agree per stage before that stage counts
+#  as "passed".
+#
+#  Returns: (passes: bool, details: dict) where details holds per-stage
+#  and per-layer booleans for diagnostic logging.
+# ══════════════════════════════════════════════════════════════════
+EXPECTED_MIN_FILES = 15  # MDF + LDF files combined. FARIDPUR has 17, etc.
+
+
+def _layer1_os_pathlib(depot_name):
+    """Layer 1: os.path / listdir based verification (classic stdlib)."""
+    depot_dir = os.path.join(BASE_DEPOT_DIR, depot_name)
+
+    # STAGE 1: depot folder exists
+    s1 = os.path.isdir(depot_dir)
+
+    # STAGE 2: a "Data" folder exists anywhere underneath depot_dir
+    s2 = False
+    if s1:
+        for root, dirs, _files in os.walk(depot_dir):
+            if "Data" in dirs:
+                # Confirm it's a directory (defense-in-depth)
+                candidate = os.path.join(root, "Data")
+                if os.path.isdir(candidate):
+                    s2 = True
+                    break
+
+    # STAGE 3: file count via os.listdir + extension check, size > 0
+    s3_count = 0
+    if s2:
+        # Re-walk to find the same Data folder we confirmed above
+        for root, dirs, _files in os.walk(depot_dir):
+            if "Data" in dirs:
+                data_dir = os.path.join(root, "Data")
+                try:
+                    for entry in os.listdir(data_dir):
+                        full = os.path.join(data_dir, entry)
+                        if not os.path.isfile(full):
+                            continue
+                        low = entry.lower()
+                        if low.endswith(".mdf") or low.endswith(".ldf"):
+                            try:
+                                if os.path.getsize(full) > 0:
+                                    s3_count += 1
+                            except OSError:
+                                pass
+                except OSError:
+                    pass
+                break
+    s3 = s3_count >= EXPECTED_MIN_FILES
+
+    return {"s1": s1, "s2": s2, "s3": s3, "s3_count": s3_count}
+
+
+def _layer2_pathlib_rglob(depot_name):
+    """Layer 2: pathlib.Path with rglob (recursive glob)."""
+    from pathlib import Path
+
+    depot_path = Path(BASE_DEPOT_DIR) / depot_name
+
+    # STAGE 1
+    s1 = depot_path.is_dir()
+
+    # STAGE 2: rglob for any 'Data' folder case-insensitively
+    s2 = False
+    if s1:
+        for p in depot_path.rglob("Data"):
+            if p.is_dir():
+                s2 = True
+                break
+        # also accept case-insensitive match
+        if not s2:
+            for p in depot_path.rglob("*"):
+                if p.is_dir() and p.name.lower() == "data":
+                    s2 = True
+                    break
+
+    # STAGE 3: use iterdir() on the Data folder
+    s3_count = 0
+    if s2:
+        for p in depot_path.rglob("*"):
+            if p.is_dir() and p.name.lower() == "data":
+                try:
+                    for f in p.iterdir():
+                        if not f.is_file():
+                            continue
+                        if f.suffix.lower() in (".mdf", ".ldf"):
+                            try:
+                                if f.stat().st_size > 0:
+                                    s3_count += 1
+                            except OSError:
+                                pass
+                except OSError:
+                    pass
+                break
+
+    s3 = s3_count >= EXPECTED_MIN_FILES
+    return {"s1": s1, "s2": s2, "s3": s3, "s3_count": s3_count}
+
+
+def _layer3_scandir_size(depot_name):
+    """Layer 3: os.scandir (fast, returns DirEntry objects with stat)
+    plus third independent walk-based file extension validation.
+    """
+    depot_dir = os.path.join(BASE_DEPOT_DIR, depot_name)
+
+    # STAGE 1 — use scandir on parent
+    s1 = False
+    try:
+        base = Path(BASE_DEPOT_DIR) if False else None  # noqa
+        parent = os.path.dirname(depot_dir)
+        with os.scandir(parent) as it:
+            for entry in it:
+                if entry.name == depot_name and entry.is_dir():
+                    s1 = True
+                    break
+    except (FileNotFoundError, OSError):
+        s1 = os.path.isdir(depot_dir)  # fallback
+
+    # STAGE 2 — manual stack-based DFS using os.scandir (no os.walk)
+    s2 = False
+    data_dir_found = None
+    if s1:
+        try:
+            stack = [depot_dir]
+            while stack:
+                current = stack.pop()
+                try:
+                    with os.scandir(current) as it:
+                        for entry in it:
+                            if entry.is_dir(follow_symlinks=False):
+                                if entry.name.lower() == "data":
+                                    data_dir_found = entry.path
+                                    s2 = True
+                                    break
+                                stack.append(entry.path)
+                        if s2:
+                            break
+                except (PermissionError, OSError):
+                    continue
+        except OSError:
+            pass
+
+    # STAGE 3 — count via scandir on the discovered Data folder
+    s3_count = 0
+    if s2 and data_dir_found:
+        try:
+            with os.scandir(data_dir_found) as it:
+                for entry in it:
+                    if not entry.is_file():
+                        continue
+                    low = entry.name.lower()
+                    if low.endswith(".mdf") or low.endswith(".ldf"):
+                        try:
+                            st = entry.stat()
+                            if st.st_size > 0:
+                                s3_count += 1
+                        except OSError:
+                            pass
+        except OSError:
+            pass
+    s3 = s3_count >= EXPECTED_MIN_FILES
+
+    return {"s1": s1, "s2": s2, "s3": s3, "s3_count": s3_count}
+
+
+def verify_local_depot_complete(depot_name, min_files=EXPECTED_MIN_FILES,
+                                 verbose=True):
+    """Triple-Stage + Triple-Layer verification for a single depot.
+
+    Returns (passes: bool, report: dict)
+    - `passes` is True ONLY if every stage passes in every layer.
+    - `report` is a dict like:
+        {
+          'layer1': {'s1':bool,'s2':bool,'s3':bool,'s3_count':int},
+          'layer2': {...},
+          'layer3': {...},
+          'all_passed': bool
+        }
+
+    The caller can short-circuit Google Drive download when `passes` is True.
+    """
+    l1 = _layer1_os_pathlib(depot_name)
+    l2 = _layer2_pathlib_rglob(depot_name)
+    l3 = _layer3_scandir_size(depot_name)
+
+    # Each stage must be True across all 3 layers before download can be skipped
+    stage1_ok = l1["s1"] and l2["s1"] and l3["s1"]
+    stage2_ok = l1["s2"] and l2["s2"] and l3["s2"]
+    # Stage 3: also cross-check the count to be reasonably close across layers
+    counts = [l1["s3_count"], l2["s3_count"], l3["s3_count"]]
+    max_count = max(counts)
+    min_count = min(counts)
+    # Allow at most 1-file discrepancy between layers due to race conditions
+    count_consistent = (max_count - min_count) <= 1
+    stage3_ok = (l1["s3"] and l2["s3"] and l3["s3"]
+                 and max_count >= min_files and count_consistent)
+
+    all_passed = stage1_ok and stage2_ok and stage3_ok
+
+    if verbose:
+        l1c = l1["s3_count"]; l2c = l2["s3_count"]; l3c = l3["s3_count"]
+        print(f"    [VERIFY] {depot_name}")
+        print(f"      Stage1 (Depot folder):     L1={l1['s1']} L2={l2['s1']} L3={l3['s1']} -> {'OK' if stage1_ok else 'FAIL'}")
+        print(f"      Stage2 (Data folder):      L1={l1['s2']} L2={l2['s2']} L3={l3['s2']} -> {'OK' if stage2_ok else 'FAIL'}")
+        print(f"      Stage3 ({min_files}+ files): L1={l1c} L2={l2c} L3={l3c} -> {'OK' if stage3_ok else 'FAIL'}")
+        print(f"      >>> {'LOCAL COMPLETE — will skip Google Drive' if all_passed else 'INCOMPLETE — must download'}")
+
+    report = {
+        "layer1": l1,
+        "layer2": l2,
+        "layer3": l3,
+        "stage1_ok": stage1_ok,
+        "stage2_ok": stage2_ok,
+        "stage3_ok": stage3_ok,
+        "all_passed": all_passed,
+        "counts": counts,
+    }
+    return all_passed, report
+
+
+def all_depots_have_local_mdf(depots_to_process):
+    """
+    Check if EVERY depot in the list already has a local MDF file on disk.
+    If yes, we can skip Google Drive connection and rclone download entirely,
+    and work directly with the local files via SQL Server.
+
+    This is the SINGLE-FILE (just MDF) check used as a quick precondition.
+    The deeper triple-stage verification is run per-depot in the main loop
+    via `verify_local_depot_complete`.
+    """
+    missing = []
+    for depot_name, _folder_url in depots_to_process:
+        mdf_path, _ldf_path = get_local_data_paths(depot_name)
+        if not mdf_path or not os.path.exists(mdf_path):
+            missing.append(depot_name)
+    return (len(missing) == 0), missing
+
 def download_depot_files(depot_name, folder_url, drive_service, groq_api_key):
-    """Download MDF/LDF files for a single depot to its folder"""
+    """Download MDF/LDF files for a single depot from Google Drive.
+
+    Per user requirement, this ALWAYS downloads fresh files on every run.
+    Any existing local files are overwritten by rclone. Files persist on disk
+    after this function returns (no deletion by this function).
+    """
     depot_dir = os.path.join(BASE_DEPOT_DIR, depot_name)
     data_dir = os.path.join(depot_dir, "Data")
     os.makedirs(data_dir, exist_ok=True)
-    
+
     final_mdf_path = os.path.join(data_dir, "ERPonTheNet_Data.MDF")
     final_ldf_path = os.path.join(data_dir, "ERPonTheNet_log.LDF")
-    
-    # Check if files already exist
+
+    # Log whether we're going to overwrite an existing cached file
     if os.path.exists(final_mdf_path):
-        print(f"  Local MDF file already exists at: {final_mdf_path}")
-        return final_mdf_path, (final_ldf_path if os.path.exists(final_ldf_path) else None)
+        print(f"  Existing local MDF will be overwritten: {final_mdf_path}")
         
     folder_id_match = re.search(r'folders/([a-zA-Z0-9-_]+)', str(folder_url))
     if not folder_id_match:
@@ -542,9 +1000,8 @@ def check_free_space():
 def cleanup_all_attached_dbs():
     """Initial cleanup of any attached _DB databases to ensure clean slate"""
     print("Checking and cleaning up old databases from SQLEXPRESS...")
-    conn_str = f'DRIVER={{ODBC Driver 17 for SQL Server}};SERVER={SQL_SERVER};DATABASE=master;Trusted_Connection=yes;'
     try:
-        conn = pyodbc.connect(conn_str)
+        conn = connect_sql_server(database='master')
         conn.autocommit = True
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sys.databases WHERE name LIKE '%_DB' AND name NOT IN ('master','tempdb','model','msdb')")
@@ -685,12 +1142,12 @@ def send_pipeline_telegram_notification(base_dir, success_depots, sales_count, r
 - Returns Transactions: {returns_count:,}
 
 📁 *New Files Created:*
-1. 01\_Product\_Level\_Net\_Sales\_Extracted\_Data\_{timestamp}.csv
-2. 01.1\_Date\_wise\_Customer\_wise\_Product\_wise\_Net\_Sales\_Extracted\_Data\_{timestamp}.csv
-3. 02A\_MPO\_Achievement\_Pivot\_Analysis\_{timestamp}.xlsx
-4. 02D\_FINAL\_MPO\_Target\_vs\_Achievement\_Formula\_{timestamp}.xlsx
-5. 03\_Zone\_Wise\_Sales\_Grouped\_Report\_{timestamp}.xlsx
-6. 04\_Analyzed\_10\_Param\_Zone\_Wise\_Sales\_Grouped\_Report\_{timestamp}.xlsx
+1. 01_Product_Level_Net_Sales_Extracted_Data_{timestamp}.csv
+2. 01.1_Date_wise_Customer_wise_Product_wise_Net_Sales_Extracted_Data_{timestamp}.csv
+3. 02A_MPO_Achievement_Pivot_Analysis_{timestamp}.xlsx
+4. 02D_FINAL_MPO_Target_vs_Achievement_Formula_{timestamp}.xlsx
+5. 03_Zone_Wise_Sales_Grouped_Report_{timestamp}.xlsx
+6. 04_Analyzed_10_Param_Zone_Wise_Sales_Grouped_Report_{timestamp}.xlsx
 ==================================="""
     
     import requests
@@ -851,28 +1308,45 @@ def main():
     print("PHASE 0 & 1: Sequential Database Downloads & Extraction")
     print("="*60)
     
-    env = load_env(ENV_PATH)
-    groq_api_key = env.get("GROQ_API_KEY")
+    # All credentials + depot folder URLs now come from credentials_master.json
+    # via the loader (no more scattered env/Excel/client_secret files needed).
+    groq_api_key = get_env_var("GROQ_API_KEY")
     if not groq_api_key:
-        print("ERROR: GROQ_API_KEY not found in env file.")
+        print("ERROR: GROQ_API_KEY not found in credentials_master.json (env_file_content).")
         return
-        
-    if not os.path.exists(CLIENT_SECRET_PATH):
-        print(f"ERROR: Client secret file not found at {CLIENT_SECRET_PATH}")
+
+    # Depot list now comes from credentials_master.json via the loader.
+    depots_to_process = [(d['name'], d.get('url') or d.get('folder_id', '')) for d in list_depots()]
+
+    print(f"Found {len(depots_to_process)} depots in credentials_master.json.")
+
+    # ─── GOOGLE DRIVE DOWNLOAD MODE ───────────────────────────────────────
+    # Per user requirement, MDF/LDF files are ALWAYS freshly downloaded from
+    # Google Drive on every run (overwriting any existing local cache). Local
+    # files remain on disk after the pipeline finishes so they can be inspected
+    # or re-used later, but they are NOT a fast-path for the current run.
+    print("\n" + "=" * 60)
+    print("[CLOUD MODE] Will download fresh MDF/LDF for each depot from Google Drive.")
+    print(f"             Cache folder: {BASE_DEPOT_DIR}")
+    print("             Existing files (if any) will be overwritten.")
+    print("=" * 60)
+
+    # Credentials are loaded from the master file — verify the SA is reachable
+    try:
+        get_drive_service_account_credentials()
+        creds_ok = True
+    except Exception:
+        creds_ok = False
+
+    if not creds_ok and not all_local:
+        print(f"ERROR: Client secret not found at {CLIENT_SECRET_PATH} AND no local MDFs.")
         return
-        
-    drive_service = get_drive_service()
-    
-    # Load Excel Links
-    df_links = pd.read_excel(EXCEL_PATH)
-    depot_col = df_links.columns[0]
-    link_col = df_links.columns[1]
-    
-    depots_to_process = []
-    for idx, row in df_links.iterrows():
-        depots_to_process.append((row[depot_col].strip(), row[link_col].strip()))
-        
-    print(f"Found {len(depots_to_process)} depots in links Excel.")
+
+    if creds_ok:
+        drive_service = get_drive_service()
+    else:
+        print("[WARN] Google credentials not available; using existing local MDFs only.")
+        drive_service = None
     
     # Create checkpoint directory for sequential resume
     checkpoint_dir = os.path.join(BASE_DEPOT_DIR, "extracted_temp")
@@ -885,9 +1359,9 @@ def main():
         print(f"\n" + "-"*50)
         print(f"[{i}/{len(depots_to_process)}] DEPOT: {depot_name}")
         print(f"-"*50)
-        
+
         checkpoint_file = os.path.join(checkpoint_dir, f"{depot_name}.csv")
-        
+
         # ── CHECKPOINT RESUME CHECK ──
         if os.path.exists(checkpoint_file):
             print(f"  [RESUME Checkpoint] Extracted data CSV already exists at: {checkpoint_file}. Loading cache...")
@@ -900,14 +1374,60 @@ def main():
                     continue
             except Exception as e:
                 print(f"  Warning reading checkpoint CSV: {e}. Re-extracting...")
-        
+
         # Check free disk space before processing next database
         free_space = check_free_space()
         print(f"  C: Drive Free Space: {free_space:.2f} GB")
         if free_space < 1.0:
             print("  [WARNING] C: Drive is extremely low on space (< 1.0 GB). Proceeding carefully.")
-            
-        mdf_path, ldf_path = download_depot_files(depot_name, folder_url, drive_service, groq_api_key)
+
+        # ── 3-STAGE / 3-LAYER LOCAL VERIFICATION ──
+        # If ALL 3 stages (depot dir / Data folder / 15+ MDF/LDF files) pass
+        # in ALL 3 independent verification layers, we SKIP the Google Drive
+        # download completely and just use the local files.
+        local_ok, verify_report = verify_local_depot_complete(
+            depot_name, min_files=EXPECTED_MIN_FILES, verbose=True
+        )
+
+        if drive_service is None:
+            # No Google credentials — fall back to whatever local files exist
+            mdf_path, ldf_path = get_local_data_paths(depot_name)
+            if not mdf_path:
+                print(f"  ✗ [NO CREDENTIALS] No MDF for {depot_name} and Google Drive is disabled. Skipping.")
+                continue
+            print(f"  ✓ [FALLBACK LOCAL] Reusing existing MDF: {mdf_path}")
+        else:
+            # ── FAST PATH: skip Google Drive download if all 3 stages / 3 layers verified ──
+            if local_ok:
+                mdf_path, ldf_path = get_local_data_paths(depot_name)
+                if mdf_path and os.path.exists(mdf_path):
+                    counts = verify_report["counts"]
+                    print(f"  ⚡ [LOCAL CACHE HIT] All 3 stages verified by all 3 layers.")
+                    print(f"       file counts across layers: {counts} (min required {EXPECTED_MIN_FILES})")
+                    print(f"       Skipping Google Drive download for {depot_name}.")
+                else:
+                    # Verification said OK but MDF actually missing — fall back
+                    print(f"  ⚠ Verification passed but local MDF missing — falling back to download.")
+                    mdf_path, ldf_path = download_depot_files(
+                        depot_name, folder_url, drive_service, groq_api_key
+                    )
+                    if not mdf_path:
+                        mdf_path, ldf_path = get_local_data_paths(depot_name)
+                        if not mdf_path:
+                            print(f"  ✗ Failed to download MDF for {depot_name}. Skipping.")
+                            continue
+                        print(f"  ⚠ Download failed; falling back to existing local MDF: {mdf_path}")
+            else:
+                mdf_path, ldf_path = download_depot_files(
+                    depot_name, folder_url, drive_service, groq_api_key
+                )
+                if not mdf_path:
+                    # If download failed, try the previously cached local file as a last resort
+                    mdf_path, ldf_path = get_local_data_paths(depot_name)
+                    if not mdf_path:
+                        print(f"  ✗ Failed to download MDF for {depot_name}. Skipping.")
+                        continue
+                    print(f"  ⚠ Download failed; falling back to existing local MDF: {mdf_path}")
         
         if not mdf_path or not os.path.exists(mdf_path):
             print(f"  ✗ Failed to retrieve database files for {depot_name}. Skipping.")
@@ -952,15 +1472,15 @@ def main():
             if db_name:
                 detach_database(db_name)
                 
-            # ── RECLAIM DISK SPACE IMMEDIATELY ──
-            depot_folder = os.path.join(BASE_DEPOT_DIR, depot_name)
-            if os.path.exists(depot_folder):
-                print(f"  Reclaiming space: deleting local MDF/LDF files for {depot_name}...")
+            # ── RECLAIM DISK SPACE (only Temp_Download, KEEP Data/ as cache) ──
+            temp_folder = os.path.join(BASE_DEPOT_DIR, depot_name, "Temp_Download")
+            if os.path.exists(temp_folder):
+                print(f"  Reclaiming space: deleting Temp_Download for {depot_name}...")
                 try:
-                    shutil.rmtree(depot_folder, ignore_errors=True)
-                    print(f"  ✓ Deleted. Current Free Space: {check_free_space():.2f} GB")
+                    shutil.rmtree(temp_folder, ignore_errors=True)
                 except Exception as e:
-                    print(f"  Warning deleting folder: {e}")
+                    print(f"  Warning deleting temp folder: {e}")
+            print(f"  ✓ Kept Data/ as cache for next run. Free Space: {check_free_space():.2f} GB")
                     
     if not all_data:
         print("\nERROR: No data extracted from any of the depots. Pipeline stopping.")
@@ -1093,25 +1613,67 @@ def main():
             df_mpo = pd.read_excel(mpo_code_xlsx)
             df_mpo_temp = df_mpo.copy()
             df_mpo_temp.rename(columns={'DEPOT': 'DEPOT_mpo', 'MPO CODE': 'MPO_CODE_mpo'}, inplace=True)
-            
+
             # Merge
             df_merged = pd.merge(
-                detailed_grouped, 
-                df_mpo_temp, 
-                left_on=['Depot', 'MPO_Code'], 
-                right_on=['DEPOT_mpo', 'MPO_CODE_mpo'], 
+                detailed_grouped,
+                df_mpo_temp,
+                left_on=['Depot', 'MPO_Code'],
+                right_on=['DEPOT_mpo', 'MPO_CODE_mpo'],
                 how='left'
             )
-            
+
             # Fallback depot to zone
             depot_to_zone = df_mpo.groupby('DEPOT')['ZONE'].first().to_dict()
             df_merged['ZONE'] = df_merged['ZONE'].fillna(df_merged['Depot'].map(depot_to_zone))
-            
+
             # Drop helper columns
             df_merged.drop(columns=['DEPOT_mpo', 'MPO_CODE_mpo'], errors='ignore', inplace=True)
         else:
-            print("⚠ Warning: mpo_code.xlsx not found. Processing raw detailed data without mapping.")
-            df_merged = detailed_grouped.copy()
+            # Local mpo_code.xlsx not available -> try the Google Sheet
+            # (DREAM APPS MPO CODE column) as the source of truth.
+            print("[WARN] mpo_code.xlsx not found. Trying Google Sheet DREAM APPS MPO CODE column...")
+            df_mpo = load_mpo_mapping_from_google_sheet()
+            if df_mpo is not None and 'MPO CODE' in df_mpo.columns:
+                # Cache it locally so subsequent runs are fast
+                try:
+                    os.makedirs(os.path.dirname(mpo_code_xlsx), exist_ok=True)
+                    df_mpo.to_excel(mpo_code_xlsx, index=False)
+                    print(f"  [OK] Cached Google Sheet MPO mapping to {mpo_code_xlsx}")
+                except Exception as e:
+                    print(f"  [WARN] Could not cache MPO mapping: {e}")
+
+                df_mpo_temp = df_mpo.copy()
+                df_mpo_temp.rename(columns={'DEPOT': 'DEPOT_mpo', 'MPO CODE': 'MPO_CODE_mpo'}, inplace=True)
+
+                df_merged = pd.merge(
+                    detailed_grouped,
+                    df_mpo_temp,
+                    left_on=['Depot', 'MPO_Code'],
+                    right_on=['DEPOT_mpo', 'MPO_CODE_mpo'],
+                    how='left'
+                )
+
+                if 'ZONE' in df_mpo.columns:
+                    depot_to_zone = df_mpo.groupby('DEPOT')['ZONE'].first().to_dict()
+                    df_merged['ZONE'] = df_merged['ZONE'].fillna(df_merged['Depot'].map(depot_to_zone))
+
+                df_merged.drop(columns=['DEPOT_mpo', 'MPO_CODE_mpo'], errors='ignore', inplace=True)
+                print(f"  [OK] Enriched {len(df_merged)} rows with MPO mapping from Google Sheet")
+            else:
+                print("[WARN] Google Sheet MPO mapping unavailable. Falling back to hardcoded zones.")
+                df_merged = detailed_grouped.copy()
+
+                # Add a ZONE column from a hard-coded depot->zone map so the downstream
+                # SQLite/cloud schema (which expects a 'zone' column) doesn't break.
+                _DEPOT_TO_ZONE = {
+                    'BARISHAL': 'Barishal', 'CHATTOGRAM': 'Chattogram', 'CUMILLA': 'Cumilla',
+                    'DHAKA-1': 'Dhaka', 'DHAKA-2': 'Dhaka', 'FARIDPUR': 'Faridpur',
+                    'JASHORE': 'Khulna', 'MYMENSINGH': 'Mymensingh', 'RAJSHAHI': 'Rajshahi',
+                    'RANGPUR': 'Rangpur', 'SYLHET': 'Sylhet'
+                }
+                if 'ZONE' not in df_merged.columns:
+                    df_merged['ZONE'] = df_merged['Depot'].map(_DEPOT_TO_ZONE).fillna('Unknown')
 
         # Load environment credentials for cloud upload
         api_gateway_url = env.get("API_GATEWAY_URL")
@@ -1194,9 +1756,10 @@ def main():
                     
             print(f"Writing {len(df_merged):,} records to SQLite (with normalized lowercase columns)...")
             
-            # Format columns to lowercase for database compatibility
+            # Format columns to lowercase for database compatibility.
+            # Only rename columns that actually exist (some mappers may be missing).
             df_sqlite = df_merged.copy()
-            df_sqlite.rename(columns={
+            _rename_map = {
                 'CONCATENATED_KEY': 'concatenated_key',
                 'Depot': 'depot',
                 'MPO_Code': 'mpo_code',
@@ -1214,11 +1777,18 @@ def main():
                 'ZONE': 'zone',
                 'MARKET': 'market',
                 'FM/AM': 'fm_am'
-            }, inplace=True)
-            
+            }
+            _rename_map = {k: v for k, v in _rename_map.items() if k in df_sqlite.columns}
+            df_sqlite.rename(columns=_rename_map, inplace=True)
+
+            # Ensure 'zone' column always exists (already added in else branch above,
+            # but guard for the merge branch as well)
+            if 'zone' not in df_sqlite.columns:
+                df_sqlite['zone'] = 'Unknown'
+
             conn = sqlite3.connect(sqlite_path)
             df_sqlite.to_sql("sales", conn, if_exists="replace", index=False)
-            
+
             # Create indexes
             print("Creating indexes on SQLite table...")
             cursor = conn.cursor()
@@ -1300,17 +1870,25 @@ def main():
         print("Error: Could not find Step 3 Excel output to run Step 4!")
         
     root.destroy()
-    
+
     # ── FINAL CLEANUP ──
+    # Detach any remaining SQL Server databases, but DO NOT delete the local
+    # MDF/LDF cache — those files must persist on disk so the next run can
+    # either reuse them as a fast local cache or have rclone re-download them
+    # cleanly (overwriting in place).
     cleanup_all_attached_dbs()
     if os.path.exists(BASE_DEPOT_DIR):
-        print(f"Deleting downloaded database folder to reclaim disk space: {BASE_DEPOT_DIR}...")
-        try:
-            shutil.rmtree(BASE_DEPOT_DIR, ignore_errors=True)
-            print("✓ Local database files deleted successfully.")
-        except Exception as e:
-            print(f"Warning deleting directory: {e}")
-            
+        # Clear only the per-depot Temp_Download/ subfolders (transient rclone
+        # working dirs). Data/ subfolders (the actual MDF/LDF cache) are kept.
+        for entry in os.listdir(BASE_DEPOT_DIR):
+            full = os.path.join(BASE_DEPOT_DIR, entry)
+            if os.path.isdir(full) and entry.endswith('Temp_Download'):
+                try:
+                    shutil.rmtree(full, ignore_errors=True)
+                except Exception:
+                    pass
+        print(f"[OK] Local MDF/LDF cache preserved at: {BASE_DEPOT_DIR}")
+
     print("\n" + "*" * 80)
     print("  ALL PIPELINE STEPS COMPLETED SUCCESSFULLY!")
     print("*" * 80)

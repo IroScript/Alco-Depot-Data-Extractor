@@ -1,5 +1,8 @@
 import os
 import sys
+import io
+if sys.platform.startswith('win'):
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 import sqlite3
 import json
 from datetime import datetime
@@ -732,23 +735,24 @@ class DataEngine:
                 cur.execute(f"""
                     SELECT 
                         mpo_code,
+                        zone,
                         MAX(market) as market,
-                        MAX(zone) as zone,
                         MAX(depot) as depot,
+                        MAX(fm_am) as fm_name,
                         SUM(quantity) as units,
                         COUNT(DISTINCT customer_id) as parties,
                         COUNT(DISTINCT invoice_no) as invoices,
                         SUM(line_amount) as sales
                     FROM sales
                     WHERE product_code IN ({placeholders}) AND mpo_code IN ({ph_mpos})
-                    GROUP BY mpo_code
+                    GROUP BY mpo_code, zone
                     ORDER BY SUM(quantity) DESC
-                    LIMIT 50
                 """, (*codes, *valid_mpos))
                 
                 mpo_list_all = []
                 for idx, mr in enumerate(cur.fetchall(), 1):
                     m_code = mr["mpo_code"]
+                    m_zone = mr["zone"]
                     
                     cur.execute(f"""
                         SELECT 
@@ -758,10 +762,10 @@ class DataEngine:
                             COUNT(DISTINCT invoice_no) as m_invoices,
                             SUM(line_amount) as m_sales
                         FROM sales
-                        WHERE product_code IN ({placeholders}) AND mpo_code = ?
+                        WHERE product_code IN ({placeholders}) AND mpo_code = ? AND zone = ?
                         GROUP BY month
                         ORDER BY month ASC
-                    """, (*codes, m_code))
+                    """, (*codes, m_code, m_zone))
                     m_break = []
                     for mb in cur.fetchall():
                         m_break.append({
@@ -782,6 +786,7 @@ class DataEngine:
                         "market": raw_mkt,
                         "zone": mr["zone"] or "Unknown",
                         "depot": mr["depot"] or "Unknown",
+                        "fm_name": mr["fm_name"] or "Unknown",
                         "is_vacant": m_code in vacant_mpo_codes,
                         "units": round(float(mr["units"] or 0), 2),
                         "parties": int(mr["parties"] or 0),
@@ -796,18 +801,18 @@ class DataEngine:
                     cur.execute(f"""
                         SELECT 
                             mpo_code,
+                            zone,
                             MAX(market) as market,
-                            MAX(zone) as zone,
                             MAX(depot) as depot,
+                            MAX(fm_am) as fm_name,
                             SUM(quantity) as units,
                             COUNT(DISTINCT customer_id) as parties,
                             COUNT(DISTINCT invoice_no) as invoices,
                             SUM(line_amount) as sales
                         FROM sales
                         WHERE product_code IN ({placeholders}) AND month = ? AND mpo_code IN ({ph_mpos})
-                        GROUP BY mpo_code
+                        GROUP BY mpo_code, zone
                         ORDER BY SUM(quantity) DESC
-                        LIMIT 50
                     """, (*codes, m_val, *valid_mpos))
                     mpo_list_month = []
                     for idx, mr in enumerate(cur.fetchall(), 1):
@@ -821,6 +826,7 @@ class DataEngine:
                             "market": raw_mkt,
                             "zone": mr["zone"] or "Unknown",
                             "depot": mr["depot"] or "Unknown",
+                            "fm_name": mr["fm_name"] or "Unknown",
                             "is_vacant": mr["mpo_code"] in vacant_mpo_codes,
                             "units": round(float(mr["units"] or 0), 2),
                             "parties": int(mr["parties"] or 0),

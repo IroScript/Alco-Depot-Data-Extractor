@@ -6,6 +6,41 @@
 let GLOBAL_DATA = null;
 let charts = {};
 
+// Strategic table global state
+let STRATEGIC_PAGE = 1;
+const STRATEGIC_PER_PAGE = 20;
+
+// Strategic table filters global selection state
+let STRATEGIC_FILTERS_SELECTIONS = {
+    rank: null,
+    zone: null,
+    fm: null,
+    code: null,
+    market: null,
+    units: null,
+    parties: null,
+    invoices: null,
+    sales: null
+};
+
+// Temp selection state to hold values before clicking "OK"
+let TEMP_FILTERS_SELECTIONS = {};
+
+const MONTH_MAP = {
+    '2026-01': 'Jan',
+    '2026-02': 'Feb',
+    '2026-03': 'Mar',
+    '2026-04': 'Apr',
+    '2026-05': 'May',
+    '2026-06': 'Jun',
+    '2026-07': 'Jul',
+    '2026-08': 'Aug',
+    '2026-09': 'Sep',
+    '2026-10': 'Oct',
+    '2026-11': 'Nov',
+    '2026-12': 'Dec'
+};
+
 document.addEventListener("DOMContentLoaded", () => {
     initTabs();
     initEventListeners();
@@ -81,6 +116,41 @@ function initEventListeners() {
             if (searchMPO) filterMPOs(searchMPO.value.toLowerCase(), filterVal);
         });
     });
+
+    // Toggle Top Collapsible Section
+    const toggleBtn = document.getElementById("toggle-top-section-btn");
+    const collapsibleSection = document.getElementById("collapsible-top-section");
+    const toggleIcon = document.getElementById("toggle-icon");
+    if (toggleBtn && collapsibleSection && toggleIcon) {
+        toggleBtn.addEventListener("click", () => {
+            const isHidden = collapsibleSection.classList.contains("hidden");
+            if (isHidden) {
+                collapsibleSection.classList.remove("hidden");
+                toggleIcon.textContent = "−";
+                // Trigger charts rendering since container is now visible
+                if (typeof renderCharts === "function") {
+                    renderCharts();
+                }
+                // Trigger resize for Dijkstra network canvas
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                collapsibleSection.classList.add("hidden");
+                toggleIcon.textContent = "+";
+            }
+        });
+    }
+
+    // Strategic MPO Column Filters popover click outside listener
+    document.addEventListener("click", (e) => {
+        const popovers = document.querySelectorAll('[id^="popover-"]');
+        popovers.forEach(popover => {
+            const colName = popover.id.replace("popover-", "");
+            const triggerCol = document.getElementById(`filter-col-${colName}`);
+            if (triggerCol && !triggerCol.contains(e.target)) {
+                popover.classList.add("hidden");
+            }
+        });
+    });
 }
 
 function getActivePill(group) {
@@ -135,6 +205,13 @@ async function loadDashboardData(forceRefresh = false) {
 /* Render All UI Components */
 function renderAllComponents() {
     if (!GLOBAL_DATA) return;
+
+    // Set ACTIVE_STRATEGIC_MONTH to the latest month by default if still "ALL"
+    if (GLOBAL_DATA.monthly_trends && GLOBAL_DATA.monthly_trends.length > 0 && ACTIVE_STRATEGIC_MONTH === "ALL") {
+        const months = GLOBAL_DATA.monthly_trends.map(t => t.month);
+        months.sort((a, b) => b.localeCompare(a));
+        ACTIVE_STRATEGIC_MONTH = months[0];
+    }
 
     renderKPIs(GLOBAL_DATA.kpis);
     renderSpotlight(GLOBAL_DATA.top_5_products_deep || GLOBAL_DATA.top_50_products.slice(0, 5));
@@ -409,11 +486,23 @@ function renderStrategic6Products() {
     const monthPillsEl = document.getElementById("strategic-month-pills");
     if (monthPillsEl && GLOBAL_DATA.monthly_trends) {
         const months = GLOBAL_DATA.monthly_trends.map(t => t.month);
+        // Sort months latest first (descending order)
+        const sortedMonths = [...months].sort((a, b) => b.localeCompare(a));
+        
+        // Find dynamic min and max month labels
+        const minMonth = sortedMonths[sortedMonths.length - 1];
+        const maxMonth = sortedMonths[0];
+        const minLabel = (MONTH_MAP[minMonth] || minMonth).toUpperCase();
+        const maxLabel = (MONTH_MAP[maxMonth] || maxMonth).toUpperCase();
+
         monthPillsEl.innerHTML = `
-            <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH === 'ALL' ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonth('ALL')">ALL MONTHS (JAN - JUN)</button>
-            ${months.map(m => `
-                <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH === m ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonth('${m}')">[ ${m} ]</button>
-            `).join('')}
+            <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH === 'ALL' ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonth('ALL')">ALL MONTHS (${minLabel} - ${maxLabel})</button>
+            ${sortedMonths.map(m => {
+                const monthLabel = MONTH_MAP[m] || m;
+                return `
+                    <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH === m ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonth('${m}')">[ ${monthLabel} ]</button>
+                `;
+            }).join('')}
         `;
     }
 
@@ -422,12 +511,23 @@ function renderStrategic6Products() {
 
 function selectStrategicProduct(prodName) {
     ACTIVE_STRATEGIC_PROD = prodName;
+    STRATEGIC_PAGE = 1; // Reset page
+    STRATEGIC_FILTERS_SELECTIONS = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
+    TEMP_FILTERS_SELECTIONS = {};
     renderStrategic6Products();
 }
 
 function selectStrategicMonth(monthVal) {
     ACTIVE_STRATEGIC_MONTH = monthVal;
+    STRATEGIC_PAGE = 1; // Reset page
+    STRATEGIC_FILTERS_SELECTIONS = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
+    TEMP_FILTERS_SELECTIONS = {};
     renderStrategic6Products();
+}
+
+function setStrategicPage(page) {
+    STRATEGIC_PAGE = page;
+    renderStrategicMPOTable();
 }
 
 function renderStrategicMPOTable() {
@@ -438,7 +538,9 @@ function renderStrategicMPOTable() {
 
     const titleEl = document.getElementById("strategic-active-title");
     const subEl = document.getElementById("strategic-active-subtitle");
-    if (titleEl) titleEl.textContent = `💊 ${prodItem.product_name} [ MONTH: ${ACTIVE_STRATEGIC_MONTH} ]`;
+    
+    const displayMonth = ACTIVE_STRATEGIC_MONTH === "ALL" ? "ALL" : (MONTH_MAP[ACTIVE_STRATEGIC_MONTH] || ACTIVE_STRATEGIC_MONTH);
+    if (titleEl) titleEl.textContent = `💊 ${prodItem.product_name} [ MONTH: ${displayMonth} ]`;
     if (subEl) subEl.textContent = `Merged Product Codes: ${(prodItem.merged_codes || []).join(', ')} // Total Units Sold: ${Number(prodItem.total_units).toLocaleString()} Units`;
 
     let mpos = [];
@@ -448,37 +550,93 @@ function renderStrategicMPOTable() {
         mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
     }
 
+    // Apply Excel-like column filters
+    const filteredMpos = mpos.filter(m => {
+        // Rank filter
+        if (STRATEGIC_FILTERS_SELECTIONS.rank && !STRATEGIC_FILTERS_SELECTIONS.rank.includes(String(m.rank))) return false;
+        // Zone filter
+        if (STRATEGIC_FILTERS_SELECTIONS.zone && !STRATEGIC_FILTERS_SELECTIONS.zone.includes(m.zone)) return false;
+        // FM filter
+        if (STRATEGIC_FILTERS_SELECTIONS.fm && !STRATEGIC_FILTERS_SELECTIONS.fm.includes(m.fm_name || 'Unknown')) return false;
+        // Code filter
+        if (STRATEGIC_FILTERS_SELECTIONS.code && !STRATEGIC_FILTERS_SELECTIONS.code.includes(m.mpo_code)) return false;
+        // Market filter
+        if (STRATEGIC_FILTERS_SELECTIONS.market && !STRATEGIC_FILTERS_SELECTIONS.market.includes(m.market)) return false;
+        // Units filter
+        if (STRATEGIC_FILTERS_SELECTIONS.units) {
+            const unitsLabel = `${m.units} U`;
+            if (!STRATEGIC_FILTERS_SELECTIONS.units.includes(unitsLabel)) return false;
+        }
+        // Parties filter
+        if (STRATEGIC_FILTERS_SELECTIONS.parties && !STRATEGIC_FILTERS_SELECTIONS.parties.includes(String(m.parties))) return false;
+        // Invoices filter
+        if (STRATEGIC_FILTERS_SELECTIONS.invoices && !STRATEGIC_FILTERS_SELECTIONS.invoices.includes(String(m.invoices))) return false;
+        // Sales filter
+        if (STRATEGIC_FILTERS_SELECTIONS.sales) {
+            const salesLabel = formatBDT(m.sales);
+            if (!STRATEGIC_FILTERS_SELECTIONS.sales.includes(salesLabel)) return false;
+        }
+        return true;
+    });
+
+    const totalRecords = filteredMpos.length;
+    const totalPages = Math.ceil(totalRecords / STRATEGIC_PER_PAGE) || 1;
+    if (STRATEGIC_PAGE > totalPages) STRATEGIC_PAGE = totalPages;
+
+    const startIdx = (STRATEGIC_PAGE - 1) * STRATEGIC_PER_PAGE;
+    const paginatedMpos = filteredMpos.slice(startIdx, startIdx + STRATEGIC_PER_PAGE);
+
     const tbody = document.getElementById("tbody-strategic-mpos");
     if (!tbody) return;
-    if (!mpos || mpos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">No MPO records found for this product and month selection.</td></tr>`;
+    if (!paginatedMpos || paginatedMpos.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">No MPO records found for this selection.</td></tr>`;
+        
+        // Clear pagination
+        const pagContainer = document.getElementById("strategic-mpo-pagination");
+        if (pagContainer) pagContainer.innerHTML = "";
         return;
     }
 
-    tbody.innerHTML = mpos.map(m => `
+    tbody.innerHTML = paginatedMpos.map(m => `
         <tr class="hover:bg-cyan-950/20 transition-colors">
-            <td><strong class="font-cyber text-cyan-300 text-base">#${m.rank}</strong></td>
+            <td class="text-center"><strong class="font-cyber text-cyan-300 text-xs">${m.rank}</strong></td>
+            <td><span class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-mono text-[11px] truncate block" title="${m.zone}">${m.zone}</span></td>
+            <td><span class="font-semibold text-slate-300 text-xs truncate block max-w-[160px]" title="${m.fm_name || 'Unknown'}">${m.fm_name || 'Unknown'}</span></td>
             <td>
-                <span class="code-badge" style="background: rgba(6, 182, 212, 0.25); border-color: #06b6d4; color: #cffafe;">
+                <span class="code-badge text-[11px]" style="background: rgba(6, 182, 212, 0.25); border-color: #06b6d4; color: #cffafe; padding: 2px 6px;">
                     👤 ${m.mpo_code}
                 </span>
             </td>
             <td>
-                <strong class="text-white font-bold text-sm bg-purple-950/60 px-2 py-1 rounded border border-purple-500/30">📍 ${m.market}</strong>
-                ${m.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-xs px-1.5 py-0.5 rounded border border-amber-500/40 ml-1 font-mono">VACANT</span>' : ''}
+                <div class="flex items-center gap-1">
+                    <strong class="text-white font-bold text-[11px] bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-500/30 truncate max-w-[140px]" title="${m.market}">📍 ${m.market}</strong>
+                    ${m.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-[9px] px-1 py-0.2 rounded border border-amber-500/40 font-mono">VACANT</span>' : ''}
+                </div>
             </td>
-            <td><span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono text-xs">${m.zone} // ${m.depot}</span></td>
-            <td class="bg-cyan-950/40 font-cyber font-bold text-emerald-400 text-base border-l border-r border-cyan-500/30">📦 ${Number(m.units).toLocaleString()} U</td>
-            <td><span class="badge-party">${Number(m.parties).toLocaleString()} Parties 👥</span></td>
-            <td><span class="badge-invoice">${Number(m.invoices).toLocaleString()} Invoices 🧾</span></td>
-            <td class="val-highlight font-cyber text-sm">${formatBDT(m.sales)}</td>
+            <td class="bg-cyan-950/40 font-cyber font-bold text-emerald-400 text-xs border-l border-r border-cyan-500/30">📦 ${Number(m.units).toLocaleString()} U</td>
+            <td><span class="badge-party text-[11px]">${Number(m.parties).toLocaleString()} Parties 👥</span></td>
+            <td><span class="badge-party text-[11px]" style="color: #c084fc; background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.3);">${Number(m.invoices).toLocaleString()} Inv 🧾</span></td>
+            <td class="val-highlight font-cyber text-xs">${formatBDT(m.sales)}</td>
             <td>
-                <button class="btn-action text-xs py-1 px-3 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">
-                    📈 MONTHLY VISITS
+                <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">
+                    📈 MONTHLY
                 </button>
             </td>
         </tr>
     `).join('');
+
+    // Render page numbers (1, 2, 3, 4, 5... all without dots)
+    const pagContainer = document.getElementById("strategic-mpo-pagination");
+    if (pagContainer) {
+        let pagesHtml = "";
+        for (let i = 1; i <= totalPages; i++) {
+            const isActive = (i === STRATEGIC_PAGE);
+            pagesHtml += `
+                <button class="px-3 py-1.5 rounded text-xs font-tech font-bold transition-all ${isActive ? 'bg-cyan-600 text-white shadow-neon-cyan border border-cyan-400' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'}" onclick="setStrategicPage(${i})">${i}</button>
+            `;
+        }
+        pagContainer.innerHTML = pagesHtml;
+    }
 }
 
 /* Render Chart.js Visualizations */
@@ -776,9 +934,15 @@ function openDrillModal(type, code) {
         }
     } else if (type === "mpo") {
         item = GLOBAL_DATA.top_50_mpos.find(m => m.mpo_code === code);
+        if (!item && GLOBAL_DATA.strategic_6_products && GLOBAL_DATA.strategic_6_products[ACTIVE_STRATEGIC_PROD]) {
+            const stratItem = GLOBAL_DATA.strategic_6_products[ACTIVE_STRATEGIC_PROD];
+            const allMpos = stratItem.mpo_top50_all || [];
+            item = allMpos.find(m => m.mpo_code === code);
+        }
         if (item) {
             title.innerHTML = `👔 MPO PERFORMANCE: <span class="text-purple-300">${item.mpo_code}</span> // <span class="text-emerald-400 font-bold">📍 ${item.market||'Unknown'}</span> ${item.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-xs px-2 py-0.5 rounded border border-amber-500/40 ml-1 font-mono">VACANT</span>' : ''}`;
-            subtitle.innerHTML = `ASSIGNED ZONE: <span class="text-cyan-400 font-bold">${item.zone}</span> // CORE DEPOT: <span class="text-white font-bold">${item.depot}</span> // NET REVENUE: <span class="text-emerald-400 font-cyber">${formatBDT(item.total_sales)}</span>`;
+            const salesVal = item.total_sales || item.sales || 0;
+            subtitle.innerHTML = `ASSIGNED ZONE: <span class="text-cyan-400 font-bold">${item.zone}</span> // CORE DEPOT: <span class="text-white font-bold">${item.depot}</span> // NET SALES: <span class="text-emerald-400 font-cyber">${formatBDT(salesVal)}</span>`;
         }
     }
 
@@ -886,4 +1050,233 @@ function exportTableToCSV(tableId, filename) {
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
+}
+
+/* ==========================================================================
+   EXCEL PIVOT-STYLE FILTER TRAVERSAL ENGINE
+   ========================================================================== */
+function toggleFilterPopover(event, colName) {
+    event.stopPropagation();
+    
+    // Hide all other popovers
+    const allPopovers = document.querySelectorAll('[id^="popover-"]');
+    allPopovers.forEach(p => {
+        if (p.id !== `popover-${colName}`) {
+            p.classList.add("hidden");
+        }
+    });
+
+    const popover = document.getElementById(`popover-${colName}`);
+    if (popover) {
+        const isHidden = popover.classList.contains("hidden");
+        if (isHidden) {
+            // Reset temp selections to current actual selections
+            if (STRATEGIC_FILTERS_SELECTIONS[colName]) {
+                TEMP_FILTERS_SELECTIONS[colName] = new Set(STRATEGIC_FILTERS_SELECTIONS[colName]);
+            } else {
+                TEMP_FILTERS_SELECTIONS[colName] = null; // means all selected initially
+            }
+            populateFilterOptions(colName);
+            popover.classList.remove("hidden");
+        } else {
+            popover.classList.add("hidden");
+        }
+    }
+}
+
+function populateFilterOptions(colName) {
+    const optionsDiv = document.getElementById(`options-${colName}`);
+    if (!optionsDiv) return;
+
+    if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
+    const stratData = GLOBAL_DATA.strategic_6_products;
+    const prodItem = stratData[ACTIVE_STRATEGIC_PROD];
+    if (!prodItem) return;
+
+    let mpos = [];
+    if (ACTIVE_STRATEGIC_MONTH === "ALL") {
+        mpos = prodItem.mpo_top50_all || [];
+    } else {
+        mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
+    }
+
+    // Get all unique values for this column from mpos
+    const uniqueValues = new Set();
+    mpos.forEach(m => {
+        let val = "";
+        if (colName === "rank") val = String(m.rank);
+        else if (colName === "zone") val = m.zone;
+        else if (colName === "fm") val = m.fm_name || 'Unknown';
+        else if (colName === "code") val = m.mpo_code;
+        else if (colName === "market") val = m.market;
+        else if (colName === "units") val = `${m.units} U`;
+        else if (colName === "parties") val = `${m.parties}`;
+        else if (colName === "invoices") val = `${m.invoices}`;
+        else if (colName === "sales") val = formatBDT(m.sales);
+        
+        if (val) uniqueValues.add(val);
+    });
+
+    const valuesArray = Array.from(uniqueValues).sort((a, b) => {
+        const numA = parseFloat(a.replace(/[^0-9.]/g, ''));
+        const numB = parseFloat(b.replace(/[^0-9.]/g, ''));
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return a.localeCompare(b);
+    });
+
+    // Initialize TEMP selections if not set yet for this col
+    if (!TEMP_FILTERS_SELECTIONS[colName]) {
+        if (STRATEGIC_FILTERS_SELECTIONS[colName]) {
+            TEMP_FILTERS_SELECTIONS[colName] = new Set(STRATEGIC_FILTERS_SELECTIONS[colName]);
+        } else {
+            TEMP_FILTERS_SELECTIONS[colName] = new Set(valuesArray);
+        }
+    }
+
+    // Render checkbox list
+    optionsDiv.innerHTML = valuesArray.map(val => {
+        const isChecked = TEMP_FILTERS_SELECTIONS[colName].has(val);
+        return `
+            <label class="flex items-center gap-2 cursor-pointer py-0.5 hover:bg-slate-900 rounded px-1 w-full text-slate-300 hover:text-white">
+                <input type="checkbox" class="option-chk-item" value="${val}" ${isChecked ? 'checked' : ''} onchange="handleOptionCheckboxChange('${colName}', '${val}', this.checked)">
+                <span class="truncate" title="${val}">${val}</span>
+            </label>
+        `;
+    }).join('');
+}
+
+function handleOptionCheckboxChange(colName, value, checked) {
+    if (!TEMP_FILTERS_SELECTIONS[colName]) {
+        TEMP_FILTERS_SELECTIONS[colName] = new Set();
+    }
+    if (checked) {
+        TEMP_FILTERS_SELECTIONS[colName].add(value);
+    } else {
+        TEMP_FILTERS_SELECTIONS[colName].delete(value);
+    }
+}
+
+function searchFilterOptions(colName, searchVal) {
+    const optionsDiv = document.getElementById(`options-${colName}`);
+    if (!optionsDiv) return;
+    const items = optionsDiv.querySelectorAll('label');
+    const query = searchVal.trim().toLowerCase();
+    items.forEach(item => {
+        const txt = item.textContent.toLowerCase();
+        if (query === "" || txt.includes(query)) {
+            item.style.display = "flex";
+        } else {
+            item.style.display = "none";
+        }
+    });
+}
+
+function selectAllFilterOptions(colName, selectAll) {
+    const optionsDiv = document.getElementById(`options-${colName}`);
+    if (!optionsDiv) return;
+    const checkboxes = optionsDiv.querySelectorAll('input[type="checkbox"]');
+    
+    checkboxes.forEach(chk => {
+        const label = chk.closest('label');
+        if (label && label.style.display !== "none") {
+            chk.checked = selectAll;
+            handleOptionCheckboxChange(colName, chk.value, selectAll);
+        }
+    });
+}
+
+function applyFilter(colName) {
+    STRATEGIC_FILTERS_SELECTIONS[colName] = TEMP_FILTERS_SELECTIONS[colName] ? Array.from(TEMP_FILTERS_SELECTIONS[colName]) : null;
+    
+    // Hide popover
+    const popover = document.getElementById(`popover-${colName}`);
+    if (popover) popover.classList.add("hidden");
+
+    STRATEGIC_PAGE = 1;
+    renderStrategicMPOTable();
+}
+
+function cancelFilter(colName) {
+    // Hide popover
+    const popover = document.getElementById(`popover-${colName}`);
+    if (popover) popover.classList.add("hidden");
+}
+
+function clearColumnFilter(colName) {
+    STRATEGIC_FILTERS_SELECTIONS[colName] = null;
+    TEMP_FILTERS_SELECTIONS[colName] = null;
+    const popover = document.getElementById(`popover-${colName}`);
+    if (popover) popover.classList.add("hidden");
+    STRATEGIC_PAGE = 1;
+    renderStrategicMPOTable();
+}
+
+/* ==========================================================================
+   DYNAMIC COLUMN RESIZING TELEMETRY (EXCEL PIVOT EMULATOR)
+   ========================================================================== */
+let COLUMNS_LOCKED = true;
+
+function toggleColumnLock() {
+    COLUMNS_LOCKED = !COLUMNS_LOCKED;
+    const btn = document.getElementById("btn-lock-columns");
+    if (btn) {
+        if (COLUMNS_LOCKED) {
+            btn.innerHTML = "🔒 Columns Locked";
+            btn.className = "px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5";
+            removeResizers();
+        } else {
+            btn.innerHTML = "🔓 Resizing Unlocked";
+            btn.className = "px-3.5 py-2 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1.5 shadow-neon-cyan";
+            createResizers();
+        }
+    }
+}
+
+function createResizers() {
+    const table = document.getElementById("table-strategic-mpos");
+    if (!table) return;
+    const cols = table.querySelectorAll("thead tr:first-child th");
+    
+    removeResizers();
+
+    cols.forEach((col, idx) => {
+        // Skip last column (Action)
+        if (idx === cols.length - 1) return;
+
+        const resizer = document.createElement("div");
+        resizer.className = "resizer";
+        col.appendChild(resizer);
+
+        let startX, startWidth;
+
+        resizer.addEventListener("mousedown", (e) => {
+            if (COLUMNS_LOCKED) return;
+            e.preventDefault();
+            resizer.classList.add("resizing");
+            startX = e.pageX;
+            startWidth = col.offsetWidth;
+
+            const onMouseMove = (e) => {
+                const delta = e.pageX - startX;
+                const newWidth = Math.max(3, startWidth + delta);
+                col.style.width = newWidth + "px";
+            };
+
+            const onMouseUp = () => {
+                resizer.classList.remove("resizing");
+                document.removeEventListener("mousemove", onMouseMove);
+                document.removeEventListener("mouseup", onMouseUp);
+            };
+
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", onMouseUp);
+        });
+    });
+}
+
+function removeResizers() {
+    const table = document.getElementById("table-strategic-mpos");
+    if (!table) return;
+    const resizers = table.querySelectorAll(".resizer");
+    resizers.forEach(r => r.remove());
 }

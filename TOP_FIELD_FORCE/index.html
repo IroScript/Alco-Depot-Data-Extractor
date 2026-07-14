@@ -77,6 +77,26 @@
         ::-webkit-scrollbar-track { background: #02040a; }
         ::-webkit-scrollbar-thumb { background: #1e1b4b; border-radius: 4px; border: 1px solid #6366f1; }
         ::-webkit-scrollbar-thumb:hover { background: #6366f1; box-shadow: 0 0 10px #06b6d4; }
+        
+        /* Resizable columns styling */
+        .resizer {
+            position: absolute;
+            right: -5px;
+            top: 0;
+            height: 100%;
+            width: 10px;
+            cursor: col-resize;
+            user-select: none;
+            background-color: transparent;
+            z-index: 10;
+        }
+        .resizer:hover, .resizer.resizing {
+            background-color: rgba(6, 182, 212, 0.6);
+            box-shadow: 0 0 8px rgba(6, 182, 212, 0.8);
+        }
+        th {
+            position: relative;
+        }
     </style>
 </head>
 <body class="min-h-screen bg-quantum-void bg-grid-pattern relative selection:bg-cyan-500 selection:text-black">
@@ -120,182 +140,196 @@
     <!-- Main Content Grid -->
     <main class="max-w-[1700px] mx-auto p-6 space-y-8">
         
-        <!-- HERO SECTION: Futuristic Velocity Matrix & Dijkstra Supply Chain Router -->
-        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-            
-            <!-- LEFT (7 cols): Futuristic Graph Panel (Replaced 3D Globe area) -->
-            <div class="lg:col-span-7 backdrop-blur-xl bg-slate-950/60 cyber-border rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between min-h-[420px]">
-                <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
-                <div class="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
-                
-                <div class="relative z-10 flex justify-between items-start">
-                    <div>
-                        <span class="text-[10px] font-cyber tracking-[0.4em] text-cyan-400 uppercase bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-500/30">National Velocity Visualizer</span>
-                        <h2 class="font-cyber font-bold text-2xl text-white mt-2">REAL-TIME REVENUE & VISIT VELOCITY</h2>
-                        <p class="font-tech text-sm text-slate-400">Continuous multi-variable telemetry tracking net revenue vs customer party engagement frequency across all regional distribution hubs.</p>
-                    </div>
-                    <div class="text-right hidden sm:block">
-                        <div class="font-cyber text-xs text-purple-400">TELEMETRY MATRIX</div>
-                        <div class="font-mono text-sm font-bold text-emerald-400">CHART.JS // DUAL ENGINE</div>
-                    </div>
-                </div>
-
-                <!-- Futuristic Graph Canvas Container -->
-                <div class="w-full h-[290px] relative z-10 my-2">
-                    <canvas id="chart-futuristic-matrix"></canvas>
-                </div>
-
-                <div class="relative z-10 flex justify-between items-center text-xs font-tech text-slate-400 border-t border-slate-800/80 pt-3">
-                    <div class="flex items-center gap-4">
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> Net Revenue Trajectory</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-400"></span> Party Visits Frequency</span>
-                        <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Billing Pulses</span>
-                    </div>
-                    <div class="font-mono text-cyan-300">STATUS: REAL-TIME ANALYTICS STREAM</div>
-                </div>
+        <!-- Collapsible Toggle Bar -->
+        <div class="flex justify-between items-center bg-slate-900/60 backdrop-blur border border-slate-800/80 rounded-xl px-5 py-4 cursor-pointer select-none hover:bg-slate-900/90 transition-all hover:border-cyan-500/40 group shadow-neon-cyan/5" id="toggle-top-section-btn">
+            <div class="flex items-center gap-3">
+                <span class="text-cyan-400 font-tech animate-pulse">◉</span>
+                <span class="text-sm font-cyber font-bold tracking-widest text-cyan-300 group-hover:text-cyan-200 uppercase">📊 EXECUTIVE OVERVIEW & LOGISTICS METRICS</span>
+                <span class="text-xs font-tech text-slate-500 hidden sm:inline">(Click to expand/collapse)</span>
             </div>
+            <div class="w-8 h-8 rounded-full border border-slate-700 group-hover:border-cyan-400 flex items-center justify-center text-cyan-400 font-tech text-lg transition-all" id="toggle-icon">
+                +
+            </div>
+        </div>
 
-            <!-- RIGHT (5 cols): Dijkstra Supply Chain Route Optimizer -->
-            <div class="lg:col-span-5 backdrop-blur-xl bg-slate-950/80 cyber-border rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden">
-                <div class="absolute -top-10 -right-10 w-40 h-40 bg-purple-600/15 rounded-full blur-2xl pointer-events-none"></div>
+        <div id="collapsible-top-section" class="hidden space-y-8">
+            <!-- HERO SECTION: Futuristic Velocity Matrix & Dijkstra Supply Chain Router -->
+            <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                 
-                <div>
-                    <div class="flex justify-between items-center">
-                        <span class="text-[10px] font-cyber tracking-[0.4em] text-purple-400 uppercase bg-purple-950/80 px-2.5 py-1 rounded border border-purple-500/30">Logistics Algorithm</span>
-                        <span class="font-mono text-xs text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded">DIJKSTRA SHORTEST PATH</span>
-                    </div>
-                    <h2 class="font-cyber font-bold text-xl text-white mt-2">DEPOT ROUTE OPTIMIZER</h2>
-                    <p class="font-tech text-sm text-slate-400 mt-1">Select source Depot Hub and destination Customer Zone to calculate shortest distribution trajectory for optimal supply chain efficiency.</p>
-
-                    <!-- Dijkstra Controls -->
-                    <div class="grid grid-cols-2 gap-3 mt-4">
-                        <div>
-                            <label class="block font-tech text-xs text-cyan-300 uppercase mb-1">Source Depot Hub</label>
-                            <select id="dijkstra-start" class="w-full bg-slate-900 border border-cyan-500/40 rounded px-3 py-2 text-sm font-tech text-cyan-200 focus:outline-none focus:border-cyan-400">
-                                <option value="DHK">DHK - Dhaka Central Depot</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-tech text-xs text-purple-300 uppercase mb-1">Target Customer Zone</label>
-                            <select id="dijkstra-end" class="w-full bg-slate-900 border border-purple-500/40 rounded px-3 py-2 text-sm font-tech text-purple-200 focus:outline-none focus:border-purple-400">
-                                <option value="CTG">CTG - Chittagong Nexus</option>
-                            </select>
-                        </div>
-                    </div>
+                <!-- LEFT (7 cols): Futuristic Graph Panel (Replaced 3D Globe area) -->
+                <div class="lg:col-span-7 backdrop-blur-xl bg-slate-950/60 cyber-border rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between min-h-[420px]">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
                     
-                    <button id="btn-run-dijkstra" class="w-full mt-3 py-2.5 bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-cyber font-bold text-xs tracking-wider rounded-lg transition-all shadow-neon-cyan flex items-center justify-center gap-2">
-                        <span>⚡ COMPUTE OPTIMAL DISTRIBUTION ROUTE (DIJKSTRA)</span>
-                    </button>
+                    <div class="relative z-10 flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] font-cyber tracking-[0.4em] text-cyan-400 uppercase bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-500/30">National Velocity Visualizer</span>
+                            <h2 class="font-cyber font-bold text-2xl text-white mt-2">REAL-TIME REVENUE & VISIT VELOCITY</h2>
+                            <p class="font-tech text-sm text-slate-400">Continuous multi-variable telemetry tracking net revenue vs customer party engagement frequency across all regional distribution hubs.</p>
+                        </div>
+                        <div class="text-right hidden sm:block">
+                            <div class="font-cyber text-xs text-purple-400">TELEMETRY MATRIX</div>
+                            <div class="font-mono text-sm font-bold text-emerald-400">CHART.JS // DUAL ENGINE</div>
+                        </div>
+                    </div>
 
-                    <div id="dijkstra-status" class="mt-3 p-2.5 rounded bg-slate-900/90 border border-slate-700 font-tech text-xs text-slate-300 min-h-[38px] flex items-center">
-                        <span class="text-slate-500">Click button above to calculate optimal supply chain route...</span>
+                    <!-- Futuristic Graph Canvas Container -->
+                    <div class="w-full h-[290px] relative z-10 my-2">
+                        <canvas id="chart-futuristic-matrix"></canvas>
+                    </div>
+
+                    <div class="relative z-10 flex justify-between items-center text-xs font-tech text-slate-400 border-t border-slate-800/80 pt-3">
+                        <div class="flex items-center gap-4">
+                            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> Net Revenue Trajectory</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-purple-400"></span> Party Visits Frequency</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Billing Pulses</span>
+                        </div>
+                        <div class="font-mono text-cyan-300">STATUS: REAL-TIME ANALYTICS STREAM</div>
                     </div>
                 </div>
 
-                <!-- Dijkstra Network HTML5 Canvas -->
-                <div class="mt-4 border border-slate-800 rounded-lg bg-black/60 p-2 relative overflow-hidden">
-                    <canvas id="dijkstra-canvas" width="460" height="170" class="w-full h-[170px]"></canvas>
-                </div>
-            </div>
-        </section>
-
-        <!-- KPI METRICS MATRIX -->
-        <section>
-            <div class="flex items-center gap-3 mb-4">
-                <div class="w-2 h-6 bg-gradient-to-b from-cyan-400 to-purple-600 rounded-full"></div>
-                <h2 class="font-cyber font-bold text-xl tracking-wider text-white">EXECUTIVE PERFORMANCE MATRIX (JAN - JUN 2026)</h2>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <!-- KPI 1 -->
-                <div class="backdrop-blur-xl bg-slate-950/60 border border-cyan-500/30 hover:border-cyan-400/80 p-5 rounded-xl transition-all hover:shadow-neon-cyan group relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition-all"></div>
-                    <div class="font-tech text-xs text-cyan-400 font-semibold uppercase tracking-wider">Total Net Revenue</div>
-                    <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-cyan-300 transition-colors" id="kpi-sales">৳ 0.00</div>
-                    <div class="font-tech text-[11px] text-slate-500 mt-1">Across 10 regional depots</div>
-                </div>
-                <!-- KPI 2 -->
-                <div class="backdrop-blur-xl bg-slate-950/60 border border-indigo-500/30 hover:border-indigo-400/80 p-5 rounded-xl transition-all hover:shadow-neon-indigo group relative overflow-hidden">
-                    <div class="font-tech text-xs text-indigo-400 font-semibold uppercase tracking-wider">Invoices Generated</div>
-                    <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-indigo-300 transition-colors" id="kpi-invoices">0</div>
-                    <div class="font-tech text-[11px] text-slate-500 mt-1">Unique billing memos</div>
-                </div>
-                <!-- KPI 3 -->
-                <div class="backdrop-blur-xl bg-slate-950/60 border border-emerald-500/30 hover:border-emerald-400/80 p-5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-500/20 group relative overflow-hidden">
-                    <div class="font-tech text-xs text-emerald-400 font-semibold uppercase tracking-wider">Customer Parties</div>
-                    <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-emerald-300 transition-colors" id="kpi-parties">0</div>
-                    <div class="font-tech text-[11px] text-slate-500 mt-1">Unique visited customers</div>
-                </div>
-                <!-- KPI 4 -->
-                <div class="backdrop-blur-xl bg-slate-950/60 border border-purple-500/30 hover:border-purple-400/80 p-5 rounded-xl transition-all hover:shadow-neon-purple group relative overflow-hidden">
-                    <div class="font-tech text-xs text-purple-400 font-semibold uppercase tracking-wider">Active Field Force</div>
-                    <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-purple-300 transition-colors" id="kpi-mpos">0</div>
-                    <div class="font-tech text-[11px] text-slate-500 mt-1">Active MPO officers</div>
-                </div>
-                <!-- KPI 5 -->
-                <div class="backdrop-blur-xl bg-slate-950/60 border border-amber-500/30 hover:border-amber-400/80 p-5 rounded-xl transition-all hover:shadow-lg hover:shadow-amber-500/20 group relative overflow-hidden">
-                    <div class="font-tech text-xs text-amber-400 font-semibold uppercase tracking-wider">Product Portfolio</div>
-                    <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-amber-300 transition-colors" id="kpi-products">0</div>
-                    <div class="font-tech text-[11px] text-slate-500 mt-1">Unique Product Codes</div>
-                </div>
-                <!-- KPI 6 -->
-                <div class="backdrop-blur-xl bg-slate-950/60 border border-rose-500/30 hover:border-rose-400/80 p-5 rounded-xl transition-all hover:shadow-lg hover:shadow-rose-500/20 group relative overflow-hidden">
-                    <div class="font-tech text-xs text-rose-400 font-semibold uppercase tracking-wider">Avg Order Value</div>
-                    <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-rose-300 transition-colors" id="kpi-aov">৳ 0.00</div>
-                    <div class="font-tech text-[11px] text-slate-500 mt-1">AOV per invoice memo</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- NAVIGATION TABS -->
-        <nav class="flex flex-wrap gap-2 border-b border-slate-800 pb-4">
-            <button class="tab-link active px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-neon-cyan" data-target="tab-overview">
-                📊 OVERVIEW & SPOTLIGHT
-            </button>
-            <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-cyan-400 text-cyan-300 hover:text-white shadow-sm" data-target="tab-strategic-6">
-                🏆 6 STRATEGIC PRODUCTS (MPO BY UNIT)
-            </button>
-            <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white" data-target="tab-top50-products">
-                💊 TOP 50 PRODUCTS (CODE ANCHOR)
-            </button>
-            <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-purple-500 text-slate-300 hover:text-white" data-target="tab-top50-mpos">
-                👔 TOP 50 MPO PERFORMANCE (PARTY & INVOICE)
-            </button>
-            <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-white" data-target="tab-top20-fms">
-                🏆 TOP 20 FIELD MANAGERS & SECTORS
-            </button>
-            <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-amber-500 text-slate-300 hover:text-white" data-target="tab-monthly-trends">
-                📈 MONTHLY GROWTH TRAJECTORY
-            </button>
-        </nav>
-
-        <!-- TAB 1: OVERVIEW & SPOTLIGHT -->
-        <section id="tab-overview" class="tab-content active space-y-8">
-            <!-- Top 5 Spotlight Grid -->
-            <div>
-                <div class="flex justify-between items-end mb-4">
+                <!-- RIGHT (5 cols): Dijkstra Supply Chain Route Optimizer -->
+                <div class="lg:col-span-5 backdrop-blur-xl bg-slate-950/80 cyber-border rounded-2xl p-6 flex flex-col justify-between relative overflow-hidden">
+                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-purple-600/15 rounded-full blur-2xl pointer-events-none"></div>
+                    
                     <div>
-                        <h3 class="font-cyber font-bold text-lg text-cyan-300">🌟 TOP 5 PRODUCTS PERFORMANCE SPOTLIGHT</h3>
-                        <p class="font-tech text-xs text-slate-400">Strictly evaluated by unique product_code across Jan-Jun 2026 transactions.</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-cyber tracking-[0.4em] text-purple-400 uppercase bg-purple-950/80 px-2.5 py-1 rounded border border-purple-500/30">Logistics Algorithm</span>
+                            <span class="font-mono text-xs text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded">DIJKSTRA SHORTEST PATH</span>
+                        </div>
+                        <h2 class="font-cyber font-bold text-xl text-white mt-2">DEPOT ROUTE OPTIMIZER</h2>
+                        <p class="font-tech text-sm text-slate-400 mt-1">Select source Depot Hub and destination Customer Zone to calculate shortest distribution trajectory for optimal supply chain efficiency.</p>
+
+                        <!-- Dijkstra Controls -->
+                        <div class="grid grid-cols-2 gap-3 mt-4">
+                            <div>
+                                <label class="block font-tech text-xs text-cyan-300 uppercase mb-1">Source Depot Hub</label>
+                                <select id="dijkstra-start" class="w-full bg-slate-900 border border-cyan-500/40 rounded px-3 py-2 text-sm font-tech text-cyan-200 focus:outline-none focus:border-cyan-400">
+                                    <option value="DHK">DHK - Dhaka Central Depot</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block font-tech text-xs text-purple-300 uppercase mb-1">Target Customer Zone</label>
+                                <select id="dijkstra-end" class="w-full bg-slate-900 border border-purple-500/40 rounded px-3 py-2 text-sm font-tech text-purple-200 focus:outline-none focus:border-purple-400">
+                                    <option value="CTG">CTG - Chittagong Nexus</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <button id="btn-run-dijkstra" class="w-full mt-3 py-2.5 bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-cyber font-bold text-xs tracking-wider rounded-lg transition-all shadow-neon-cyan flex items-center justify-center gap-2">
+                            <span>⚡ COMPUTE OPTIMAL DISTRIBUTION ROUTE (DIJKSTRA)</span>
+                        </button>
+
+                        <div id="dijkstra-status" class="mt-3 p-2.5 rounded bg-slate-900/90 border border-slate-700 font-tech text-xs text-slate-300 min-h-[38px] flex items-center">
+                            <span class="text-slate-500">Click button above to calculate optimal supply chain route...</span>
+                        </div>
+                    </div>
+
+                    <!-- Dijkstra Network HTML5 Canvas -->
+                    <div class="mt-4 border border-slate-800 rounded-lg bg-black/60 p-2 relative overflow-hidden">
+                        <canvas id="dijkstra-canvas" width="460" height="170" class="w-full h-[170px]"></canvas>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4" id="spotlight-cards-container">
-                    <div class="col-span-full text-center py-10 font-cyber text-cyan-400 animate-pulse">LOADING SPOTLIGHT DATA...</div>
-                </div>
-            </div>
+            </section>
 
-            <!-- Charts Row -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl">
-                    <h3 class="font-cyber font-bold text-sm text-purple-300 mb-4">MONTHLY REVENUE TRAJECTORY (JAN - JUN 2026)</h3>
-                    <div class="h-[320px] relative"><canvas id="chart-overview-monthly"></canvas></div>
+            <!-- KPI METRICS MATRIX -->
+            <section>
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-2 h-6 bg-gradient-to-b from-cyan-400 to-purple-600 rounded-full"></div>
+                    <h2 class="font-cyber font-bold text-xl tracking-wider text-white">EXECUTIVE PERFORMANCE MATRIX (JAN - JUN 2026)</h2>
                 </div>
-                <div class="backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl">
-                    <h3 class="font-cyber font-bold text-sm text-cyan-300 mb-4">TOP 5 PRODUCTS REVENUE SHARE</h3>
-                    <div class="h-[320px] relative"><canvas id="chart-overview-doughnut"></canvas></div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <!-- KPI 1 -->
+                    <div class="backdrop-blur-xl bg-slate-950/60 border border-cyan-500/30 hover:border-cyan-400/80 p-5 rounded-xl transition-all hover:shadow-neon-cyan group relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-24 h-24 bg-cyan-500/10 rounded-full blur-xl group-hover:bg-cyan-500/20 transition-all"></div>
+                        <div class="font-tech text-xs text-cyan-400 font-semibold uppercase tracking-wider">Total Net Revenue</div>
+                        <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-cyan-300 transition-colors" id="kpi-sales">৳ 0.00</div>
+                        <div class="font-tech text-[11px] text-slate-500 mt-1">Across 10 regional depots</div>
+                    </div>
+                    <!-- KPI 2 -->
+                    <div class="backdrop-blur-xl bg-slate-950/60 border border-indigo-500/30 hover:border-indigo-400/80 p-5 rounded-xl transition-all hover:shadow-neon-indigo group relative overflow-hidden">
+                        <div class="font-tech text-xs text-indigo-400 font-semibold uppercase tracking-wider">Invoices Generated</div>
+                        <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-indigo-300 transition-colors" id="kpi-invoices">0</div>
+                        <div class="font-tech text-[11px] text-slate-500 mt-1">Unique billing memos</div>
+                    </div>
+                    <!-- KPI 3 -->
+                    <div class="backdrop-blur-xl bg-slate-950/60 border border-emerald-500/30 hover:border-emerald-400/80 p-5 rounded-xl transition-all hover:shadow-lg hover:shadow-emerald-500/20 group relative overflow-hidden">
+                        <div class="font-tech text-xs text-emerald-400 font-semibold uppercase tracking-wider">Customer Parties</div>
+                        <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-emerald-300 transition-colors" id="kpi-parties">0</div>
+                        <div class="font-tech text-[11px] text-slate-500 mt-1">Unique visited customers</div>
+                    </div>
+                    <!-- KPI 4 -->
+                    <div class="backdrop-blur-xl bg-slate-950/60 border border-purple-500/30 hover:border-purple-400/80 p-5 rounded-xl transition-all hover:shadow-neon-purple group relative overflow-hidden">
+                        <div class="font-tech text-xs text-purple-400 font-semibold uppercase tracking-wider">Active Field Force</div>
+                        <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-purple-300 transition-colors" id="kpi-mpos">0</div>
+                        <div class="font-tech text-[11px] text-slate-500 mt-1">Active MPO officers</div>
+                    </div>
+                    <!-- KPI 5 -->
+                    <div class="backdrop-blur-xl bg-slate-950/60 border border-amber-500/30 hover:border-amber-400/80 p-5 rounded-xl transition-all hover:shadow-lg hover:shadow-amber-500/20 group relative overflow-hidden">
+                        <div class="font-tech text-xs text-amber-400 font-semibold uppercase tracking-wider">Product Portfolio</div>
+                        <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-amber-300 transition-colors" id="kpi-products">0</div>
+                        <div class="font-tech text-[11px] text-slate-500 mt-1">Unique Product Codes</div>
+                    </div>
+                    <!-- KPI 6 -->
+                    <div class="backdrop-blur-xl bg-slate-950/60 border border-rose-500/30 hover:border-rose-400/80 p-5 rounded-xl transition-all hover:shadow-lg hover:shadow-rose-500/20 group relative overflow-hidden">
+                        <div class="font-tech text-xs text-rose-400 font-semibold uppercase tracking-wider">Avg Order Value</div>
+                        <div class="font-cyber font-black text-2xl text-white mt-1 group-hover:text-rose-300 transition-colors" id="kpi-aov">৳ 0.00</div>
+                        <div class="font-tech text-[11px] text-slate-500 mt-1">AOV per invoice memo</div>
+                    </div>
                 </div>
-            </div>
-        </section>
+            </section>
+
+            <!-- NAVIGATION TABS -->
+            <nav class="flex flex-wrap gap-2 border-b border-slate-800 pb-4">
+                <button class="tab-link active px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-gradient-to-r from-cyan-600 to-indigo-600 text-white shadow-neon-cyan" data-target="tab-overview">
+                    📊 OVERVIEW & SPOTLIGHT
+                </button>
+                <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-cyan-400 text-cyan-300 hover:text-white shadow-sm" data-target="tab-strategic-6">
+                    🏆 6 STRATEGIC PRODUCTS (MPO BY UNIT)
+                </button>
+                <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-white" data-target="tab-top50-products">
+                    💊 TOP 50 PRODUCTS (CODE ANCHOR)
+                </button>
+                <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-purple-500 text-slate-300 hover:text-white" data-target="tab-top50-mpos">
+                    👔 TOP 50 MPO PERFORMANCE (PARTY & INVOICE)
+                </button>
+                <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-white" data-target="tab-top20-fms">
+                    🏆 TOP 20 FIELD MANAGERS & SECTORS
+                </button>
+                <button class="tab-link px-5 py-2.5 rounded-lg font-cyber text-xs font-bold tracking-wider transition-all bg-slate-900/80 border border-slate-700 hover:border-amber-500 text-slate-300 hover:text-white" data-target="tab-monthly-trends">
+                    📈 MONTHLY GROWTH TRAJECTORY
+                </button>
+            </nav>
+
+            <!-- TAB 1: OVERVIEW & SPOTLIGHT -->
+            <section id="tab-overview" class="tab-content active space-y-8">
+                <!-- Top 5 Spotlight Grid -->
+                <div>
+                    <div class="flex justify-between items-end mb-4">
+                        <div>
+                            <h3 class="font-cyber font-bold text-lg text-cyan-300">🌟 TOP 5 PRODUCTS PERFORMANCE SPOTLIGHT</h3>
+                            <p class="font-tech text-xs text-slate-400">Strictly evaluated by unique product_code across Jan-Jun 2026 transactions.</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4" id="spotlight-cards-container">
+                        <div class="col-span-full text-center py-10 font-cyber text-cyan-400 animate-pulse">LOADING SPOTLIGHT DATA...</div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl">
+                        <h3 class="font-cyber font-bold text-sm text-purple-300 mb-4">MONTHLY REVENUE TRAJECTORY (JAN - JUN 2026)</h3>
+                        <div class="h-[320px] relative"><canvas id="chart-overview-monthly"></canvas></div>
+                    </div>
+                    <div class="backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl">
+                        <h3 class="font-cyber font-bold text-sm text-cyan-300 mb-4">TOP 5 PRODUCTS REVENUE SHARE</h3>
+                        <div class="h-[320px] relative"><canvas id="chart-overview-doughnut"></canvas></div>
+                    </div>
+                </div>
+            </section>
+        </div>
 
         <!-- TAB: 6 STRATEGIC PRODUCTS (TOP 50 MPO BY UNIT) -->
         <section id="tab-strategic-6" class="tab-content space-y-6">
@@ -322,26 +356,224 @@
                     <p id="strategic-active-subtitle" class="font-tech text-xs text-slate-400">Merged Product Codes: MON1, MOO1, MOP1</p>
                 </div>
                 
-                <!-- Month Filter Pills -->
-                <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800" id="strategic-month-pills">
-                    <button class="strat-month-pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold shadow-neon-cyan" data-month="ALL">ALL MONTHS (JAN - JUN)</button>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button id="btn-lock-columns" class="px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5" onclick="toggleColumnLock()">
+                        🔒 Columns Locked
+                    </button>
+                    <!-- Month Filter Pills -->
+                    <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800" id="strategic-month-pills">
+                        <button class="strat-month-pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold shadow-neon-cyan" data-month="ALL">ALL MONTHS (JAN - JUN)</button>
+                    </div>
                 </div>
             </div>
 
             <!-- Top 50 MPO Table for Selected Strategic Product & Month -->
             <div class="overflow-x-auto rounded-xl border border-cyan-500/30 backdrop-blur-xl bg-slate-950/70 shadow-lg">
-                <table id="table-strategic-mpos" class="w-full text-left border-collapse">
+                <table id="table-strategic-mpos" class="text-left border-collapse table-fixed w-max">
                     <thead>
                         <tr class="bg-slate-900/90 border-b border-cyan-500/40 text-cyan-300 font-cyber text-xs">
-                            <th class="p-3.5"># RANK (BY UNIT) 🏆</th>
-                            <th class="p-3.5">MPO CODE 👤</th>
-                            <th class="p-3.5">MARKET NAME 📍</th>
-                            <th class="p-3.5">ZONE / DEPOT</th>
-                            <th class="p-3.5 bg-cyan-950/50 text-cyan-200">TOTAL UNITS SOLD 📦</th>
-                            <th class="p-3.5">VISITED PARTIES 👥</th>
-                            <th class="p-3.5">INVOICES BILLED 🧾</th>
-                            <th class="p-3.5">NET REVENUE (৳)</th>
-                            <th class="p-3.5">ACTION</th>
+                            <th class="py-1 px-1.5 w-[60px] text-center">RANK 🏆</th>
+                            <th class="py-1 px-1.5 w-[75px]">ZONE</th>
+                            <th class="py-1 px-1.5 w-[170px]">FIELD MANAGER</th>
+                            <th class="py-1 px-1.5 w-[90px]">MPO CODE 👤</th>
+                            <th class="py-1 px-1.5 w-[150px]">MARKET NAME 📍</th>
+                            <th class="py-1 px-1.5 bg-cyan-950/50 text-cyan-200 w-[130px]">TOTAL UNITS 📦</th>
+                            <th class="py-1 px-1.5 w-[110px]">PARTIES 👥</th>
+                            <th class="py-1 px-1.5 w-[110px]">INVOICES 🧾</th>
+                            <th class="py-1 px-1.5 w-[140px]">Value in Tk. (Incl. VAT)</th>
+                            <th class="py-1 px-1.5 w-[130px]">ACTION</th>
+                        </tr>
+                        <tr class="bg-slate-950/60 border-b border-cyan-500/20 text-[11px]">
+                            <!-- Rank -->
+                            <th class="p-1.5 text-center">
+                                <div class="relative inline-block text-left" id="filter-col-rank">
+                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'rank')">
+                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
+                                    </button>
+                                    <div id="popover-rank" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                        <input type="text" oninput="searchFilterOptions('rank', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('rank', true)">Select All</button>
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('rank', false)">Clear</button>
+                                        </div>
+                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-rank"></div>
+                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('rank')">Cancel</button>
+                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('rank')">Clear</button>
+                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('rank')">OK</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Zone -->
+                            <th class="p-1.5">
+                                <div class="relative inline-block text-left" id="filter-col-zone">
+                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'zone')">
+                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
+                                    </button>
+                                    <div id="popover-zone" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                        <input type="text" oninput="searchFilterOptions('zone', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('zone', true)">Select All</button>
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('zone', false)">Clear</button>
+                                        </div>
+                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-zone"></div>
+                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('zone')">Cancel</button>
+                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('zone')">Clear</button>
+                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('zone')">OK</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- FM -->
+                            <th class="p-1.5">
+                                <div class="relative inline-block text-left" id="filter-col-fm">
+                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'fm')">
+                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
+                                    </button>
+                                    <div id="popover-fm" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                        <input type="text" oninput="searchFilterOptions('fm', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('fm', true)">Select All</button>
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('fm', false)">Clear</button>
+                                        </div>
+                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-fm"></div>
+                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('fm')">Cancel</button>
+                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('fm')">Clear</button>
+                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('fm')">OK</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Code -->
+                            <th class="p-1.5">
+                                <div class="relative inline-block text-left" id="filter-col-code">
+                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'code')">
+                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
+                                    </button>
+                                    <div id="popover-code" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                        <input type="text" oninput="searchFilterOptions('code', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('code', true)">Select All</button>
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('code', false)">Clear</button>
+                                        </div>
+                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-code"></div>
+                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('code')">Cancel</button>
+                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('code')">Clear</button>
+                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('code')">OK</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Market -->
+                            <th class="p-1.5">
+                                <div class="relative inline-block text-left" id="filter-col-market">
+                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'market')">
+                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
+                                    </button>
+                                    <div id="popover-market" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                        <input type="text" oninput="searchFilterOptions('market', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('market', true)">Select All</button>
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('market', false)">Clear</button>
+                                        </div>
+                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-market"></div>
+                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('market')">Cancel</button>
+                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('market')">Clear</button>
+                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('market')">OK</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Units -->
+                            <th class="p-1.5">
+                                <div class="relative inline-block text-left" id="filter-col-units">
+                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'units')">
+                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
+                                    </button>
+                                    <div id="popover-units" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                        <input type="text" oninput="searchFilterOptions('units', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('units', true)">Select All</button>
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('units', false)">Clear</button>
+                                        </div>
+                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-units"></div>
+                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('units')">Cancel</button>
+                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('units')">Clear</button>
+                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('units')">OK</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Parties -->
+                            <th class="p-1.5">
+                                <div class="relative inline-block text-left" id="filter-col-parties">
+                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'parties')">
+                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
+                                    </button>
+                                    <div id="popover-parties" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                        <input type="text" oninput="searchFilterOptions('parties', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('parties', true)">Select All</button>
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('parties', false)">Clear</button>
+                                        </div>
+                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-parties"></div>
+                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('parties')">Cancel</button>
+                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('parties')">Clear</button>
+                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('parties')">OK</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Invoices -->
+                            <th class="p-1.5">
+                                <div class="relative inline-block text-left" id="filter-col-invoices">
+                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'invoices')">
+                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
+                                    </button>
+                                    <div id="popover-invoices" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                        <input type="text" oninput="searchFilterOptions('invoices', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('invoices', true)">Select All</button>
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('invoices', false)">Clear</button>
+                                        </div>
+                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-invoices"></div>
+                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('invoices')">Cancel</button>
+                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('invoices')">Clear</button>
+                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('invoices')">OK</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Sales -->
+                            <th class="p-1.5">
+                                <div class="relative inline-block text-left" id="filter-col-sales">
+                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'sales')">
+                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
+                                    </button>
+                                    <div id="popover-sales" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                        <input type="text" oninput="searchFilterOptions('sales', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('sales', true)">Select All</button>
+                                            <button class="hover:text-white" onclick="selectAllFilterOptions('sales', false)">Clear</button>
+                                        </div>
+                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-sales"></div>
+                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('sales')">Cancel</button>
+                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('sales')">Clear</button>
+                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('sales')">OK</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </th>
+                            <th class="p-1.5"></th>
                         </tr>
                     </thead>
                     <tbody id="tbody-strategic-mpos" class="font-tech text-sm divide-y divide-slate-800/60">
@@ -349,6 +581,9 @@
                     </tbody>
                 </table>
             </div>
+            
+            <!-- Strategic MPO Pagination -->
+            <div id="strategic-mpo-pagination" class="flex flex-wrap justify-center gap-1.5 mt-4"></div>
         </section>
 
         <!-- TAB 2: TOP 50 PRODUCTS -->
@@ -390,140 +625,250 @@
             </div>
         </section>
 
-        <!-- TAB 3: TOP 50 MPOS -->
-        <section id="tab-top50-mpos" class="tab-content space-y-4">
-            <div class="flex flex-wrap justify-between items-center gap-4 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
-                <div class="flex items-center gap-2 bg-slate-900 border border-purple-500/40 rounded-lg px-3 py-2 flex-1 max-w-md">
-                    <span class="text-purple-400">👔</span>
-                    <input type="text" id="search-mpo" placeholder="Search MPO Code, Zone or Depot..." class="bg-transparent border-none text-sm font-tech text-white w-full focus:outline-none">
-                </div>
-                <div class="flex gap-2">
-                    <button class="pill active px-3 py-1.5 rounded bg-purple-600 text-white font-tech text-xs font-bold" data-filter-mpo="all">ALL ZONES</button>
-                    <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-mpo="CTG">CHITTAGONG</button>
-                    <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-mpo="DHK">DHAKA</button>
-                    <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-mpo="RAJ">RAJSHAHI</button>
-                </div>
-                <button class="px-4 py-2 rounded bg-purple-900/60 border border-purple-500/50 text-purple-200 font-tech font-bold text-xs hover:bg-purple-800 transition-all" onclick="exportTableToCSV('table-top50-mpos', 'Top_50_MPO_Performance.csv')">
-                    📥 EXPORT CSV
-                </button>
+        <!-- Bottom Collapsible Toggle Bar -->
+        <div class="flex justify-between items-center bg-slate-900/60 backdrop-blur border border-slate-800/80 rounded-xl px-5 py-4 cursor-pointer select-none hover:bg-slate-900/90 transition-all hover:border-purple-500/40 group shadow-neon-purple/5" id="toggle-mpo-section-btn">
+            <div class="flex items-center gap-3">
+                <span class="text-purple-400 font-tech animate-pulse">◉</span>
+                <span class="text-sm font-cyber font-bold tracking-widest text-purple-300 group-hover:text-purple-200 uppercase">👔 MPO PERFORMANCE & REGIONAL FIELD LEADERBOARDS</span>
+                <span class="text-xs font-tech text-slate-500 hidden sm:inline">(Click to expand/collapse)</span>
             </div>
-
-            <div class="overflow-x-auto rounded-xl border border-slate-800/80 backdrop-blur-xl bg-slate-950/70">
-                <table id="table-top50-mpos" class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-900/90 border-b border-purple-500/30 text-purple-300 font-cyber text-xs">
-                            <th class="p-3">#</th>
-                            <th class="p-3">MPO CODE</th>
-                            <th class="p-3">MARKET / TERRITORY</th>
-                            <th class="p-3">ASSIGNED ZONE</th>
-                            <th class="p-3">CORE DEPOT</th>
-                            <th class="p-3">NET REVENUE (৳)</th>
-                            <th class="p-3">QTY SOLD</th>
-                            <th class="p-3">VISITED PARTIES 👥</th>
-                            <th class="p-3">INVOICES BILLED 🧾</th>
-                            <th class="p-3">ACTION</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-top50-mpos" class="font-tech text-sm divide-y divide-slate-800/60">
-                        <!-- JS Loaded -->
-                    </tbody>
-                </table>
+            <div class="w-8 h-8 rounded-full border border-slate-700 group-hover:border-purple-400 flex items-center justify-center text-purple-400 font-tech text-lg transition-all" id="toggle-mpo-icon">
+                +
             </div>
-        </section>
+        </div>
 
-        <!-- TAB 4: TOP 20 FMS & SECTORS -->
-        <section id="tab-top20-fms" class="tab-content grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Top 20 FMs -->
-            <div class="backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="font-cyber font-bold text-lg text-amber-300">🏆 TOP 20 FIELD MANAGERS (FM/AM)</h3>
-                    <button class="px-3 py-1 rounded bg-slate-900 border border-amber-500/40 text-amber-300 text-xs font-tech font-bold" onclick="exportTableToCSV('table-fms', 'Top_20_FMs.csv')">CSV</button>
+        <div id="collapsible-mpo-section" class="hidden space-y-8">
+            <!-- TAB 3: TOP 50 MPOS -->
+            <section id="tab-top50-mpos" class="tab-content space-y-4">
+                <div class="flex flex-wrap justify-between items-center gap-4 bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+                    <div class="flex items-center gap-2 bg-slate-900 border border-purple-500/40 rounded-lg px-3 py-2 flex-1 max-w-md">
+                        <span class="text-purple-400">👔</span>
+                        <input type="text" id="search-mpo" placeholder="Search MPO Code, Zone or Depot..." class="bg-transparent border-none text-sm font-tech text-white w-full focus:outline-none">
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="pill active px-3 py-1.5 rounded bg-purple-600 text-white font-tech text-xs font-bold" data-filter-mpo="all">ALL ZONES</button>
+                        <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-mpo="CTG">CHITTAGONG</button>
+                        <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-mpo="DHK">DHAKA</button>
+                        <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-mpo="RAJ">RAJSHAHI</button>
+                    </div>
+                    <button class="px-4 py-2 rounded bg-purple-900/60 border border-purple-500/50 text-purple-200 font-tech font-bold text-xs hover:bg-purple-800 transition-all" onclick="exportTableToCSV('table-top50-mpos', 'Top_50_MPO_Performance.csv')">
+                        📥 EXPORT CSV
+                    </button>
                 </div>
-                <div class="max-h-[500px] overflow-y-auto border border-slate-800 rounded-xl">
-                    <table id="table-fms" class="w-full text-left">
-                        <thead class="bg-slate-900 text-amber-200 font-cyber text-xs sticky top-0">
-                            <tr><th class="p-3">#</th><th class="p-3">FM / AM NAME</th><th class="p-3">MPOS</th><th class="p-3">REVENUE (৳)</th><th class="p-3">PARTIES</th><th class="p-3">INVOICES</th></tr>
+
+                <div class="overflow-x-auto rounded-xl border border-slate-800/80 backdrop-blur-xl bg-slate-950/70">
+                    <table id="table-top50-mpos" class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900/90 border-b border-purple-500/30 text-purple-300 font-cyber text-xs">
+                                <th class="p-3">#</th>
+                                <th class="p-3">MPO CODE</th>
+                                <th class="p-3">MARKET / TERRITORY</th>
+                                <th class="p-3">ASSIGNED ZONE</th>
+                                <th class="p-3">CORE DEPOT</th>
+                                <th class="p-3">NET REVENUE (৳)</th>
+                                <th class="p-3">QTY SOLD</th>
+                                <th class="p-3">VISITED PARTIES 👥</th>
+                                <th class="p-3">INVOICES BILLED 🧾</th>
+                                <th class="p-3">ACTION</th>
+                            </tr>
                         </thead>
-                        <tbody id="tbody-fms" class="font-tech text-sm divide-y divide-slate-800/60"></tbody>
+                        <tbody id="tbody-top50-mpos" class="font-tech text-sm divide-y divide-slate-800/60">
+                            <!-- JS Loaded -->
+                        </tbody>
                     </table>
                 </div>
-            </div>
+            </section>
 
-            <!-- Top 5 Sectors -->
-            <div class="backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="font-cyber font-bold text-lg text-emerald-300">🌐 TOP 5 SECTOR HEADS / ZONES</h3>
-                    <button class="px-3 py-1 rounded bg-slate-900 border border-emerald-500/40 text-emerald-300 text-xs font-tech font-bold" onclick="exportTableToCSV('table-sectors', 'Top_5_Sectors.csv')">CSV</button>
+            <!-- TAB 4: TOP 20 FMS & SECTORS -->
+            <section id="tab-top20-fms" class="tab-content grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Top 20 FMs -->
+                <div class="backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-cyber font-bold text-lg text-amber-300">🏆 TOP 20 FIELD MANAGERS (FM/AM)</h3>
+                        <button class="px-3 py-1 rounded bg-slate-900 border border-amber-500/40 text-amber-300 text-xs font-tech font-bold" onclick="exportTableToCSV('table-fms', 'Top_20_FMs.csv')">CSV</button>
+                    </div>
+                    <div class="max-h-[500px] overflow-y-auto border border-slate-800 rounded-xl">
+                        <table id="table-fms" class="w-full text-left">
+                            <thead class="bg-slate-900 text-amber-200 font-cyber text-xs sticky top-0">
+                                <tr><th class="p-3">#</th><th class="p-3">FM / AM NAME</th><th class="p-3">MPOS</th><th class="p-3">REVENUE (৳)</th><th class="p-3">PARTIES</th><th class="p-3">INVOICES</th></tr>
+                            </thead>
+                            <tbody id="tbody-fms" class="font-tech text-sm divide-y divide-slate-800/60"></tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="max-h-[300px] overflow-y-auto border border-slate-800 rounded-xl">
-                    <table id="table-sectors" class="w-full text-left">
-                        <thead class="bg-slate-900 text-emerald-200 font-cyber text-xs sticky top-0">
-                            <tr><th class="p-3">#</th><th class="p-3">SECTOR / ZONE NAME</th><th class="p-3">MPOS</th><th class="p-3">REVENUE (৳)</th><th class="p-3">PARTIES</th></tr>
+
+                <!-- Top 5 Sectors -->
+                <div class="backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-cyber font-bold text-lg text-emerald-300">🌐 TOP 5 SECTOR HEADS / ZONES</h3>
+                        <button class="px-3 py-1 rounded bg-slate-900 border border-emerald-500/40 text-emerald-300 text-xs font-tech font-bold" onclick="exportTableToCSV('table-sectors', 'Top_5_Sectors.csv')">CSV</button>
+                    </div>
+                    <div class="max-h-[300px] overflow-y-auto border border-slate-800 rounded-xl">
+                        <table id="table-sectors" class="w-full text-left">
+                            <thead class="bg-slate-900 text-emerald-200 font-cyber text-xs sticky top-0">
+                                <tr><th class="p-3">#</th><th class="p-3">SECTOR / ZONE NAME</th><th class="p-3">MPOS</th><th class="p-3">REVENUE (৳)</th><th class="p-3">PARTIES</th></tr>
+                            </thead>
+                            <tbody id="tbody-sectors" class="font-tech text-sm divide-y divide-slate-800/60"></tbody>
+                        </table>
+                    </div>
+                    <div class="mt-6">
+                        <h4 class="font-cyber text-xs text-slate-400 mb-2">SECTOR REVENUE DISTRIBUTION</h4>
+                        <div class="h-[220px] relative"><canvas id="chart-sector-bar"></canvas></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 5: MONTHLY TRENDS -->
+            <section id="tab-monthly-trends" class="tab-content space-y-6">
+                <div class="backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl">
+                    <h3 class="font-cyber font-bold text-lg text-cyan-300 mb-4">📈 MONTHLY SYSTEM GROWTH TRAJECTORY</h3>
+                    <div class="h-[400px] relative"><canvas id="chart-monthly-dual"></canvas></div>
+                </div>
+                
+                <div class="overflow-x-auto rounded-xl border border-slate-800/80 backdrop-blur-xl bg-slate-950/70">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900/90 border-b border-cyan-500/30 text-cyan-300 font-cyber text-xs">
+                                <th class="p-3">MONTH</th>
+                                <th class="p-3">TOTAL REVENUE (৳)</th>
+                                <th class="p-3">TOTAL QUANTITY</th>
+                                <th class="p-3">INVOICES BILLED</th>
+                                <th class="p-3">UNIQUE PARTIES BILLED</th>
+                                <th class="p-3">AVG ORDER VALUE (৳)</th>
+                            </tr>
                         </thead>
-                        <tbody id="tbody-sectors" class="font-tech text-sm divide-y divide-slate-800/60"></tbody>
+                        <tbody id="tbody-monthly-table" class="font-tech text-sm divide-y divide-slate-800/60"></tbody>
                     </table>
                 </div>
-                <div class="mt-6">
-                    <h4 class="font-cyber text-xs text-slate-400 mb-2">SECTOR REVENUE DISTRIBUTION</h4>
-                    <div class="h-[220px] relative"><canvas id="chart-sector-bar"></canvas></div>
-                </div>
-            </div>
-        </section>
+            </section>
 
-        <!-- TAB 5: MONTHLY TRENDS -->
-        <section id="tab-monthly-trends" class="tab-content space-y-6">
-            <div class="backdrop-blur-xl bg-slate-950/70 border border-slate-800/80 p-6 rounded-2xl">
-                <h3 class="font-cyber font-bold text-lg text-cyan-300 mb-4">📈 MONTHLY SYSTEM GROWTH TRAJECTORY</h3>
-                <div class="h-[400px] relative"><canvas id="chart-monthly-dual"></canvas></div>
+            <!-- Footer -->
+            <footer class="mt-16 border-t border-slate-900 bg-black/60 py-6 text-center font-tech text-xs text-slate-500">
+                <p>© 2026 ALCO PHARMA ADVANCED ANALYTICS NEXUS // POWERED BY THREE.JS, TAILWIND CSS & DIJKSTRA LOGISTICS // PYTHONANYWHERE READY.</p>
+            </footer>
+        </div>
+
+    <!-- Advanced Drilldown Modal -->
+    <div id="drill-modal" class="modal-overlay">
+        <div class="modal-content border border-cyan-500/40 rounded-2xl max-w-4xl w-full p-6 shadow-neon-cyan flex flex-col gap-4 relative">
+            <div class="modal-header">
+                <div>
+                    <h3 id="modal-title" class="font-cyber font-black text-lg text-white">MPO PERFORMANCE BREAKDOWN</h3>
+                    <p id="modal-subtitle" class="font-tech text-xs text-slate-400 mt-1">Telemetry loading...</p>
+                </div>
+                <button class="btn-close" onclick="closeModal()">×</button>
             </div>
-            
-            <div class="overflow-x-auto rounded-xl border border-slate-800/80 backdrop-blur-xl bg-slate-950/70">
+            <!-- Chart Container -->
+            <div class="h-64 bg-slate-900/60 rounded-xl border border-slate-800 p-2 relative">
+                <canvas id="modal-chart"></canvas>
+            </div>
+            <!-- Table Container -->
+            <div class="overflow-x-auto rounded-xl border border-slate-800/80 bg-slate-950/90">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-900/90 border-b border-cyan-500/30 text-cyan-300 font-cyber text-xs">
                             <th class="p-3">MONTH</th>
-                            <th class="p-3">TOTAL REVENUE (৳)</th>
-                            <th class="p-3">TOTAL QUANTITY</th>
-                            <th class="p-3">INVOICES BILLED</th>
-                            <th class="p-3">UNIQUE PARTIES BILLED</th>
-                            <th class="p-3">AVG ORDER VALUE (৳)</th>
+                            <th class="p-3">Value in Tk. (Incl. VAT)</th>
+                            <th class="p-3">INVOICES</th>
+                            <th class="p-3">PARTIES</th>
+                            <th class="p-3">QUANTITY</th>
                         </tr>
                     </thead>
-                    <tbody id="tbody-monthly-table" class="font-tech text-sm divide-y divide-slate-800/60"></tbody>
+                    <tbody id="modal-tbody" class="font-tech text-sm divide-y divide-slate-800/60"></tbody>
                 </table>
             </div>
-        </section>
-
-    </main>
-
-    <!-- Interactive Drill-Down Modal -->
-    <div id="drill-modal" class="modal-overlay fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
-        <div class="backdrop-blur-2xl bg-slate-950 border border-cyan-500/50 rounded-2xl p-6 max-w-3xl w-full shadow-neon-cyan transform scale-95 transition-all duration-300">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
-                <h3 id="modal-title" class="font-cyber font-bold text-lg text-cyan-300">PERFORMANCE DRILLDOWN</h3>
-                <button class="text-slate-400 hover:text-white font-mono text-xl" onclick="closeModal()">✕</button>
-            </div>
-            <p id="modal-subtitle" class="font-tech text-xs text-slate-400 my-3"></p>
-            <div class="h-[280px] w-full my-4 relative"><canvas id="modal-chart"></canvas></div>
-            <div class="max-h-[200px] overflow-y-auto border border-slate-800 rounded-lg">
-                <table class="w-full text-left font-tech text-xs">
-                    <thead class="bg-slate-900 text-slate-300 sticky top-0">
-                        <tr><th class="p-2">MONTH</th><th class="p-2">REVENUE (৳)</th><th class="p-2">INVOICES</th><th class="p-2">PARTIES VISITED</th><th class="p-2">QTY</th></tr>
-                    </thead>
-                    <tbody id="modal-tbody" class="divide-y divide-slate-800/60"></tbody>
-                </table>
+            <div class="flex justify-end mt-2">
+                <button class="px-5 py-2 rounded bg-purple-900/60 border border-purple-500/50 text-purple-200 font-tech font-bold text-xs hover:bg-purple-800 transition-all" onclick="closeModal()">
+                    CLOSE TELEMETRY
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="mt-16 border-t border-slate-900 bg-black/60 py-6 text-center font-tech text-xs text-slate-500">
-        <p>© 2026 ALCO PHARMA ADVANCED ANALYTICS NEXUS // POWERED BY THREE.JS, TAILWIND CSS & DIJKSTRA LOGISTICS // PYTHONANYWHERE READY.</p>
-    </footer>
-
     <!-- Custom Logic Scripts -->
-    <script src="js/script.js"></script>
-    <script src="js/quantum_3d.js"></script>
-    <script src="js/dijkstra_network.js"></script>
+    <script src="js/script.js?v=2.1.2"></script>
+    <script src="js/quantum_3d.js?v=2.1.2"></script>
+    <script src="js/dijkstra_network.js?v=2.1.2"></script>
+    <script>
+        (() => {
+            const initToggles = () => {
+                // 1. Top Section Toggle
+                const toggleTopBtn = document.getElementById("toggle-top-section-btn");
+                const collapsibleTop = document.getElementById("collapsible-top-section");
+                const toggleTopIcon = document.getElementById("toggle-icon");
+                
+                if (toggleTopBtn && collapsibleTop && toggleTopIcon) {
+                    toggleTopBtn.onclick = () => {
+                        const isHidden = collapsibleTop.classList.contains("hidden") || collapsibleTop.style.display === "none";
+                        if (isHidden) {
+                            collapsibleTop.classList.remove("hidden");
+                            collapsibleTop.style.display = "block";
+                            toggleTopIcon.textContent = "−";
+                            if (typeof renderCharts === "function") {
+                                renderCharts();
+                            }
+                            window.dispatchEvent(new Event('resize'));
+                        } else {
+                            collapsibleTop.style.display = "none";
+                            collapsibleTop.classList.add("hidden");
+                            toggleTopIcon.textContent = "+";
+                        }
+                    };
+                }
+
+                // 2. MPO Section Toggle
+                const toggleMpoBtn = document.getElementById("toggle-mpo-section-btn");
+                const collapsibleMpo = document.getElementById("collapsible-mpo-section");
+                const toggleMpoIcon = document.getElementById("toggle-mpo-icon");
+                
+                if (toggleMpoBtn && collapsibleMpo && toggleMpoIcon) {
+                    toggleMpoBtn.onclick = () => {
+                        const isHidden = collapsibleMpo.classList.contains("hidden") || collapsibleMpo.style.display === "none";
+                        if (isHidden) {
+                            collapsibleMpo.classList.remove("hidden");
+                            collapsibleMpo.style.display = "block";
+                            toggleMpoIcon.textContent = "−";
+                        } else {
+                            collapsibleMpo.style.display = "none";
+                            collapsibleMpo.classList.add("hidden");
+                            toggleMpoIcon.textContent = "+";
+                        }
+                    };
+                }
+
+                // 3. Tab switching auto-expands corresponding collapsible section
+                const tabLinks = document.querySelectorAll(".tab-link");
+                tabLinks.forEach(link => {
+                    link.addEventListener("click", () => {
+                        const targetId = link.getAttribute("data-target");
+                        if (["tab-top50-mpos", "tab-top20-fms", "tab-monthly-trends"].includes(targetId)) {
+                            if (collapsibleMpo && (collapsibleMpo.classList.contains("hidden") || collapsibleMpo.style.display === "none")) {
+                                collapsibleMpo.classList.remove("hidden");
+                                collapsibleMpo.style.display = "block";
+                                if (toggleMpoIcon) toggleMpoIcon.textContent = "−";
+                            }
+                        } else if (["tab-overview"].includes(targetId)) {
+                            if (collapsibleTop && (collapsibleTop.classList.contains("hidden") || collapsibleTop.style.display === "none")) {
+                                collapsibleTop.classList.remove("hidden");
+                                collapsibleTop.style.display = "block";
+                                if (toggleTopIcon) toggleTopIcon.textContent = "−";
+                                if (typeof renderCharts === "function") {
+                                    renderCharts();
+                                }
+                                window.dispatchEvent(new Event('resize'));
+                            }
+                        }
+                    });
+                });
+            };
+
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", initToggles);
+            } else {
+                initToggles();
+            }
+            window.addEventListener("load", initToggles);
+        })();
+    </script>
 </body>
 </html>

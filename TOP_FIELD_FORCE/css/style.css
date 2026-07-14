@@ -595,3 +595,25 @@ tr:hover td:first-child {
     .spotlight-grid { grid-template-columns: 1fr; }
     th, td { padding: 0.75rem 0.5rem; font-size: 0.85rem; }
 }
+
+/* Strategic table zero padding override & overflow hidden for collapse */
+#table-strategic-mpos {
+    table-layout: fixed !important;
+}
+#table-strategic-mpos th, 
+#table-strategic-mpos td {
+    padding: 2px 4px !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    min-width: 0px !important;
+}
+#table-strategic-mpos th *, 
+#table-strategic-mpos td * {
+    max-width: 100% !important;
+    min-width: 0px !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    display: inline-block !important;
+}

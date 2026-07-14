@@ -1,9 +1,17 @@
 import os
+import sys
 import json
 import sqlite3
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from data_engine import DataEngine, DATA_OUT_DIR
+
+# Reconfigure console output encoding to prevent Windows crash on non-ASCII characters
+if hasattr(sys.stdout, 'reconfigure'):
+    try:
+        sys.stdout.reconfigure(encoding='utf-8', errors='backslashreplace')
+    except:
+        pass
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 API_DATA_PATH = os.path.join(DATA_OUT_DIR, "api_data.json")

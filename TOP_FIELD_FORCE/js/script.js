@@ -227,7 +227,14 @@ function renderAllComponents() {
 
 /* Format Currency in Bangladesh Standard */
 function formatBDT(val) {
-    return "৳ " + Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const num = Number(val) || 0;
+    const absNum = Math.abs(num);
+    if (absNum >= 1000000) {
+        return "৳ " + (num / 1000000).toFixed(2) + " M";
+    } else if (absNum >= 1000) {
+        return "৳ " + (num / 1000).toFixed(2) + " K";
+    }
+    return "৳ " + num.toFixed(2);
 }
 
 /* Render KPI Matrix */
@@ -599,23 +606,14 @@ function renderStrategicMPOTable() {
 
     tbody.innerHTML = paginatedMpos.map(m => `
         <tr class="hover:bg-cyan-950/20 transition-colors">
-            <td class="text-center"><strong class="font-cyber text-cyan-300 text-xs">${m.rank}</strong></td>
-            <td><span class="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-mono text-[11px] truncate block" title="${m.zone}">${m.zone}</span></td>
-            <td><span class="font-semibold text-slate-300 text-xs truncate block max-w-[160px]" title="${m.fm_name || 'Unknown'}">${m.fm_name || 'Unknown'}</span></td>
-            <td>
-                <span class="code-badge text-[11px]" style="background: rgba(6, 182, 212, 0.25); border-color: #06b6d4; color: #cffafe; padding: 2px 6px;">
-                    👤 ${m.mpo_code}
-                </span>
-            </td>
-            <td>
-                <div class="flex items-center gap-1">
-                    <strong class="text-white font-bold text-[11px] bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-500/30 truncate max-w-[140px]" title="${m.market}">📍 ${m.market}</strong>
-                    ${m.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-[9px] px-1 py-0.2 rounded border border-amber-500/40 font-mono">VACANT</span>' : ''}
-                </div>
-            </td>
+            <td class="text-center font-cyber text-cyan-300 text-xs">${m.rank}</td>
+            <td class="text-slate-300 font-mono text-[11px]" title="${m.zone}">${m.zone}</td>
+            <td class="font-semibold text-slate-300 text-xs" title="${m.fm_name || 'Unknown'}">${m.fm_name || 'Unknown'}</td>
+            <td class="text-[#cffafe] text-[11px]" title="${m.mpo_code}">👤 ${m.mpo_code}</td>
+            <td class="text-white font-bold text-[11px]" title="${m.market}">📍 ${m.market}${m.is_vacant ? ' (VACANT)' : ''}</td>
             <td class="bg-cyan-950/40 font-cyber font-bold text-emerald-400 text-xs border-l border-r border-cyan-500/30">📦 ${Number(m.units).toLocaleString()} U</td>
-            <td><span class="badge-party text-[11px]">${Number(m.parties).toLocaleString()} Parties 👥</span></td>
-            <td><span class="badge-party text-[11px]" style="color: #c084fc; background: rgba(168, 85, 247, 0.15); border-color: rgba(168, 85, 247, 0.3);">${Number(m.invoices).toLocaleString()} Inv 🧾</span></td>
+            <td class="badge-party text-[11px]">${Number(m.parties).toLocaleString()} Parties 👥</td>
+            <td class="badge-party text-[11px]" style="color: #c084fc;">${Number(m.invoices).toLocaleString()} Inv 🧾</td>
             <td class="val-highlight font-cyber text-xs">${formatBDT(m.sales)}</td>
             <td>
                 <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">

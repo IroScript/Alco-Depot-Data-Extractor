@@ -603,7 +603,7 @@ tr:hover td:first-child {
 #table-strategic-mpos th, 
 #table-strategic-mpos td {
     padding: 2px 4px !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     text-overflow: clip !important;
     white-space: nowrap !important;
     min-width: 0px !important;
@@ -616,4 +616,44 @@ tr:hover td:first-child {
     text-overflow: clip !important;
     white-space: nowrap !important;
     display: inline-block !important;
+}
+
+/* Excel absolute header styling */
+.excel-header-wrapper {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 2px 4px !important;
+    box-sizing: border-box !important;
+    background: rgb(15, 23, 42);
+    border-bottom: 1px solid rgba(6, 182, 212, 0.4);
+}
+.excel-header-text {
+    overflow: hidden !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    flex-grow: 1;
+    display: inline-block !important;
+}
+.excel-filter-btn {
+    flex-shrink: 0 !important;
+    font-size: 8px !important;
+    color: #64748b !important;
+    background: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid rgba(6, 182, 212, 0.2) !important;
+    border-radius: 3px !important;
+    padding: 2px 4px !important;
+    margin-left: 2px !important;
+    cursor: pointer !important;
+    display: inline-block !important;
+}
+.excel-filter-btn:hover {
+    color: #06b6d4 !important;
+    border-color: #06b6d4 !important;
 }

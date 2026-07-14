@@ -371,209 +371,193 @@
             <div class="overflow-x-auto rounded-xl border border-cyan-500/30 backdrop-blur-xl bg-slate-950/70 shadow-lg">
                 <table id="table-strategic-mpos" class="text-left border-collapse table-fixed w-max">
                     <thead>
-                        <tr class="bg-slate-900/90 border-b border-cyan-500/40 text-cyan-300 font-cyber text-xs">
-                            <th class="py-1 px-1.5 w-[60px] text-center">RANK 🏆</th>
-                            <th class="py-1 px-1.5 w-[75px]">ZONE</th>
-                            <th class="py-1 px-1.5 w-[170px]">FIELD MANAGER</th>
-                            <th class="py-1 px-1.5 w-[90px]">MPO CODE 👤</th>
-                            <th class="py-1 px-1.5 w-[150px]">MARKET NAME 📍</th>
-                            <th class="py-1 px-1.5 bg-cyan-950/50 text-cyan-200 w-[130px]">TOTAL UNITS 📦</th>
-                            <th class="py-1 px-1.5 w-[110px]">PARTIES 👥</th>
-                            <th class="py-1 px-1.5 w-[110px]">INVOICES 🧾</th>
-                            <th class="py-1 px-1.5 w-[140px]">Value in Tk. (Incl. VAT)</th>
-                            <th class="py-1 px-1.5 w-[130px]">ACTION</th>
-                        </tr>
-                        <tr class="bg-slate-950/60 border-b border-cyan-500/20 text-[11px]">
+                        <tr class="bg-slate-900/90 text-cyan-300 font-cyber text-xs" style="height: 28px;">
                             <!-- Rank -->
-                            <th class="p-1.5 text-center">
-                                <div class="relative inline-block text-left" id="filter-col-rank">
-                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'rank')">
-                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
-                                    </button>
-                                    <div id="popover-rank" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                        <input type="text" oninput="searchFilterOptions('rank', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('rank', true)">Select All</button>
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('rank', false)">Clear</button>
-                                        </div>
-                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-rank"></div>
-                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
-                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('rank')">Cancel</button>
-                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('rank')">Clear</button>
-                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('rank')">OK</button>
-                                        </div>
+                            <th class="w-[60px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper">
+                                    <span class="excel-header-text">RANK 🏆</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'rank')">▼</button>
+                                </div>
+                                <div id="popover-rank" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptions('rank', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('rank', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('rank', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-rank"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilter('rank')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('rank')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('rank')">OK</button>
                                     </div>
                                 </div>
                             </th>
                             <!-- Zone -->
-                            <th class="p-1.5">
-                                <div class="relative inline-block text-left" id="filter-col-zone">
-                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'zone')">
-                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
-                                    </button>
-                                    <div id="popover-zone" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                        <input type="text" oninput="searchFilterOptions('zone', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('zone', true)">Select All</button>
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('zone', false)">Clear</button>
-                                        </div>
-                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-zone"></div>
-                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
-                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('zone')">Cancel</button>
-                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('zone')">Clear</button>
-                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('zone')">OK</button>
-                                        </div>
+                            <th class="w-[75px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper">
+                                    <span class="excel-header-text">ZONE</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'zone')">▼</button>
+                                </div>
+                                <div id="popover-zone" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptions('zone', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('zone', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('zone', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-zone"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilter('zone')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('zone')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('zone')">OK</button>
                                     </div>
                                 </div>
                             </th>
-                            <!-- FM -->
-                            <th class="p-1.5">
-                                <div class="relative inline-block text-left" id="filter-col-fm">
-                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'fm')">
-                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
-                                    </button>
-                                    <div id="popover-fm" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                        <input type="text" oninput="searchFilterOptions('fm', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('fm', true)">Select All</button>
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('fm', false)">Clear</button>
-                                        </div>
-                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-fm"></div>
-                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
-                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('fm')">Cancel</button>
-                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('fm')">Clear</button>
-                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('fm')">OK</button>
-                                        </div>
+                            <!-- Field Manager -->
+                            <th class="w-[170px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper">
+                                    <span class="excel-header-text">FIELD MANAGER</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'fm')">▼</button>
+                                </div>
+                                <div id="popover-fm" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptions('fm', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('fm', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('fm', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-fm"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilter('fm')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('fm')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('fm')">OK</button>
                                     </div>
                                 </div>
                             </th>
-                            <!-- Code -->
-                            <th class="p-1.5">
-                                <div class="relative inline-block text-left" id="filter-col-code">
-                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'code')">
-                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
-                                    </button>
-                                    <div id="popover-code" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                        <input type="text" oninput="searchFilterOptions('code', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('code', true)">Select All</button>
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('code', false)">Clear</button>
-                                        </div>
-                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-code"></div>
-                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
-                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('code')">Cancel</button>
-                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('code')">Clear</button>
-                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('code')">OK</button>
-                                        </div>
+                            <!-- MPO Code -->
+                            <th class="w-[90px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper">
+                                    <span class="excel-header-text">MPO CODE 👤</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'code')">▼</button>
+                                </div>
+                                <div id="popover-code" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptions('code', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('code', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('code', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-code"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilter('code')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('code')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('code')">OK</button>
                                     </div>
                                 </div>
                             </th>
-                            <!-- Market -->
-                            <th class="p-1.5">
-                                <div class="relative inline-block text-left" id="filter-col-market">
-                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'market')">
-                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
-                                    </button>
-                                    <div id="popover-market" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                        <input type="text" oninput="searchFilterOptions('market', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('market', true)">Select All</button>
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('market', false)">Clear</button>
-                                        </div>
-                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-market"></div>
-                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
-                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('market')">Cancel</button>
-                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('market')">Clear</button>
-                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('market')">OK</button>
-                                        </div>
+                            <!-- Market Name -->
+                            <th class="w-[150px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper">
+                                    <span class="excel-header-text">MARKET NAME 📍</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'market')">▼</button>
+                                </div>
+                                <div id="popover-market" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptions('market', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('market', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('market', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-market"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilter('market')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('market')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('market')">OK</button>
                                     </div>
                                 </div>
                             </th>
-                            <!-- Units -->
-                            <th class="p-1.5">
-                                <div class="relative inline-block text-left" id="filter-col-units">
-                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'units')">
-                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
-                                    </button>
-                                    <div id="popover-units" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                        <input type="text" oninput="searchFilterOptions('units', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('units', true)">Select All</button>
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('units', false)">Clear</button>
-                                        </div>
-                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-units"></div>
-                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
-                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('units')">Cancel</button>
-                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('units')">Clear</button>
-                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('units')">OK</button>
-                                        </div>
+                            <!-- Total Units -->
+                            <th class="bg-cyan-950/50 text-cyan-200 w-[130px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="background: rgba(8, 47, 73, 0.9);">
+                                    <span class="excel-header-text">TOTAL UNITS 📦</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'units')">▼</button>
+                                </div>
+                                <div id="popover-units" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptions('units', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('units', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('units', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-units"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilter('units')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('units')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('units')">OK</button>
                                     </div>
                                 </div>
                             </th>
                             <!-- Parties -->
-                            <th class="p-1.5">
-                                <div class="relative inline-block text-left" id="filter-col-parties">
-                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'parties')">
-                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
-                                    </button>
-                                    <div id="popover-parties" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                        <input type="text" oninput="searchFilterOptions('parties', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('parties', true)">Select All</button>
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('parties', false)">Clear</button>
-                                        </div>
-                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-parties"></div>
-                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
-                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('parties')">Cancel</button>
-                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('parties')">Clear</button>
-                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('parties')">OK</button>
-                                        </div>
+                            <th class="w-[110px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper">
+                                    <span class="excel-header-text">PARTIES 👥</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'parties')">▼</button>
+                                </div>
+                                <div id="popover-parties" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptions('parties', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('parties', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('parties', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-parties"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilter('parties')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('parties')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('parties')">OK</button>
                                     </div>
                                 </div>
                             </th>
                             <!-- Invoices -->
-                            <th class="p-1.5">
-                                <div class="relative inline-block text-left" id="filter-col-invoices">
-                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'invoices')">
-                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
-                                    </button>
-                                    <div id="popover-invoices" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                        <input type="text" oninput="searchFilterOptions('invoices', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('invoices', true)">Select All</button>
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('invoices', false)">Clear</button>
-                                        </div>
-                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-invoices"></div>
-                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
-                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('invoices')">Cancel</button>
-                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('invoices')">Clear</button>
-                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('invoices')">OK</button>
-                                        </div>
+                            <th class="w-[110px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper">
+                                    <span class="excel-header-text">INVOICES 🧾</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'invoices')">▼</button>
+                                </div>
+                                <div id="popover-invoices" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptions('invoices', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('invoices', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('invoices', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-invoices"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilter('invoices')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('invoices')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('invoices')">OK</button>
                                     </div>
                                 </div>
                             </th>
-                            <!-- Sales -->
-                            <th class="p-1.5">
-                                <div class="relative inline-block text-left" id="filter-col-sales">
-                                    <button class="px-1.5 py-1 rounded bg-slate-900 border border-cyan-500/20 text-cyan-200 text-[10px] flex items-center gap-0.5 hover:border-cyan-400 font-tech focus:outline-none" onclick="toggleFilterPopover(event, 'sales')">
-                                        <span>Filter</span> <span class="text-[8px] text-slate-500">▼</span>
-                                    </button>
-                                    <div id="popover-sales" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                        <input type="text" oninput="searchFilterOptions('sales', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                        <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('sales', true)">Select All</button>
-                                            <button class="hover:text-white" onclick="selectAllFilterOptions('sales', false)">Clear</button>
-                                        </div>
-                                        <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-sales"></div>
-                                        <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
-                                            <button class="text-slate-400 hover:text-white" onclick="cancelFilter('sales')">Cancel</button>
-                                            <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('sales')">Clear</button>
-                                            <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('sales')">OK</button>
-                                        </div>
+                            <!-- Value in Tk. -->
+                            <th class="w-[140px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper">
+                                    <span class="excel-header-text">Value in Tk. (Incl. VAT)</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'sales')">▼</button>
+                                </div>
+                                <div id="popover-sales" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptions('sales', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('sales', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('sales', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-sales"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilter('sales')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('sales')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('sales')">OK</button>
                                     </div>
                                 </div>
                             </th>
-                            <th class="p-1.5"></th>
+                            <!-- Action -->
+                            <th class="w-[130px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper">
+                                    <span class="excel-header-text">ACTION</span>
+                                </div>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="tbody-strategic-mpos" class="font-tech text-sm divide-y divide-slate-800/60">
@@ -786,9 +770,9 @@
     </div>
 
     <!-- Custom Logic Scripts -->
-    <script src="js/script.js?v=2.1.3"></script>
-    <script src="js/quantum_3d.js?v=2.1.3"></script>
-    <script src="js/dijkstra_network.js?v=2.1.3"></script>
+    <script src="js/script.js?v=2.1.4"></script>
+    <script src="js/quantum_3d.js?v=2.1.4"></script>
+    <script src="js/dijkstra_network.js?v=2.1.4"></script>
     <script>
         (() => {
             const initToggles = () => {

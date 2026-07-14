@@ -614,13 +614,20 @@ tr:hover td:first-child {
     white-space: nowrap !important;
     min-width: 0px !important;
 }
-/* td children: clip everything inside data cells */
-#table-strategic-mpos td * {
-    max-width: 100% !important;
-    min-width: 0px !important;
+/* Cell clipping wrapper - reliable overflow clipping inside table cells */
+#table-strategic-mpos td {
+    padding: 0 !important;
+}
+.cell-clip {
     overflow: hidden !important;
     text-overflow: clip !important;
     white-space: nowrap !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 2px 4px !important;
+    box-sizing: border-box !important;
+    font-size: 11px;
+    color: #cbd5e1;
 }
 
 /* Excel absolute header styling */

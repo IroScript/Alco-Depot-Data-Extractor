@@ -606,19 +606,21 @@ function renderStrategicMPOTable() {
 
     tbody.innerHTML = paginatedMpos.map(m => `
         <tr class="hover:bg-cyan-950/20 transition-colors">
-            <td class="text-center font-cyber text-cyan-300 text-xs">${m.rank}</td>
-            <td class="text-slate-300 font-mono text-[11px]" title="${m.zone}">${m.zone}</td>
-            <td class="font-semibold text-slate-300 text-xs" title="${m.fm_name || 'Unknown'}">${m.fm_name || 'Unknown'}</td>
-            <td class="text-[#cffafe] text-[11px]" title="${m.mpo_code}">👤 ${m.mpo_code}</td>
-            <td class="text-white font-bold text-[11px]" title="${m.market}">📍 ${m.market}${m.is_vacant ? ' (VACANT)' : ''}</td>
-            <td class="bg-cyan-950/40 font-cyber font-bold text-emerald-400 text-xs border-l border-r border-cyan-500/30">📦 ${Number(m.units).toLocaleString()} U</td>
-            <td class="badge-party text-[11px]">${Number(m.parties).toLocaleString()} Parties 👥</td>
-            <td class="badge-party text-[11px]" style="color: #c084fc;">${Number(m.invoices).toLocaleString()} Inv 🧾</td>
-            <td class="val-highlight font-cyber text-xs">${formatBDT(m.sales)}</td>
+            <td><div class="cell-clip">${m.rank}</div></td>
+            <td><div class="cell-clip" title="${m.zone}">${m.zone}</div></td>
+            <td><div class="cell-clip" title="${m.fm_name || 'Unknown'}">${m.fm_name || 'Unknown'}</div></td>
+            <td><div class="cell-clip" title="${m.mpo_code}">👤 ${m.mpo_code}</div></td>
+            <td><div class="cell-clip" title="${m.market}">📍 ${m.market}${m.is_vacant ? ' (VACANT)' : ''}</div></td>
+            <td><div class="cell-clip">📦 ${Number(m.units).toLocaleString()} U</div></td>
+            <td><div class="cell-clip">${Number(m.parties).toLocaleString()} Parties 👥</div></td>
+            <td><div class="cell-clip">${Number(m.invoices).toLocaleString()} Inv 🧾</div></td>
+            <td><div class="cell-clip">${formatBDT(m.sales)}</div></td>
             <td>
-                <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">
-                    📈 MONTHLY
-                </button>
+                <div class="cell-clip">
+                    <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">
+                        📈 MONTHLY
+                    </button>
+                </div>
             </td>
         </tr>
     `).join('');

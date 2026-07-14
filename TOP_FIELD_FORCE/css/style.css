@@ -600,10 +600,16 @@ tr:hover td:first-child {
 #table-strategic-mpos {
     table-layout: fixed !important;
 }
-#table-strategic-mpos th, 
-#table-strategic-mpos td {
+#table-strategic-mpos th {
     padding: 2px 4px !important;
     overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+    min-width: 0px !important;
+}
+#table-strategic-mpos td {
+    padding: 2px 4px !important;
+    overflow: hidden !important;
     text-overflow: clip !important;
     white-space: nowrap !important;
     min-width: 0px !important;

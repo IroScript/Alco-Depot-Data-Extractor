@@ -1056,16 +1056,7 @@ function openDrillModal(type, code) {
                         borderColor: "#10b981",
                         borderWidth: 2,
                         borderRadius: 4,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: "Sales (৳)",
-                        data: salesData,
-                        backgroundColor: "rgba(251, 191, 36, 0.8)",
-                        borderColor: "#fbbf24",
-                        borderWidth: 2,
-                        borderRadius: 4,
-                        yAxisID: 'y'
+                        yAxisID: 'yCount'
                     },
                     {
                         label: "Invoices 🧾",
@@ -1074,7 +1065,7 @@ function openDrillModal(type, code) {
                         borderColor: "#06b6d4",
                         borderWidth: 2,
                         borderRadius: 4,
-                        yAxisID: 'y'
+                        yAxisID: 'yCount'
                     },
                     {
                         label: "Parties 👥",
@@ -1083,7 +1074,16 @@ function openDrillModal(type, code) {
                         borderColor: "#a855f7",
                         borderWidth: 2,
                         borderRadius: 4,
-                        yAxisID: 'y'
+                        yAxisID: 'yCount'
+                    },
+                    {
+                        label: "Sales (৳)",
+                        data: salesData,
+                        backgroundColor: "rgba(251, 191, 36, 0.8)",
+                        borderColor: "#fbbf24",
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        yAxisID: 'ySales'
                     }
                 ]
             },
@@ -1094,21 +1094,36 @@ function openDrillModal(type, code) {
                     legend: { position: 'top', labels: { font: { family: 'Rajdhani', size: 12 }, color: '#fff' } },
                     tooltip: {
                         backgroundColor: 'rgba(2, 4, 10, 0.95)',
-                        borderColor: '#a855f7',
+                        borderColor: '#fbbf24',
                         borderWidth: 2,
                         titleFont: { family: 'Orbitron', size: 13 }
                     }
                 },
                 scales: {
-                    y: {
+                    yCount: {
                         type: 'linear', position: 'left',
-                        title: { display: false },
+                        title: { display: true, text: 'UNITS / INV / PARTIES', color: '#10b981', font: { family: 'Orbitron', size: 11, weight: 'bold' } },
                         grid: { color: "rgba(100, 116, 139, 0.2)" },
                         ticks: {
-                            color: '#cbd5e1',
-                            stepSize: 5,
+                            color: '#10b981',
                             precision: 0,
                             font: { family: 'Rajdhani', size: 11, weight: 'bold' }
+                        },
+                        beginAtZero: true
+                    },
+                    ySales: {
+                        type: 'linear', position: 'right',
+                        title: { display: true, text: 'SALES (৳)', color: '#fbbf24', font: { family: 'Orbitron', size: 11, weight: 'bold' } },
+                        grid: { display: false },
+                        ticks: {
+                            color: '#fbbf24',
+                            precision: 0,
+                            font: { family: 'Rajdhani', size: 11, weight: 'bold' },
+                            callback: function(value) {
+                                if (value >= 100000) return (value / 1000).toFixed(0) + 'K';
+                                if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+                                return value;
+                            }
                         },
                         beginAtZero: true
                     },
@@ -1131,8 +1146,8 @@ function openDrillModal(type, code) {
                             const value = dataset.data[index];
                             if (value === 0 || value == null) return;
                             let label;
-                            if (datasetIndex === 1) {
-                                // Sales — show in K format
+                            if (datasetIndex === 3) {
+                                // Sales (৳) — show in K format
                                 if (value >= 100000) label = (value / 1000).toFixed(0) + 'K';
                                 else if (value >= 1000) label = (value / 1000).toFixed(1) + 'K';
                                 else label = Math.round(value).toString();

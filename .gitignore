@@ -71,7 +71,22 @@ out.txt
 googleDrive/env
 googleDrive/token.pickle
 googleDrive/credentials_master.json
+googleDrive/credentials.json
 googleDrive/.upload_folder.json
+
+# Service-account private key JSONs (any alco-pharma-*.json or similar)
+googleDrive/alco-pharma-*.json
+googleDrive/driveautomation-*.json
+googleDrive/service_account.json
+googleDrive/client_secret_*.json
+
+# Screenshots (personal/debug files, never part of repo)
+Dashboard/Screenshot*.png
+Dashboard/SS.png
+
+# AI CLI session transcripts (personal scratch, never part of repo)
+GeminiPowerShell.txt
+"❗ Puku CLI.txt"
 
 # ─────────────────────────────────────────────────────────────────
 # CREDENTIALS MASTER FILE (single source of truth)

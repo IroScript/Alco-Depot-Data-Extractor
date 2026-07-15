@@ -618,7 +618,7 @@ function renderStrategicMPOTable() {
             <td>
                 <div class="cell-clip">
                     <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">
-                        📈 MONTHLY
+                        📈 GRAPH
                     </button>
                 </div>
             </td>

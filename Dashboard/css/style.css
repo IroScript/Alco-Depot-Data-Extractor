@@ -600,6 +600,16 @@ tr:hover td:first-child {
 #table-strategic-mpos {
     table-layout: fixed !important;
 }
+#table-strategic-mpos th,
+#table-strategic-mpos td,
+#table-strategic-mpos .excel-header-text {
+    font-size: 1.08em !important;
+}
+#table-strategic-mpos td *,
+#table-strategic-mpos .cell-clip,
+#table-strategic-mpos .btn-action {
+    font-size: 1.08em !important;
+}
 #table-strategic-mpos th {
     padding: 2px 4px !important;
     overflow: visible !important;

@@ -1,0 +1,59 @@
+**********************
+PowerShell transcript start
+Start time: 20260714135923
+Username: DESKTOP-9OMAAC9\Irak
+RunAs User: DESKTOP-9OMAAC9\Irak
+Configuration Name: 
+Machine: DESKTOP-9OMAAC9 (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.dll -Command py -3.12 data_engine.py
+Process ID: 5920
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.19045
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+[auto-save] Recording to: C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\TOP_FIELD_FORCE\terminal-logs\session_2026-07-14_13-59-23.txt
+
+PS>py -3.12 data_engine.py
+
+  আ�� স��স�� এ�� ����ধন কর�� ����র প��ব��ন��� ক����:
+
+
+  ### �� ক�� হ����:
+
+
+  ১. LIMIT 50 ���ভ ক�� হ����:
+
+
+  •  data_engine.py  ��ই�� ���� SQL ����� ����  LIMIT 50  স���� ��ও�� হ����। এখন এ�� উ�� ������ক ������ ���� ক�� সকল MPO-�� ��থম ���� ��ষ প���� (Top
+ to Bottom) ��� ���� আস��।
+
+  ২. ন�ন ���� ������শন �� হ����:
+
+
+  • প��ব��ন�� ����কর কর�� ��ক��উ��  py -3.12 data_engine.py  ক������ ��ন ক�� হ����, �� স���� ������জ ���� সকল MPO-এর ���� ����ল���ট ক�� ন�ন  api_dat
+a.json  ��ইল ���� কর��।
+
+  ৩. Excel-like ক��ম পপও��র ����র আপ��ট:
+
+
+  • ��প��উন ��ক-���� ����র�����ও এখন সকল MPO-এর ইউ��ক আই��ম��� ��ই�������� ������।
+
+
+  ��ক��উ�� ������ স���� হ�� ক��ক ������ সময় ��গ�� ����। ����স�� ��ষ হও��র ���� ���� আ�� আপ���� কন���� কর��, এরপর ����শ কর��ই আপ�� ১, ২, ৩, ৪... সহ স
+���� ������শন ও সকল MPO-�� ��খ�� ����ন!
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+>
+PS>$global:?
+False
+**********************
+PowerShell transcript end
+End time: 20260714140003
+**********************

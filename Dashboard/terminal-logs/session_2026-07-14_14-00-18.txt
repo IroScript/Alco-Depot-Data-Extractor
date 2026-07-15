@@ -1,0 +1,58 @@
+**********************
+PowerShell transcript start
+Start time: 20260714140018
+Username: DESKTOP-9OMAAC9\Irak
+RunAs User: DESKTOP-9OMAAC9\Irak
+Configuration Name: 
+Machine: DESKTOP-9OMAAC9 (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.dll -Command py -3.12 data_engine.py
+Process ID: 4704
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.19045
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+[auto-save] Recording to: C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\TOP_FIELD_FORCE\terminal-logs\session_2026-07-14_14-00-18.txt
+
+PS>py -3.12 data_engine.py
+
+  ৩. Excel-like ক��ম পপও��র ����র আপ��ট:
+
+
+  • ��প��উন ��ক-���� ����র�����ও এখন সকল MPO-এর ইউ��ক আই��ম��� ��ই�������� ������।
+
+
+  ��ক��উ�� ������ স���� হ�� ক��ক ������ সময় ��গ�� ����। ����স�� ��ষ হও��র ���� ���� আ�� আপ���� কন���� কর��, এরপর ����শ কর��ই আপ�� ১, ২, ৩, ৪... সহ স
+���� ������শন ও সকল MPO-�� ��খ�� ����ন!
+
+● Read(C:/Users/Irak/Desktop/Barishal April Data - Copy/New folder/Alco-Depot-Data-Extractor/TOP_FIELD_FORCE/data_engine.py)
+● Read(C:/Users/Irak/Desktop/Barishal April Data - Copy/New folder/Alco-Depot-Data-Extractor/TOP_FIELD_FORCE/data_engine.py)
+● Edit(C:/Users/Irak/Desktop/Barishal April Data - Copy/New folder/Alco-Depot-Data-Extractor/TOP_FIELD_FORCE/data_engine.py)
+○ Bash(py -3.12 data_engine.py) (ctrl+o to expand)
+
+  An error occurred during background execution:
+
+    UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' (✓)
+
+  Windows-এর ������লCP1252 উই��জ ��ড��জ ��ব��র ক��র ��র�� ����র ��ন ��ষ হও��র পর ��ক��স ����জ ���� ক��র সময় উই����ড ������ ( ✓ ) ������ল এন��ড কর��
+�� ����য় এই ��শ�� ঘ����ল।
+
+  আ�� �������� ���� ( data_engine.py ) উই��জ এন��য়রন����র জ�� UTF-8 ��ম ��ই��র ��� ক�� ������, ��র ফ�� এখন আর এই এন���� এরর�� হ�� ��। ������ �ন��য়
+��ন ক��র ����শ ��ও�� হ���� এ�� ����
+  সফল���� ������ট হ��। এ�� ��ষ হও�� ����ই আপ���� ������!
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+>
+PS>$global:?
+True
+**********************
+PowerShell transcript end
+End time: 20260714140053
+**********************

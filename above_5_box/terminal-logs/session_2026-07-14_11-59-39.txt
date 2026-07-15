@@ -1,0 +1,55 @@
+**********************
+PowerShell transcript start
+Start time: 20260714115939
+Username: DESKTOP-9OMAAC9\Irak
+RunAs User: DESKTOP-9OMAAC9\Irak
+Configuration Name: 
+Machine: DESKTOP-9OMAAC9 (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.dll -Command python -m pip install pandas
+Process ID: 3488
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.19045
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+[auto-save] Recording to: C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\above_5_box\terminal-logs\session_2026-07-14_11-59-39.txt
+
+PS>python -m pip install pandas
+    [ERROR] Failed to load C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-
+  Extractor\Extracted All Data\extracted_09_Jul_2026_04.35_PM\RANGPUR.csv: module 'pandas' has no attribute 'read_csv'
+
+  ERROR: No data loaded. Pipeline stopping.
+  [11:58 above_5_box] PS>
+
+● ListDir(C:/Users/Irak/Desktop/Barishal April Data - Copy/New folder/Alco-Depot-Data-Extractor/above_5_box)
+● ListDir(C:/Users/Irak/Desktop/Barishal April Data - Copy/New folder/Alco-Depot-Data-Extractor)
+● Bash(python -c "import pandas; print(pandas.__file__)")
+● Bash(python -c "import pandas; print(pandas)")
+● Bash(pip show pandas)
+● Read(C:/Users/Irak/Desktop/Barishal April Data - Copy/New f...nual_single_click_auto_run_no_need__following_steps.py)
+● Bash(python -c "import openpyxl; print(openpyxl)")
+● Bash(python -c "import requests; print(requests)")
+● Bash(python -m pip install pandas) (ctrl+o to expand)
+
+  গ��ষ�� ও ����ষণ ক�� ���� ���� �� ������  pandas  ��ই������ স��ক���� ইন��ল ক�� ��ই (��র ��র�� এ�� এক�� ���� ��ম��স ম��উ
+○ ������ ��ড হ�� এ��  pandas has no
+  attribute read_csv  ���� ������)।
+
+
+  আ�� এ�� স����ন ক��র জ��  pandas  ইন��ল ক��র ������ �� ক����। ইন����শন স���� হও�� প���� অ���হ ক�� অ���� ক�ন।
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+>
+PS>$global:?
+True
+**********************
+PowerShell transcript end
+End time: 20260714120027
+**********************

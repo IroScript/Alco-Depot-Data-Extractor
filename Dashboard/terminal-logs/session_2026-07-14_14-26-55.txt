@@ -1,0 +1,54 @@
+**********************
+PowerShell transcript start
+Start time: 20260714142655
+Username: DESKTOP-9OMAAC9\Irak
+RunAs User: DESKTOP-9OMAAC9\Irak
+Configuration Name: 
+Machine: DESKTOP-9OMAAC9 (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.dll -Command py -3.12 data_engine.py
+Process ID: 7664
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.19045
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+[auto-save] Recording to: C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\TOP_FIELD_FORCE\terminal-logs\session_2026-07-14_14-26-55.txt
+
+PS>py -3.12 data_engine.py
+ জ�� র����।
+● • স����ন: আ�� ���� এ����র SQL �������� ����ধন ক�� ������। এখন এ�� ������  mpo_code  ���� ��প �� ক��  GROUP BY mpo_code
+, zone  (��ড এ�� ��ন)
+  উভ��র সম���� ��প কর��। এর ফ�� Barishal-এর B003 এ�� Rajshahi-এর B003 স���� �থক ��� �� ������ ��শ���� ����ল���� ������ এ
+�� ����র ��জ ��জ আসল ��ন ও
+  স��ক Field Manager-এর ��ম ���� হ��।
+
+
+  ### ২. ������র Clear ��টন ��জ �� ক��:
+
+
+  • �ল�� ����য় ��ল: ���র ����র পপও����র ����র ����� ���� ��������ড Clear Filter ��টন ��ল ��, ��র ��র�� ��কব�� �������� ক
+�� ওক ���� �� ০ ������ ������।
+  • স����ন: এখন পপও����র ��ত�� Cancel এ�� OK ��ট��র ��ক ��ঝ���� এক�� ��������ড ��ল র��র  Clear  ��টন ��গ ক�� ������। এই
+��ট�� ��ক কর�� ওই ������ ক����র
+  ����র স���� ����ট �� প����র হ�� ���� এ�� ���� ���� ����ল আপ��ট হ�� ����।
+
+
+  ���� ������শন ��ক��উ�� ������ ( task-459 ) ����স হ��। এ�� স���� হও��র ����জ আ������ই আ�� আপ���� কন���� কর��, ��রপর ��
+��শ ����ই আপ�� ��� ����র ���� আ��������
+  ��খ�� ����ন!
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+>
+PS>$global:?
+True
+**********************
+PowerShell transcript end
+End time: 20260714142842
+**********************

@@ -34,6 +34,7 @@ def create_zip():
         "googleDrive",
         "FieldEdit",
         "fastapi_gateway",
+        "Dashboard",
         "step_1_extract_Product_Level_Net_Sales_csv.py",
         "step_2_generate_MPO_Target_vs_Achievement_report.py",
         "step_3_generate_Zone_Wise_Product_Sales_Report.py",
@@ -42,8 +43,7 @@ def create_zip():
         "auto_single_click_auto_run_no_need__following_steps.py",
         "above_5_box",
         "telegram_notifier.py",
-        "local_gateway_sync.py",
-        "sales.db"
+        "local_gateway_sync.py"
     ]
     
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -53,8 +53,8 @@ def create_zip():
                 continue
             if os.path.isdir(item_path):
                 for root, dirs, files in os.walk(item_path):
-                    # Skip __pycache__ folders and archives
-                    if "__pycache__" in root or "Archive" in root:
+                    # Skip __pycache__, archives, and All_Depots
+                    if "__pycache__" in root or "Archive" in root or "All_Depots" in root:
                         continue
                     for file in files:
                         file_path = os.path.join(root, file)
@@ -137,7 +137,7 @@ def deploy_to_pythonanywhere():
             return False
             
     except Exception as e:
-        print(f"❌ Deployment connection error: {e}")
+        print(f"[ERROR] Deployment connection error: {e}")
         return False
 
 if __name__ == "__main__":

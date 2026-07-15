@@ -1,0 +1,54 @@
+**********************
+PowerShell transcript start
+Start time: 20260714141736
+Username: DESKTOP-9OMAAC9\Irak
+RunAs User: DESKTOP-9OMAAC9\Irak
+Configuration Name: 
+Machine: DESKTOP-9OMAAC9 (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.dll -Command py -3.12 scratch/count_mpos.py
+Process ID: 5380
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.19045
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+[auto-save] Recording to: C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\TOP_FIELD_FORCE\terminal-logs\session_2026-07-14_14-17-36.txt
+
+PS>py -3.12 scratch/count_mpos.py
+
+● Search(Search STRATEGIC_6_MAPPING)
+● Search(Search function definition)
+● Read(C:/Users/Irak/Desktop/Barishal April Data - ...ata-Extractor/TOP_FIELD_FORCE/data_engine.py) (ctrl+o to expand)
+
+▸ Thought for 2s, 200 tokens
+  Analyzing Data Volumes
+
+● Create(C:/Users/Irak/Desktop/Barishal April Data - Copy/New ...-Data-Extractor/TOP_FIELD_FORCE/scratch/count_mpos.py)
+● Bash(py -3.12 scratch/count_mpos.py)
+● Create(C:/Users/Irak/Desktop/Barishal April Data - Copy/New ...-Data-Extractor/TOP_FIELD_FORCE/scratch/count_mpos.py)
+● Bash(py -3.12 scratch/count_mpos.py)
+● ManageTask(status b18edb18-07ba-4403-a648-f14d421a1a64/task-432) (ctrl+o to expand)
+
+  ������ল ��ক��উ�� ������ স���� হও��র ���� ���� ���� ��উ�� ��খ�� ��ব। আ�� ������ল ��ন হও��র অ���� কর�� ���� ��খ�� ����
+�������� উ�� ������ক ������র জ�� ��ট কত�� ইউ��ক MPO
+  ���� এ�� ��র��ত আ�� এ�� ��������র পর কত��� ��দ ����।
+
+
+  ২ ������র ম�� এ�� স���� হ�� ����।
+
+⡿  Generating...
+└ Tip: To disable tips, toggle Show Tips in /settings.
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+>
+PS>$global:?
+True
+**********************
+PowerShell transcript end
+End time: 20260714141747
+**********************

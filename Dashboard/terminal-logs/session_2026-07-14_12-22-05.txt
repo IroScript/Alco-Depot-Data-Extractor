@@ -1,0 +1,60 @@
+**********************
+PowerShell transcript start
+Start time: 20260714122205
+Username: DESKTOP-9OMAAC9\Irak
+RunAs User: DESKTOP-9OMAAC9\Irak
+Configuration Name: 
+Machine: DESKTOP-9OMAAC9 (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.dll -Command python server.py
+Process ID: 10876
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.19045
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+[auto-save] Recording to: C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\TOP_FIELD_FORCE\terminal-logs\session_2026-07-14_12-22-05.txt
+
+PS>python server.py
+  ================================================================================
+   �� TOP FIELD FORCE DASHBOARD SERVER RUNNING AT: http://127.0.0.1:8080
+  ================================================================================
+   Available API endpoints for PythonAnywhere / Django / Frontend:
+     -> http://127.0.0.1:8080/api/all-dashboard-data
+     -> http://127.0.0.1:8080/api/top-50-products (Always anchored on Product Code)
+     -> http://127.0.0.1:8080/api/top-50-mpos
+     -> http://127.0.0.1:8080/api/top-20-fms
+     -> http://127.0.0.1:8080/api/top-5-sectors
+  ================================================================================
+
+  Server shutting down...
+
+  Irak@DESKTOP-9OMAAC9 MINGW64 ~/Desktop/Barishal April Data - Copy/New folder/Alco-Depot-Data-Extractor/TOP_FIELD_FORCE (main)
+  $
+
+● Read(C:/Users/Irak/Desktop/Barishal April Data - Copy/New folder/Alco-Depot-Data-Extractor/TOP_FIELD_FORCE/server.py)
+● Read(C:/Users/Irak/Desktop/Barishal April Data - Copy/New folder/Alco-Depot-Data-Extractor/TOP_FIELD_FORCE/data_engine.py)
+● Search(Find sheet functions)
+● Read(C:/Users/Irak/Desktop/Barishal April Data - Copy/New folder/Alco-Depot-Data-Extractor/TOP_FIELD_FORCE/data_engine.py) (ctrl+o to expand)
+
+▸ Thought for 7s, 922 tokens
+  Investigating Early Server Shutdown
+
+● Bash(netstat -ano | findstr :8080)
+● Bash(netstat -ano | findstr :8000)
+● Bash(python server.py) (ctrl+o to expand)
+⣷  Running...
+└ Tip: In request-review mode, file edits are shown for approval before being applied.
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+>
+PS>$global:?
+False
+**********************
+PowerShell transcript end
+End time: 20260714122210
+**********************

@@ -256,3 +256,9 @@ def chat_endpoint(payload: ChatPayload, api_key: str = Depends(verify_api_key)):
             detail=f"Chat processing error: {str(e)}"
         )
 
+# Mounting the Dashboard directory as a static folder to serve index.html directly from PythonAnywhere
+from fastapi.staticfiles import StaticFiles
+static_dir = os.path.join(PARENT_DIR, "Dashboard")
+if os.path.exists(static_dir):
+    app.mount("/Dashboard", StaticFiles(directory=static_dir, html=True), name="static")
+

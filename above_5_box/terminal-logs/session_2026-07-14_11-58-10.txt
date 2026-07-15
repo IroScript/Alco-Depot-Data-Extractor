@@ -1,0 +1,51 @@
+**********************
+PowerShell transcript start
+Start time: 20260714115810
+Username: DESKTOP-9OMAAC9\Irak
+RunAs User: DESKTOP-9OMAAC9\Irak
+Configuration Name: 
+Machine: DESKTOP-9OMAAC9 (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.dll
+Process ID: 9580
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.19045
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+[auto-save] Recording to: C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\above_5_box\terminal-logs\session_2026-07-14_11-58-10.txt
+
+[11:58 above_5_box] PS>
+PS>python above_5_box_manual_single_click_auto_run_no_need__following_steps.py
+  [ERROR] Failed to load C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\Extracted
+ All Data\extracted_09_Jul_2026_04.35_PM\CHATTOGRAM.csv: module 'pandas' has no attribute 'read_csv'
+  [ERROR] Failed to load C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\Extracted
+ All Data\extracted_09_Jul_2026_04.35_PM\CUMILLA.csv: module 'pandas' has no attribute 'read_csv'
+  [ERROR] Failed to load C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\Extracted
+ All Data\extracted_09_Jul_2026_04.35_PM\DHAKA-1.csv: module 'pandas' has no attribute 'read_csv'
+  [ERROR] Failed to load C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\Extracted
+ All Data\extracted_09_Jul_2026_04.35_PM\DHAKA-2.csv: module 'pandas' has no attribute 'read_csv'
+  [ERROR] Failed to load C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\Extracted
+ All Data\extracted_09_Jul_2026_04.35_PM\FARIDPUR.csv: module 'pandas' has no attribute 'read_csv'
+  [ERROR] Failed to load C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\Extracted
+ All Data\extracted_09_Jul_2026_04.35_PM\JASHORE.csv: module 'pandas' has no attribute 'read_csv'
+  [ERROR] Failed to load C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\Extracted
+ All Data\extracted_09_Jul_2026_04.35_PM\MYMENSINGH.csv: module 'pandas' has no attribute 'read_csv'
+  [ERROR] Failed to load C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\Extracted
+ All Data\extracted_09_Jul_2026_04.35_PM\RAJSHAHI.csv: module 'pandas' has no attribute 'read_csv'
+  [ERROR] Failed to load C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\Extracted
+ All Data\extracted_09_Jul_2026_04.35_PM\RANGPUR.csv: module 'pandas' has no attribute 'read_csv'
+
+ERROR: No data loaded. Pipeline stopping.
+[11:58 above_5_box] PS>
+PS>npm install -g @puku/puku-cli
+npm error gyp ERR! $npm_package_name better-sqlite3
+npm error gyp ERR! $npm_package_version 12.9.0
+npm error gyp ERR! not ok
+npm error A complete log of this run can be found in: C:\Users\Irak\AppData\Local\npm-cache\_logs\2026-07-14T06_14_07_337Z-debug-0.log
+[12:16 above_5_box] PS>

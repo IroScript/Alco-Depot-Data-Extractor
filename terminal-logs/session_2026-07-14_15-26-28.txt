@@ -1,0 +1,30 @@
+**********************
+PowerShell transcript start
+Start time: 20260714152628
+Username: DESKTOP-9OMAAC9\Irak
+RunAs User: DESKTOP-9OMAAC9\Irak
+Configuration Name: 
+Machine: DESKTOP-9OMAAC9 (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.dll -Command git add TOP_FIELD_FORCE/css/style.css TOP_FIELD_FORCE/data_engine.py TOP_FIELD_FORCE/index.html TOP_FIELD_FORCE/js/script.js TOP_FIELD_FORCE/server.py
+Process ID: 6532
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.19045
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+[auto-save] Recording to: C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\terminal-logs\session_2026-07-14_15-26-28.txt
+
+PS>git add TOP_FIELD_FORCE/css/style.css TOP_FIELD_FORCE/data_engine.py TOP_FIELD_FORCE/index.html TOP_FIELD_FORCE/js/script.js TOP_FIELD_FORCE/server.py
+>
+PS>$global:?
+True
+**********************
+PowerShell transcript end
+End time: 20260714152629
+**********************

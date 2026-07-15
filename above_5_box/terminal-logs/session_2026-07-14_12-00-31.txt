@@ -1,0 +1,55 @@
+**********************
+PowerShell transcript start
+Start time: 20260714120031
+Username: DESKTOP-9OMAAC9\Irak
+RunAs User: DESKTOP-9OMAAC9\Irak
+Configuration Name: 
+Machine: DESKTOP-9OMAAC9 (Microsoft Windows NT 10.0.19045.0)
+Host Application: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.3.0_x64__8wekyb3d8bbwe\pwsh.dll -Command python above_5_box_manual_single_click_auto_run_no_need__following_steps.py
+Process ID: 1904
+PSVersion: 7.6.3
+PSEdition: Core
+GitCommitId: 7.6.3
+OS: Microsoft Windows 10.0.19045
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+[auto-save] Recording to: C:\Users\Irak\Desktop\Barishal April Data - Copy\New folder\Alco-Depot-Data-Extractor\above_5_box\terminal-logs\session_2026-07-14_12-00-31.txt
+
+PS>python above_5_box_manual_single_click_auto_run_no_need__following_steps.py
+● Bash(pip show pandas)
+● Read(C:/Users/Irak/Desktop/Barishal April Data - Copy/New f...nual_single_click_auto_run_no_need__following_steps.py)
+● Bash(python -c "import openpyxl; print(openpyxl)")
+● Bash(python -c "import requests; print(requests)")
+● Bash(python -m pip install pandas) (ctrl+o to expand)
+
+  গ��ষ�� ও ����ষণ ক�� ���� ���� �� ������  pandas  ��ই������ স��ক���� ইন��ল ক�� ��ই (��র ��র�� এ�� এক�� ���� ��ম��স ম��উ
+ল ������ ��ড হ�� এ��  pandas has no
+  attribute read_csv  ���� ������)।
+
+
+  আ�� এ�� স����ন ক��র জ��  pandas  ইন��ল ক��র ������ �� ক����। ইন����শন স���� হও�� প���� অ���হ ক�� অ���� ক�ন।
+
+
+● Bash(python above_5_box_manual_single_click_auto_run_no_need__following_steps.py) (ctrl+o to expand)
+
+   pandas  ��ই������ সফল���� ইন��ল ক�� হ����। এ��র আপ��র �ল ������ (
+○
+  above_5_box_manual_single_click_auto_run_no_need__following_steps.py ) �ন��য় ��ন ক�� �� ক����।
+
+
+  ������র চল��ন ����স ��ষ হও�� প���� অ���হ ক�� অ���� ক�ন।
+
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+>
+PS>$global:?
+True
+**********************
+PowerShell transcript end
+End time: 20260714120435
+**********************

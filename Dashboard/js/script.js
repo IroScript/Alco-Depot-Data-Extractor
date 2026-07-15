@@ -925,24 +925,89 @@ function openDrillModal(type, code) {
 
     if (!modal) return;
 
+    // Month label converter: "2026-01" → "JAN' 26"
+    const MONTH_NAMES = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const fmtMonth = (m) => {
+        if (!m) return "";
+        const s = String(m);
+        const parts = s.includes("-") ? s.split("-") : null;
+        if (parts && parts.length === 2) {
+            const yr = parts[0].slice(-2);
+            const mi = parseInt(parts[1], 10);
+            if (mi >= 1 && mi <= 12) return `${MONTH_NAMES[mi - 1]}' ${yr}`;
+        }
+        return s;
+    };
+
     let item = null;
     if (type === "product") {
         item = GLOBAL_DATA.top_50_products.find(p => p.product_code === code);
         if (item) {
-            title.innerHTML = `💊 <span class="text-white">${item.product_name}</span> <span class="text-cyan-400 font-mono">(${item.product_code})</span>`;
-            subtitle.innerHTML = `<span class="text-emerald-400 font-bold">🔒 STRICT CODE ANCHOR</span> // TOTAL REVENUE: <span class="text-white font-cyber">${formatBDT(item.total_sales)}</span> // UNIQUE PARTIES: <span class="text-purple-300 font-bold">${item.total_parties}</span>`;
+            title.innerHTML = `💊 <span class="text-white">${item.product_name}</span> <span class="text-cyan-400 font-mono">(${item.product_code})</span> // 📍 MARKET: <span class="text-emerald-400">${item.market || 'ALL MARKETS'}</span> // ZONE: <span class="text-cyan-400">${item.zone || 'ALL ZONES'}</span>`;
+            const totalUnits = item.total_units || item.total_quantity || 0;
+            subtitle.innerHTML = `<span class="text-emerald-400 font-bold">🔒 STRICT CODE ANCHOR</span> // TOTAL UNITS: <span class="text-white font-cyber">${Number(totalUnits).toLocaleString()}</span> // UNIQUE PARTIES: <span class="text-purple-300 font-bold">${item.total_parties}</span>`;
         }
     } else if (type === "mpo") {
-        item = GLOBAL_DATA.top_50_mpos.find(m => m.mpo_code === code);
-        if (!item && GLOBAL_DATA.strategic_6_products && GLOBAL_DATA.strategic_6_products[ACTIVE_STRATEGIC_PROD]) {
+        // Search priority:
+        //  1. Strategic-context monthly data (mpo_top50_by_month or mpo_top50_all) — has units
+        //  2. Top-50 MPOs aggregate (top_50_mpos) — fallback, units may be 0 if stale
+        let stratAllEntry = null;
+        let stratMonthEntry = null;
+        if (GLOBAL_DATA.strategic_6_products && GLOBAL_DATA.strategic_6_products[ACTIVE_STRATEGIC_PROD]) {
             const stratItem = GLOBAL_DATA.strategic_6_products[ACTIVE_STRATEGIC_PROD];
-            const allMpos = stratItem.mpo_top50_all || [];
-            item = allMpos.find(m => m.mpo_code === code);
+            stratAllEntry = (stratItem.mpo_top50_all || []).find(m => m.mpo_code === code) || null;
+            if (ACTIVE_STRATEGIC_MONTH !== "ALL") {
+                const monthBucket = (stratItem.mpo_top50_by_month && stratItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) || [];
+                stratMonthEntry = monthBucket.find(m => m.mpo_code === code) || null;
+            }
         }
+
+        // Priority: strategic-all entry (has full monthly_breakdown with units)
+        if (stratAllEntry && stratAllEntry.monthly_breakdown && stratAllEntry.monthly_breakdown.length > 0) {
+            item = stratAllEntry;
+        } else {
+            // Fallback: top_50_mpos aggregate
+            item = GLOBAL_DATA.top_50_mpos.find(m => m.mpo_code === code);
+            // If still no monthly_breakdown, try patching from stratMonthEntry or stratAllEntry
+            if (!item || !item.monthly_breakdown || item.monthly_breakdown.length === 0) {
+                const synthSource = stratMonthEntry || stratAllEntry;
+                if (synthSource) {
+                    item = item || {};
+                    item.mpo_code = item.mpo_code || code;
+                    item.market = item.market || synthSource.market;
+                    item.zone = item.zone || synthSource.zone;
+                    item.depot = item.depot || synthSource.depot;
+                    item.is_vacant = item.is_vacant || stratAllEntry?.is_vacant || stratMonthEntry?.is_vacant || false;
+                    item.monthly_breakdown = [{
+                        month: ACTIVE_STRATEGIC_MONTH === "ALL" ? "2026-01" : ACTIVE_STRATEGIC_MONTH,
+                        sales: synthSource.sales || 0,
+                        units: synthSource.units || 0,
+                        quantity: synthSource.units || 0,
+                        invoices: synthSource.invoices || 0,
+                        parties: synthSource.parties || 0
+                    }];
+                }
+            } else {
+                // Has monthly_breakdown but may lack units — patch from strategic
+                const needsPatch = item.monthly_breakdown.every(mb => (mb.units || 0) === 0 && (mb.quantity || 0) === 0);
+                if (needsPatch && stratAllEntry && stratAllEntry.monthly_breakdown) {
+                    item.monthly_breakdown = item.monthly_breakdown.map(mb => {
+                        const sm = stratAllEntry.monthly_breakdown.find(s => s.month === mb.month);
+                        return {
+                            ...mb,
+                            units: sm ? (sm.units || sm.quantity || 0) : 0,
+                            quantity: sm ? (sm.units || sm.quantity || 0) : 0
+                        };
+                    });
+                }
+            }
+        }
+
         if (item) {
-            title.innerHTML = `👔 MPO PERFORMANCE: <span class="text-purple-300">${item.mpo_code}</span> // <span class="text-emerald-400 font-bold">📍 ${item.market||'Unknown'}</span> ${item.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-xs px-2 py-0.5 rounded border border-amber-500/40 ml-1 font-mono">VACANT</span>' : ''}`;
-            const salesVal = item.total_sales || item.sales || 0;
-            subtitle.innerHTML = `ASSIGNED ZONE: <span class="text-cyan-400 font-bold">${item.zone}</span> // CORE DEPOT: <span class="text-white font-bold">${item.depot}</span> // NET SALES: <span class="text-emerald-400 font-cyber">${formatBDT(salesVal)}</span>`;
+            // Title shows active strategic product name (e.g. "💊 MOKAST 10 TAB") + market + zone
+            const productName = ACTIVE_STRATEGIC_PROD || 'PRODUCT';
+            title.innerHTML = `💊 <span class="text-cyan-300">${productName}</span> // 📍 MARKET: <span class="text-emerald-400 font-bold">${item.market||'Unknown'}</span> // ZONE: <span class="text-purple-300 font-bold">${item.zone}</span>`;
+            subtitle.innerHTML = `<span class="text-purple-300 font-bold">👔 MPO ${item.mpo_code}</span> ${item.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-xs px-2 py-0.5 rounded border border-amber-500/40 ml-1 font-mono">VACANT</span>' : ''}`;
         }
     }
 
@@ -951,45 +1016,74 @@ function openDrillModal(type, code) {
         return;
     }
 
-    // Populate Modal Table
-    tbody.innerHTML = item.monthly_breakdown.map(mb => `
-        <tr class="hover:bg-cyan-950/30 transition-colors">
-            <td><strong class="font-cyber text-cyan-300">[ ${mb.month} ]</strong></td>
-            <td class="val-highlight font-cyber">${formatBDT(mb.sales)}</td>
-            <td><span class="badge-invoice text-xs">${Number(mb.invoices).toLocaleString()} Invoices</span></td>
-            <td><span class="badge-party text-xs">${Number(mb.parties).toLocaleString()} Parties</span></td>
-            <td class="font-mono text-slate-300">${Number(mb.quantity || 0).toLocaleString()}</td>
-        </tr>
-    `).join('');
+    // Reverse so newest month is on top (Jul at top, Jan at bottom)
+    const reversed = [...item.monthly_breakdown].reverse();
+
+    // Populate Modal Table — MONTH / UNITS / INVOICES / PARTIES / SALES
+    tbody.innerHTML = reversed.map(mb => {
+        const units = mb.units || mb.quantity || 0;
+        const sales = mb.sales || 0;
+        return `
+        <tr class="hover:bg-cyan-950/30 transition-colors border-b border-slate-800/40">
+            <td><strong class="font-cyber text-cyan-300">${fmtMonth(mb.month)}</strong></td>
+            <td class="font-cyber text-emerald-300"><span class="inline-block px-2 py-0.5 rounded font-bold text-emerald-300 bg-emerald-950/60 border-l-4 border-emerald-500">📦 ${Number(units).toLocaleString()} U</span></td>
+            <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-cyan-300 bg-cyan-950/60 border-l-4 border-cyan-500">${Number(mb.invoices).toLocaleString()} Inv 🧾</span></td>
+            <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-purple-300 bg-purple-950/60 border-l-4 border-purple-500">${Number(mb.parties).toLocaleString()} Parties 👥</span></td>
+            <td class="font-cyber text-amber-300"><span class="inline-block px-2 py-0.5 rounded font-bold text-amber-300 bg-amber-950/60 border-l-4 border-amber-500">৳ ${Number(sales).toLocaleString()}</span></td>
+        </tr>`;
+    }).join('');
 
     // Render Modal Chart
     const ctxModal = document.getElementById("modal-chart");
     if (charts.modal) charts.modal.destroy();
-    
+
     if (ctxModal && window.Chart) {
+        const monthLabels = reversed.map(mb => fmtMonth(mb.month));
+        const unitsData = reversed.map(mb => mb.units || mb.quantity || 0);
+        const invoicesData = reversed.map(mb => mb.invoices || 0);
+        const partiesData = reversed.map(mb => mb.parties || 0);
+        const salesData = reversed.map(mb => mb.sales || 0);
+
         charts.modal = new Chart(ctxModal, {
             type: "bar",
             data: {
-                labels: item.monthly_breakdown.map(mb => mb.month),
+                labels: monthLabels,
                 datasets: [
                     {
-                        label: "Monthly Net Revenue (৳)",
-                        data: item.monthly_breakdown.map(mb => mb.sales),
-                        backgroundColor: "rgba(6, 182, 212, 0.7)",
-                        borderColor: "#06b6d4",
+                        label: "Units 📦",
+                        data: unitsData,
+                        backgroundColor: "rgba(16, 185, 129, 0.85)",
+                        borderColor: "#10b981",
                         borderWidth: 2,
-                        borderRadius: 6,
+                        borderRadius: 4,
                         yAxisID: 'y'
                     },
                     {
-                        label: "Unique Parties Visited 👥",
-                        data: item.monthly_breakdown.map(mb => mb.parties),
-                        type: "line",
+                        label: "Sales (৳)",
+                        data: salesData,
+                        backgroundColor: "rgba(251, 191, 36, 0.8)",
+                        borderColor: "#fbbf24",
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: "Invoices 🧾",
+                        data: invoicesData,
+                        backgroundColor: "rgba(6, 182, 212, 0.85)",
+                        borderColor: "#06b6d4",
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: "Parties 👥",
+                        data: partiesData,
+                        backgroundColor: "rgba(168, 85, 247, 0.85)",
                         borderColor: "#a855f7",
-                        backgroundColor: "#a855f7",
-                        borderWidth: 3,
-                        pointRadius: 6,
-                        yAxisID: 'y1'
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        yAxisID: 'y'
                     }
                 ]
             },
@@ -1006,11 +1100,52 @@ function openDrillModal(type, code) {
                     }
                 },
                 scales: {
-                    y: { type: 'linear', position: 'left', grid: { color: "rgba(6, 182, 212, 0.15)" }, ticks: { color: '#06b6d4' } },
-                    y1: { type: 'linear', position: 'right', grid: { display: false }, ticks: { color: '#a855f7' } },
-                    x: { grid: { display: false }, ticks: { color: '#fff' } }
+                    y: {
+                        type: 'linear', position: 'left',
+                        title: { display: false },
+                        grid: { color: "rgba(100, 116, 139, 0.2)" },
+                        ticks: {
+                            color: '#cbd5e1',
+                            stepSize: 5,
+                            precision: 0,
+                            font: { family: 'Rajdhani', size: 11, weight: 'bold' }
+                        },
+                        beginAtZero: true
+                    },
+                    x: { grid: { display: false }, ticks: { color: '#fff', font: { family: 'Rajdhani', size: 13, weight: 'bold' } } }
                 }
-            }
+            },
+            plugins: [{
+                id: 'inlineBarLabels',
+                afterDatasetsDraw(chart) {
+                    const { ctx } = chart;
+                    ctx.save();
+                    ctx.font = 'bold 11px Rajdhani, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    chart.data.datasets.forEach((dataset, datasetIndex) => {
+                        const meta = chart.getDatasetMeta(datasetIndex);
+                        if (!meta || meta.hidden) return;
+                        const color = dataset.borderColor || '#fff';
+                        meta.data.forEach((bar, index) => {
+                            const value = dataset.data[index];
+                            if (value === 0 || value == null) return;
+                            let label;
+                            if (datasetIndex === 1) {
+                                // Sales — show in K format
+                                if (value >= 100000) label = (value / 1000).toFixed(0) + 'K';
+                                else if (value >= 1000) label = (value / 1000).toFixed(1) + 'K';
+                                else label = Math.round(value).toString();
+                            } else {
+                                label = Math.round(value).toString();
+                            }
+                            ctx.fillStyle = color;
+                            ctx.fillText(label, bar.x, bar.y - 4);
+                        });
+                    });
+                    ctx.restore();
+                }
+            }]
         });
     }
 

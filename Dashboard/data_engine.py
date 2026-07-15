@@ -619,11 +619,12 @@ class DataEngine:
             for idx, r in enumerate(top_50_mpo_rows, 1):
                 m_code = r["mpo_code"]
                 m_sales = float(r["total_sales"] or 0)
-                
+
                 cur.execute("""
-                    SELECT 
+                    SELECT
                         month,
                         SUM(line_amount) as m_sales,
+                        SUM(quantity) as m_units,
                         COUNT(DISTINCT invoice_no) as m_invoices,
                         COUNT(DISTINCT customer_id) as m_parties
                     FROM sales
@@ -636,6 +637,8 @@ class DataEngine:
                     m_breakdown.append({
                         "month": mb["month"],
                         "sales": round(float(mb["m_sales"] or 0), 2),
+                        "units": round(float(mb["m_units"] or 0), 2),
+                        "quantity": round(float(mb["m_units"] or 0), 2),
                         "invoices": int(mb["m_invoices"] or 0),
                         "parties": int(mb["m_parties"] or 0)
                     })

@@ -185,6 +185,8 @@ function initEventListeners() {
             const triggerCol = document.getElementById(`filter-col-${colName}`);
             if (triggerCol && !triggerCol.contains(e.target)) {
                 popover.classList.add("hidden");
+                const th = popover.closest('th');
+                if (th) th.style.zIndex = "";
             }
         });
     });
@@ -2144,17 +2146,20 @@ function exportTableToCSV(tableId, filename) {
 function toggleFilterPopover(event, colName) {
     event.stopPropagation();
     
-    // Hide all other popovers
+    // Hide all other popovers and reset z-index
     const allPopovers = document.querySelectorAll('[id^="popover-"]');
     allPopovers.forEach(p => {
         if (p.id !== `popover-${colName}`) {
             p.classList.add("hidden");
+            const parentTh = p.closest('th');
+            if (parentTh) parentTh.style.zIndex = "";
         }
     });
 
     const popover = document.getElementById(`popover-${colName}`);
     if (popover) {
         const isHidden = popover.classList.contains("hidden");
+        const th = popover.closest('th');
         if (isHidden) {
             // Reset temp selections to current actual selections
             if (STRATEGIC_FILTERS_SELECTIONS[colName]) {
@@ -2164,8 +2169,10 @@ function toggleFilterPopover(event, colName) {
             }
             populateFilterOptions(colName);
             popover.classList.remove("hidden");
+            if (th) th.style.zIndex = "100";
         } else {
             popover.classList.add("hidden");
+            if (th) th.style.zIndex = "";
         }
     }
 }
@@ -2716,17 +2723,20 @@ function renderProductMonthPills() {
 function toggleFilterPopoverCopy(event, colName) {
     event.stopPropagation();
     
-    // Hide all other popovers
+    // Hide all other popovers and reset z-index
     const allPopovers = document.querySelectorAll('[id^="popover-"]');
     allPopovers.forEach(p => {
         if (p.id !== `popover-${colName}-copy`) {
             p.classList.add("hidden");
+            const parentTh = p.closest('th');
+            if (parentTh) parentTh.style.zIndex = "";
         }
     });
 
     const popover = document.getElementById(`popover-${colName}-copy`);
     if (popover) {
         const isHidden = popover.classList.contains("hidden");
+        const th = popover.closest('th');
         if (isHidden) {
             if (STRATEGIC_FILTERS_SELECTIONS_COPY[colName]) {
                 TEMP_FILTERS_SELECTIONS_COPY[colName] = new Set(STRATEGIC_FILTERS_SELECTIONS_COPY[colName]);
@@ -2735,8 +2745,10 @@ function toggleFilterPopoverCopy(event, colName) {
             }
             populateFilterOptionsCopy(colName);
             popover.classList.remove("hidden");
+            if (th) th.style.zIndex = "100";
         } else {
             popover.classList.add("hidden");
+            if (th) th.style.zIndex = "";
         }
     }
 }
@@ -2972,6 +2984,7 @@ document.addEventListener("click", (e) => {
             const th = popover.closest('th');
             if (th && !th.contains(e.target)) {
                 popover.classList.add("hidden");
+                th.style.zIndex = "";
             }
         }
     });
@@ -2983,17 +2996,20 @@ document.addEventListener("click", (e) => {
 function toggleFilterPopoverCopy2(event, colName) {
     event.stopPropagation();
     
-    // Hide all other popovers
+    // Hide all other popovers and reset z-index
     const allPopovers = document.querySelectorAll('[id^="popover-"]');
     allPopovers.forEach(p => {
         if (p.id !== `popover-${colName}-copy2`) {
             p.classList.add("hidden");
+            const parentTh = p.closest('th');
+            if (parentTh) parentTh.style.zIndex = "";
         }
     });
 
     const popover = document.getElementById(`popover-${colName}-copy2`);
     if (popover) {
         const isHidden = popover.classList.contains("hidden");
+        const th = popover.closest('th');
         if (isHidden) {
             if (STRATEGIC_FILTERS_SELECTIONS_COPY2[colName]) {
                 TEMP_FILTERS_SELECTIONS_COPY2[colName] = new Set(STRATEGIC_FILTERS_SELECTIONS_COPY2[colName]);
@@ -3002,8 +3018,10 @@ function toggleFilterPopoverCopy2(event, colName) {
             }
             populateFilterOptionsCopy2(colName);
             popover.classList.remove("hidden");
+            if (th) th.style.zIndex = "100";
         } else {
             popover.classList.add("hidden");
+            if (th) th.style.zIndex = "";
         }
     }
 }

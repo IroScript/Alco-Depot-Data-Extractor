@@ -601,6 +601,8 @@ tr:hover td:first-child {
 #table-strategic-mpos-copy,
 #table-strategic-mpos-copy2 {
     table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
 }
 #table-strategic-mpos th,
 #table-strategic-mpos td,

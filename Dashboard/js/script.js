@@ -9,6 +9,8 @@ let charts = {};
 // Strategic table global state
 let STRATEGIC_PAGE = 1;
 const STRATEGIC_PER_PAGE = 20;
+const STRATEGIC_PER_PAGE_FM = 10;
+const STRATEGIC_PER_PAGE_SH = 5;
 
 // Strategic table filters global selection state
 let STRATEGIC_FILTERS_SELECTIONS = {
@@ -25,6 +27,38 @@ let STRATEGIC_FILTERS_SELECTIONS = {
 
 // Temp selection state to hold values before clicking "OK"
 let TEMP_FILTERS_SELECTIONS = {};
+
+// Strategic table copy global state
+let STRATEGIC_PAGE_COPY = 1;
+let STRATEGIC_FILTERS_SELECTIONS_COPY = {
+    rank: null,
+    zone: null,
+    fm: null,
+    code: null,
+    market: null,
+    units: null,
+    parties: null,
+    invoices: null,
+    sales: null
+};
+let TEMP_FILTERS_SELECTIONS_COPY = {};
+let COLUMNS_LOCKED_COPY = true;
+
+// Strategic table copy 2 global state
+let STRATEGIC_PAGE_COPY2 = 1;
+let STRATEGIC_FILTERS_SELECTIONS_COPY2 = {
+    rank: null,
+    zone: null,
+    fm: null,
+    code: null,
+    market: null,
+    units: null,
+    parties: null,
+    invoices: null,
+    sales: null
+};
+let TEMP_FILTERS_SELECTIONS_COPY2 = {};
+let COLUMNS_LOCKED_COPY2 = true;
 
 const MONTH_MAP = {
     '2026-01': 'Jan',
@@ -623,11 +657,15 @@ function renderStrategic6Products() {
     if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
     const stratData = GLOBAL_DATA.strategic_6_products;
     const container = document.getElementById("strategic-6-buttons-container");
+    const containerCopy = document.getElementById("strategic-6-buttons-container-copy");
+    const containerCopy2 = document.getElementById("strategic-6-buttons-container-copy2");
     if (!container) return;
 
     const keys = Object.keys(stratData);
     if (keys.length === 0) {
         container.innerHTML = `<div class="col-span-full text-center py-6 text-cyan-400 font-cyber">NO STRATEGIC PRODUCTS FOUND.</div>`;
+        if (containerCopy) containerCopy.innerHTML = `<div class="col-span-full text-center py-6 text-purple-400 font-cyber">NO STRATEGIC PRODUCTS FOUND.</div>`;
+        if (containerCopy2) containerCopy2.innerHTML = `<div class="col-span-full text-center py-6 text-amber-400 font-cyber">NO STRATEGIC PRODUCTS FOUND.</div>`;
         return;
     }
 
@@ -635,7 +673,7 @@ function renderStrategic6Products() {
         ACTIVE_STRATEGIC_PROD = keys[0];
     }
 
-    container.innerHTML = keys.map(prodName => {
+    const htmlContent = keys.map(prodName => {
         const item = stratData[prodName];
         const isActive = (prodName === ACTIVE_STRATEGIC_PROD);
         
@@ -664,7 +702,17 @@ function renderStrategic6Products() {
         `;
     }).join('');
 
+    container.innerHTML = htmlContent;
+    if (containerCopy) {
+        containerCopy.innerHTML = htmlContent;
+    }
+    if (containerCopy2) {
+        containerCopy2.innerHTML = htmlContent;
+    }
+
     const monthPillsEl = document.getElementById("strategic-month-pills");
+    const monthPillsElCopy = document.getElementById("strategic-month-pills-copy");
+    const monthPillsElCopy2 = document.getElementById("strategic-month-pills-copy2");
     if (monthPillsEl && GLOBAL_DATA.monthly_trends) {
         const months = GLOBAL_DATA.monthly_trends.map(t => t.month);
         // Sort months latest first (descending order)
@@ -676,7 +724,7 @@ function renderStrategic6Products() {
         const minLabel = (MONTH_MAP[minMonth] || minMonth).toUpperCase();
         const maxLabel = (MONTH_MAP[maxMonth] || maxMonth).toUpperCase();
 
-        monthPillsEl.innerHTML = `
+        const pillsHtml = `
             <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH === 'ALL' ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonth('ALL')">ALL MONTHS (${minLabel} - ${maxLabel})</button>
             ${sortedMonths.map(m => {
                 const monthLabel = MONTH_MAP[m] || m;
@@ -685,6 +733,13 @@ function renderStrategic6Products() {
                 `;
             }).join('')}
         `;
+        monthPillsEl.innerHTML = pillsHtml;
+        if (monthPillsElCopy) {
+            monthPillsElCopy.innerHTML = pillsHtml;
+        }
+        if (monthPillsElCopy2) {
+            monthPillsElCopy2.innerHTML = pillsHtml;
+        }
     }
 
     renderStrategicMPOTable();
@@ -692,22 +747,44 @@ function renderStrategic6Products() {
 
 function selectStrategicProduct(prodName) {
     ACTIVE_STRATEGIC_PROD = prodName;
-    STRATEGIC_PAGE = 1; // Reset page
+    STRATEGIC_PAGE = 1;
+    STRATEGIC_PAGE_COPY = 1;
+    STRATEGIC_PAGE_COPY2 = 1;
     STRATEGIC_FILTERS_SELECTIONS = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
+    STRATEGIC_FILTERS_SELECTIONS_COPY = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
+    STRATEGIC_FILTERS_SELECTIONS_COPY2 = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
     TEMP_FILTERS_SELECTIONS = {};
+    TEMP_FILTERS_SELECTIONS_COPY = {};
+    TEMP_FILTERS_SELECTIONS_COPY2 = {};
     renderStrategic6Products();
 }
 
 function selectStrategicMonth(monthVal) {
     ACTIVE_STRATEGIC_MONTH = monthVal;
-    STRATEGIC_PAGE = 1; // Reset page
+    STRATEGIC_PAGE = 1;
+    STRATEGIC_PAGE_COPY = 1;
+    STRATEGIC_PAGE_COPY2 = 1;
     STRATEGIC_FILTERS_SELECTIONS = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
+    STRATEGIC_FILTERS_SELECTIONS_COPY = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
+    STRATEGIC_FILTERS_SELECTIONS_COPY2 = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
     TEMP_FILTERS_SELECTIONS = {};
+    TEMP_FILTERS_SELECTIONS_COPY = {};
+    TEMP_FILTERS_SELECTIONS_COPY2 = {};
     renderStrategic6Products();
 }
 
 function setStrategicPage(page) {
     STRATEGIC_PAGE = page;
+    renderStrategicMPOTable();
+}
+
+function setStrategicPageCopy(page) {
+    STRATEGIC_PAGE_COPY = page;
+    renderStrategicMPOTable();
+}
+
+function setStrategicPageCopy2(page) {
+    STRATEGIC_PAGE_COPY2 = page;
     renderStrategicMPOTable();
 }
 
@@ -719,10 +796,21 @@ function renderStrategicMPOTable() {
 
     const titleEl = document.getElementById("strategic-active-title");
     const subEl = document.getElementById("strategic-active-subtitle");
+    const titleElCopy = document.getElementById("strategic-active-title-copy");
+    const subElCopy = document.getElementById("strategic-active-subtitle-copy");
+    const titleElCopy2 = document.getElementById("strategic-active-title-copy2");
+    const subElCopy2 = document.getElementById("strategic-active-subtitle-copy2");
     
     const displayMonth = ACTIVE_STRATEGIC_MONTH === "ALL" ? "ALL" : (MONTH_MAP[ACTIVE_STRATEGIC_MONTH] || ACTIVE_STRATEGIC_MONTH);
-    if (titleEl) titleEl.textContent = `${getProductIcon(prodItem.product_name)} ${prodItem.product_name} [ MONTH: ${displayMonth} ]`;
-    if (subEl) subEl.textContent = `Merged Product Codes: ${(prodItem.merged_codes || []).join(', ')} // Total Units Sold: ${Number(prodItem.total_units).toLocaleString()} Units`;
+    const titleText = `${getProductIcon(prodItem.product_name)} ${prodItem.product_name} [ MONTH: ${displayMonth} ]`;
+    const subtitleText = `Merged Product Codes: ${(prodItem.merged_codes || []).join(', ')} // Total Units Sold: ${Number(prodItem.total_units).toLocaleString()} Units`;
+    
+    if (titleEl) titleEl.textContent = titleText;
+    if (subEl) subEl.textContent = subtitleText;
+    if (titleElCopy) titleElCopy.textContent = `${titleText} (Field Manager)`;
+    if (subElCopy) subElCopy.textContent = subtitleText;
+    if (titleElCopy2) titleElCopy2.textContent = `${titleText} (Sector Head)`;
+    if (subElCopy2) subElCopy2.textContent = subtitleText;
 
     let mpos = [];
     if (ACTIVE_STRATEGIC_MONTH === "ALL") {
@@ -731,28 +819,19 @@ function renderStrategicMPOTable() {
         mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
     }
 
-    // Apply Excel-like column filters
+    // Apply Excel-like column filters for original table
     const filteredMpos = mpos.filter(m => {
-        // Rank filter
         if (STRATEGIC_FILTERS_SELECTIONS.rank && !STRATEGIC_FILTERS_SELECTIONS.rank.includes(String(m.rank))) return false;
-        // Zone filter
         if (STRATEGIC_FILTERS_SELECTIONS.zone && !STRATEGIC_FILTERS_SELECTIONS.zone.includes(m.zone)) return false;
-        // FM filter
         if (STRATEGIC_FILTERS_SELECTIONS.fm && !STRATEGIC_FILTERS_SELECTIONS.fm.includes(m.fm_name || 'Unknown')) return false;
-        // Code filter
         if (STRATEGIC_FILTERS_SELECTIONS.code && !STRATEGIC_FILTERS_SELECTIONS.code.includes(m.mpo_code)) return false;
-        // Market filter
         if (STRATEGIC_FILTERS_SELECTIONS.market && !STRATEGIC_FILTERS_SELECTIONS.market.includes(m.market)) return false;
-        // Units filter
         if (STRATEGIC_FILTERS_SELECTIONS.units) {
             const unitsLabel = `${m.units} U`;
             if (!STRATEGIC_FILTERS_SELECTIONS.units.includes(unitsLabel)) return false;
         }
-        // Parties filter
         if (STRATEGIC_FILTERS_SELECTIONS.parties && !STRATEGIC_FILTERS_SELECTIONS.parties.includes(String(m.parties))) return false;
-        // Invoices filter
         if (STRATEGIC_FILTERS_SELECTIONS.invoices && !STRATEGIC_FILTERS_SELECTIONS.invoices.includes(String(m.invoices))) return false;
-        // Sales filter
         if (STRATEGIC_FILTERS_SELECTIONS.sales) {
             const salesLabel = formatBDT(m.sales);
             if (!STRATEGIC_FILTERS_SELECTIONS.sales.includes(salesLabel)) return false;
@@ -768,48 +847,189 @@ function renderStrategicMPOTable() {
     const paginatedMpos = filteredMpos.slice(startIdx, startIdx + STRATEGIC_PER_PAGE);
 
     const tbody = document.getElementById("tbody-strategic-mpos");
-    if (!tbody) return;
-    if (!paginatedMpos || paginatedMpos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">No MPO records found for this selection.</td></tr>`;
-        
-        // Clear pagination
-        const pagContainer = document.getElementById("strategic-mpo-pagination");
-        if (pagContainer) pagContainer.innerHTML = "";
-        return;
+    if (tbody) {
+        if (!paginatedMpos || paginatedMpos.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">No MPO records found for this selection.</td></tr>`;
+        } else {
+            tbody.innerHTML = paginatedMpos.map(m => `
+                <tr class="hover:bg-cyan-950/20 transition-colors">
+                    <td><div class="cell-clip">${m.rank}</div></td>
+                    <td><div class="cell-clip" title="${m.zone}">${m.zone}</div></td>
+                    <td><div class="cell-clip" title="${m.fm_name || 'Unknown'}">${m.fm_name || 'Unknown'}</div></td>
+                    <td><div class="cell-clip" title="${m.mpo_code}">👤 ${m.mpo_code}</div></td>
+                    <td><div class="cell-clip" title="${m.market}">📍 ${m.market}${m.is_vacant ? ' (VACANT)' : ''}</div></td>
+                    <td><div class="cell-clip">📦 ${Number(m.units).toLocaleString()} U</div></td>
+                    <td><div class="cell-clip">${Number(m.parties).toLocaleString()} Parties 👥</div></td>
+                    <td><div class="cell-clip">${Number(m.invoices).toLocaleString()} Inv 🧾</div></td>
+                    <td><div class="cell-clip">${formatBDT(m.sales)}</div></td>
+                    <td>
+                        <div class="cell-clip">
+                            <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">
+                                📈 GRAPH
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
     }
 
-    tbody.innerHTML = paginatedMpos.map(m => `
-        <tr class="hover:bg-cyan-950/20 transition-colors">
-            <td><div class="cell-clip">${m.rank}</div></td>
-            <td><div class="cell-clip" title="${m.zone}">${m.zone}</div></td>
-            <td><div class="cell-clip" title="${m.fm_name || 'Unknown'}">${m.fm_name || 'Unknown'}</div></td>
-            <td><div class="cell-clip" title="${m.mpo_code}">👤 ${m.mpo_code}</div></td>
-            <td><div class="cell-clip" title="${m.market}">📍 ${m.market}${m.is_vacant ? ' (VACANT)' : ''}</div></td>
-            <td><div class="cell-clip">📦 ${Number(m.units).toLocaleString()} U</div></td>
-            <td><div class="cell-clip">${Number(m.parties).toLocaleString()} Parties 👥</div></td>
-            <td><div class="cell-clip">${Number(m.invoices).toLocaleString()} Inv 🧾</div></td>
-            <td><div class="cell-clip">${formatBDT(m.sales)}</div></td>
-            <td>
-                <div class="cell-clip">
-                    <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">
-                        📈 GRAPH
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-
-    // Render page numbers (1, 2, 3, 4, 5... all without dots)
     const pagContainer = document.getElementById("strategic-mpo-pagination");
     if (pagContainer) {
-        let pagesHtml = "";
-        for (let i = 1; i <= totalPages; i++) {
-            const isActive = (i === STRATEGIC_PAGE);
-            pagesHtml += `
-                <button class="px-3 py-1.5 rounded text-xs font-tech font-bold transition-all ${isActive ? 'bg-cyan-600 text-white shadow-neon-cyan border border-cyan-400' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'}" onclick="setStrategicPage(${i})">${i}</button>
-            `;
+        if (!paginatedMpos || paginatedMpos.length === 0) {
+            pagContainer.innerHTML = "";
+        } else {
+            let pagesHtml = "";
+            for (let i = 1; i <= totalPages; i++) {
+                const isActive = (i === STRATEGIC_PAGE);
+                pagesHtml += `
+                    <button class="px-3 py-1.5 rounded text-xs font-tech font-bold transition-all ${isActive ? 'bg-cyan-600 text-white shadow-neon-cyan border border-cyan-400' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'}" onclick="setStrategicPage(${i})">${i}</button>
+                `;
+            }
+            pagContainer.innerHTML = pagesHtml;
         }
-        pagContainer.innerHTML = pagesHtml;
+    }
+
+    // Apply Excel-like column filters for copy table (Copy 1)
+    const filteredMposCopy = mpos.filter(m => {
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.rank && !STRATEGIC_FILTERS_SELECTIONS_COPY.rank.includes(String(m.rank))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.zone && !STRATEGIC_FILTERS_SELECTIONS_COPY.zone.includes(m.zone)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.fm && !STRATEGIC_FILTERS_SELECTIONS_COPY.fm.includes(m.fm_name || 'Unknown')) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.code && !STRATEGIC_FILTERS_SELECTIONS_COPY.code.includes(m.mpo_code)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.market && !STRATEGIC_FILTERS_SELECTIONS_COPY.market.includes(m.market)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.units) {
+            const unitsLabel = `${m.units} U`;
+            if (!STRATEGIC_FILTERS_SELECTIONS_COPY.units.includes(unitsLabel)) return false;
+        }
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.parties && !STRATEGIC_FILTERS_SELECTIONS_COPY.parties.includes(String(m.parties))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.invoices && !STRATEGIC_FILTERS_SELECTIONS_COPY.invoices.includes(String(m.invoices))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.sales) {
+            const salesLabel = formatBDT(m.sales);
+            if (!STRATEGIC_FILTERS_SELECTIONS_COPY.sales.includes(salesLabel)) return false;
+        }
+        return true;
+    });
+
+    const totalRecordsCopy = filteredMposCopy.length;
+    const totalPagesCopy = Math.ceil(totalRecordsCopy / STRATEGIC_PER_PAGE_FM) || 1;
+    if (STRATEGIC_PAGE_COPY > totalPagesCopy) STRATEGIC_PAGE_COPY = totalPagesCopy;
+
+    const startIdxCopy = (STRATEGIC_PAGE_COPY - 1) * STRATEGIC_PER_PAGE_FM;
+    const paginatedMposCopy = filteredMposCopy.slice(startIdxCopy, startIdxCopy + STRATEGIC_PER_PAGE_FM);
+
+    const tbodyCopy = document.getElementById("tbody-strategic-mpos-copy");
+    if (tbodyCopy) {
+        if (!paginatedMposCopy || paginatedMposCopy.length === 0) {
+            tbodyCopy.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 20px;">No records found.</td></tr>`;
+        } else {
+            tbodyCopy.innerHTML = paginatedMposCopy.map(m => `
+                <tr class="hover:bg-purple-950/20 transition-colors">
+                    <td><div class="cell-clip">${m.rank}</div></td>
+                    <td><div class="cell-clip" title="${m.zone}">${m.zone}</div></td>
+                    <td><div class="cell-clip" title="${m.fm_name || 'Unknown'}">${m.fm_name || 'Unknown'}</div></td>
+                    <td><div class="cell-clip" title="${m.mpo_code}">👤 ${m.mpo_code}</div></td>
+                    <td><div class="cell-clip" title="${m.market}">📍 ${m.market}${m.is_vacant ? ' (VACANT)' : ''}</div></td>
+                    <td><div class="cell-clip">📦 ${Number(m.units).toLocaleString()} U</div></td>
+                    <td><div class="cell-clip">${Number(m.parties).toLocaleString()} Parties 👥</div></td>
+                    <td><div class="cell-clip">${Number(m.invoices).toLocaleString()} Inv 🧾</div></td>
+                    <td><div class="cell-clip">${formatBDT(m.sales)}</div></td>
+                    <td>
+                        <div class="cell-clip">
+                            <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">
+                                📈 GRAPH
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    const pagContainerCopy = document.getElementById("strategic-mpo-pagination-copy");
+    if (pagContainerCopy) {
+        if (!paginatedMposCopy || paginatedMposCopy.length === 0) {
+            pagContainerCopy.innerHTML = "";
+        } else {
+            let pagesHtmlCopy = "";
+            for (let i = 1; i <= totalPagesCopy; i++) {
+                const isActive = (i === STRATEGIC_PAGE_COPY);
+                pagesHtmlCopy += `
+                    <button class="px-3 py-1.5 rounded text-xs font-tech font-bold transition-all ${isActive ? 'bg-purple-600 text-white shadow-neon-purple border border-purple-400' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'}" onclick="setStrategicPageCopy(${i})">${i}</button>
+                `;
+            }
+            pagContainerCopy.innerHTML = pagesHtmlCopy;
+        }
+    }
+
+    // Apply Excel-like column filters for copy 2 table
+    const filteredMposCopy2 = mpos.filter(m => {
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY2.rank && !STRATEGIC_FILTERS_SELECTIONS_COPY2.rank.includes(String(m.rank))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY2.zone && !STRATEGIC_FILTERS_SELECTIONS_COPY2.zone.includes(m.zone)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY2.fm && !STRATEGIC_FILTERS_SELECTIONS_COPY2.fm.includes(m.fm_name || 'Unknown')) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY2.code && !STRATEGIC_FILTERS_SELECTIONS_COPY2.code.includes(m.mpo_code)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY2.market && !STRATEGIC_FILTERS_SELECTIONS_COPY2.market.includes(m.market)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY2.units) {
+            const unitsLabel = `${m.units} U`;
+            if (!STRATEGIC_FILTERS_SELECTIONS_COPY2.units.includes(unitsLabel)) return false;
+        }
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY2.parties && !STRATEGIC_FILTERS_SELECTIONS_COPY2.parties.includes(String(m.parties))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY2.invoices && !STRATEGIC_FILTERS_SELECTIONS_COPY2.invoices.includes(String(m.invoices))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY2.sales) {
+            const salesLabel = formatBDT(m.sales);
+            if (!STRATEGIC_FILTERS_SELECTIONS_COPY2.sales.includes(salesLabel)) return false;
+        }
+        return true;
+    });
+
+    const totalRecordsCopy2 = filteredMposCopy2.length;
+    const totalPagesCopy2 = Math.ceil(totalRecordsCopy2 / STRATEGIC_PER_PAGE_SH) || 1;
+    if (STRATEGIC_PAGE_COPY2 > totalPagesCopy2) STRATEGIC_PAGE_COPY2 = totalPagesCopy2;
+
+    const startIdxCopy2 = (STRATEGIC_PAGE_COPY2 - 1) * STRATEGIC_PER_PAGE_SH;
+    const paginatedMposCopy2 = filteredMposCopy2.slice(startIdxCopy2, startIdxCopy2 + STRATEGIC_PER_PAGE_SH);
+
+    const tbodyCopy2 = document.getElementById("tbody-strategic-mpos-copy2");
+    if (tbodyCopy2) {
+        if (!paginatedMposCopy2 || paginatedMposCopy2.length === 0) {
+            tbodyCopy2.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 20px;">No records found.</td></tr>`;
+        } else {
+            tbodyCopy2.innerHTML = paginatedMposCopy2.map(m => `
+                <tr class="hover:bg-amber-950/20 transition-colors">
+                    <td><div class="cell-clip">${m.rank}</div></td>
+                    <td><div class="cell-clip" title="${m.zone}">${m.zone}</div></td>
+                    <td><div class="cell-clip" title="${m.fm_name || 'Unknown'}">${m.fm_name || 'Unknown'}</div></td>
+                    <td><div class="cell-clip" title="${m.mpo_code}">👤 ${m.mpo_code}</div></td>
+                    <td><div class="cell-clip" title="${m.market}">📍 ${m.market}${m.is_vacant ? ' (VACANT)' : ''}</div></td>
+                    <td><div class="cell-clip">📦 ${Number(m.units).toLocaleString()} U</div></td>
+                    <td><div class="cell-clip">${Number(m.parties).toLocaleString()} Parties 👥</div></td>
+                    <td><div class="cell-clip">${Number(m.invoices).toLocaleString()} Inv 🧾</div></td>
+                    <td><div class="cell-clip">${formatBDT(m.sales)}</div></td>
+                    <td>
+                        <div class="cell-clip">
+                            <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">
+                                📈 GRAPH
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    }
+
+    const pagContainerCopy2 = document.getElementById("strategic-mpo-pagination-copy2");
+    if (pagContainerCopy2) {
+        if (!paginatedMposCopy2 || paginatedMposCopy2.length === 0) {
+            pagContainerCopy2.innerHTML = "";
+        } else {
+            let pagesHtmlCopy2 = "";
+            for (let i = 1; i <= totalPagesCopy2; i++) {
+                const isActive = (i === STRATEGIC_PAGE_COPY2);
+                pagesHtmlCopy2 += `
+                    <button class="px-3 py-1.5 rounded text-xs font-tech font-bold transition-all ${isActive ? 'bg-amber-600 text-white shadow-neon-amber border border-amber-400' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800'}" onclick="setStrategicPageCopy2(${i})">${i}</button>
+                `;
+            }
+            pagContainerCopy2.innerHTML = pagesHtmlCopy2;
+        }
     }
 }
 
@@ -1947,3 +2167,452 @@ function renderProductMonthPills() {
         }).join('')}
     `;
 }
+
+/* ==========================================================================
+   COPIED STRATEGIC TABLE HANDLERS & FILTERS
+   ========================================================================== */
+function toggleFilterPopoverCopy(event, colName) {
+    event.stopPropagation();
+    
+    // Hide all other popovers
+    const allPopovers = document.querySelectorAll('[id^="popover-"]');
+    allPopovers.forEach(p => {
+        if (p.id !== `popover-${colName}-copy`) {
+            p.classList.add("hidden");
+        }
+    });
+
+    const popover = document.getElementById(`popover-${colName}-copy`);
+    if (popover) {
+        const isHidden = popover.classList.contains("hidden");
+        if (isHidden) {
+            if (STRATEGIC_FILTERS_SELECTIONS_COPY[colName]) {
+                TEMP_FILTERS_SELECTIONS_COPY[colName] = new Set(STRATEGIC_FILTERS_SELECTIONS_COPY[colName]);
+            } else {
+                TEMP_FILTERS_SELECTIONS_COPY[colName] = null;
+            }
+            populateFilterOptionsCopy(colName);
+            popover.classList.remove("hidden");
+        } else {
+            popover.classList.add("hidden");
+        }
+    }
+}
+
+function populateFilterOptionsCopy(colName) {
+    const optionsDiv = document.getElementById(`options-${colName}-copy`);
+    if (!optionsDiv) return;
+
+    if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
+    const stratData = GLOBAL_DATA.strategic_6_products;
+    const prodItem = stratData[ACTIVE_STRATEGIC_PROD];
+    if (!prodItem) return;
+
+    let mpos = [];
+    if (ACTIVE_STRATEGIC_MONTH === "ALL") {
+        mpos = prodItem.mpo_top50_all || [];
+    } else {
+        mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
+    }
+
+    const uniqueValues = new Set();
+    mpos.forEach(m => {
+        let val = "";
+        if (colName === "rank") val = String(m.rank);
+        else if (colName === "zone") val = m.zone;
+        else if (colName === "fm") val = m.fm_name || 'Unknown';
+        else if (colName === "code") val = m.mpo_code;
+        else if (colName === "market") val = m.market;
+        else if (colName === "units") val = `${m.units} U`;
+        else if (colName === "parties") val = `${m.parties}`;
+        else if (colName === "invoices") val = `${m.invoices}`;
+        else if (colName === "sales") val = formatBDT(m.sales);
+        
+        if (val) uniqueValues.add(val);
+    });
+
+    const valuesArray = Array.from(uniqueValues).sort((a, b) => {
+        const numA = parseFloat(a.replace(/[^0-9.]/g, ''));
+        const numB = parseFloat(b.replace(/[^0-9.]/g, ''));
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return a.localeCompare(b);
+    });
+
+    if (!TEMP_FILTERS_SELECTIONS_COPY[colName]) {
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY[colName]) {
+            TEMP_FILTERS_SELECTIONS_COPY[colName] = new Set(STRATEGIC_FILTERS_SELECTIONS_COPY[colName]);
+        } else {
+            TEMP_FILTERS_SELECTIONS_COPY[colName] = new Set(valuesArray);
+        }
+    }
+
+    optionsDiv.innerHTML = valuesArray.map(val => {
+        const isChecked = TEMP_FILTERS_SELECTIONS_COPY[colName].has(val);
+        return `
+            <label class="flex items-center gap-2 cursor-pointer py-0.5 hover:bg-slate-900 rounded px-1 w-full text-slate-300 hover:text-white">
+                <input type="checkbox" class="option-chk-item" value="${val}" ${isChecked ? 'checked' : ''} onchange="handleOptionCheckboxChangeCopy('${colName}', '${val}', this.checked)">
+                <span class="truncate" title="${val}">${val}</span>
+            </label>
+        `;
+    }).join('');
+}
+
+function handleOptionCheckboxChangeCopy(colName, value, checked) {
+    if (!TEMP_FILTERS_SELECTIONS_COPY[colName]) {
+        TEMP_FILTERS_SELECTIONS_COPY[colName] = new Set();
+    }
+    if (checked) {
+        TEMP_FILTERS_SELECTIONS_COPY[colName].add(value);
+    } else {
+        TEMP_FILTERS_SELECTIONS_COPY[colName].delete(value);
+    }
+}
+
+function searchFilterOptionsCopy(colName, searchVal) {
+    const optionsDiv = document.getElementById(`options-${colName}-copy`);
+    if (!optionsDiv) return;
+    const items = optionsDiv.querySelectorAll('label');
+    const query = searchVal.trim().toLowerCase();
+    items.forEach(item => {
+        const txt = item.textContent.toLowerCase();
+        if (query === "" || txt.includes(query)) {
+            item.style.display = "flex";
+        } else {
+            item.style.display = "none";
+        }
+    });
+}
+
+function selectAllFilterOptionsCopy(colName, selectAll) {
+    const optionsDiv = document.getElementById(`options-${colName}-copy`);
+    if (!optionsDiv) return;
+    const checkboxes = optionsDiv.querySelectorAll('input[type="checkbox"]');
+    
+    checkboxes.forEach(chk => {
+        const label = chk.closest('label');
+        if (label && label.style.display !== "none") {
+            chk.checked = selectAll;
+            handleOptionCheckboxChangeCopy(colName, chk.value, selectAll);
+        }
+    });
+}
+
+function applyFilterCopy(colName) {
+    STRATEGIC_FILTERS_SELECTIONS_COPY[colName] = TEMP_FILTERS_SELECTIONS_COPY[colName] ? Array.from(TEMP_FILTERS_SELECTIONS_COPY[colName]) : null;
+    
+    const popover = document.getElementById(`popover-${colName}-copy`);
+    if (popover) popover.classList.add("hidden");
+
+    STRATEGIC_PAGE_COPY = 1;
+    renderStrategicMPOTable();
+}
+
+function cancelFilterCopy(colName) {
+    const popover = document.getElementById(`popover-${colName}-copy`);
+    if (popover) popover.classList.add("hidden");
+}
+
+function clearColumnFilterCopy(colName) {
+    STRATEGIC_FILTERS_SELECTIONS_COPY[colName] = null;
+    TEMP_FILTERS_SELECTIONS_COPY[colName] = null;
+    const popover = document.getElementById(`popover-${colName}-copy`);
+    if (popover) popover.classList.add("hidden");
+    STRATEGIC_PAGE_COPY = 1;
+    renderStrategicMPOTable();
+}
+
+function toggleColumnLockCopy() {
+    COLUMNS_LOCKED_COPY = !COLUMNS_LOCKED_COPY;
+    const btn = document.getElementById("btn-lock-columns-copy");
+    if (btn) {
+        if (COLUMNS_LOCKED_COPY) {
+            btn.innerHTML = "🔒 Columns Locked";
+            btn.className = "px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5";
+            removeResizersCopy();
+        } else {
+            btn.innerHTML = "🔓 Resizing Unlocked";
+            btn.className = "px-3.5 py-2 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1.5 shadow-neon-cyan";
+            createResizersCopy();
+        }
+    }
+}
+
+function createResizersCopy() {
+    const table = document.getElementById("table-strategic-mpos-copy");
+    if (!table) return;
+    const cols = table.querySelectorAll("th");
+    cols.forEach(col => {
+        const resizer = document.createElement("div");
+        resizer.classList.add("resizer");
+        resizer.style.height = table.offsetHeight + "px";
+        col.appendChild(resizer);
+        col.style.position = "relative";
+        
+        let x = 0;
+        let w = 0;
+        
+        const mouseDownHandler = function(e) {
+            x = e.clientX;
+            const styles = window.getComputedStyle(col);
+            w = parseInt(styles.width, 10);
+            document.addEventListener("mousemove", mouseMoveHandler);
+            document.addEventListener("mouseup", mouseUpHandler);
+            resizer.classList.add("resizing");
+        };
+        
+        const mouseMoveHandler = function(e) {
+            const dx = e.clientX - x;
+            col.style.width = `${w + dx}px`;
+        };
+        
+        const mouseUpHandler = function() {
+            document.removeEventListener("mousemove", mouseMoveHandler);
+            document.removeEventListener("mouseup", mouseUpHandler);
+            resizer.classList.remove("resizing");
+        };
+        
+        resizer.addEventListener("mousedown", mouseDownHandler);
+    });
+}
+
+function removeResizersCopy() {
+    const table = document.getElementById("table-strategic-mpos-copy");
+    if (!table) return;
+    const resizers = table.querySelectorAll(".resizer");
+    resizers.forEach(r => r.remove());
+}
+
+// Global click outside popovers handler for all sections
+document.addEventListener("click", (e) => {
+    const popovers = document.querySelectorAll('[id^="popover-"]');
+    popovers.forEach(popover => {
+        if (!popover.classList.contains("hidden")) {
+            const colName = popover.id.replace("popover-", "").replace("-copy2", "").replace("-copy", "");
+            const th = popover.closest('th');
+            if (th && !th.contains(e.target)) {
+                popover.classList.add("hidden");
+            }
+        }
+    });
+});
+
+/* ==========================================================================
+   COPIED STRATEGIC TABLE 2 HANDLERS & FILTERS (Copy 2)
+   ========================================================================== */
+function toggleFilterPopoverCopy2(event, colName) {
+    event.stopPropagation();
+    
+    // Hide all other popovers
+    const allPopovers = document.querySelectorAll('[id^="popover-"]');
+    allPopovers.forEach(p => {
+        if (p.id !== `popover-${colName}-copy2`) {
+            p.classList.add("hidden");
+        }
+    });
+
+    const popover = document.getElementById(`popover-${colName}-copy2`);
+    if (popover) {
+        const isHidden = popover.classList.contains("hidden");
+        if (isHidden) {
+            if (STRATEGIC_FILTERS_SELECTIONS_COPY2[colName]) {
+                TEMP_FILTERS_SELECTIONS_COPY2[colName] = new Set(STRATEGIC_FILTERS_SELECTIONS_COPY2[colName]);
+            } else {
+                TEMP_FILTERS_SELECTIONS_COPY2[colName] = null;
+            }
+            populateFilterOptionsCopy2(colName);
+            popover.classList.remove("hidden");
+        } else {
+            popover.classList.add("hidden");
+        }
+    }
+}
+
+function populateFilterOptionsCopy2(colName) {
+    const optionsDiv = document.getElementById(`options-${colName}-copy2`);
+    if (!optionsDiv) return;
+
+    if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
+    const stratData = GLOBAL_DATA.strategic_6_products;
+    const prodItem = stratData[ACTIVE_STRATEGIC_PROD];
+    if (!prodItem) return;
+
+    let mpos = [];
+    if (ACTIVE_STRATEGIC_MONTH === "ALL") {
+        mpos = prodItem.mpo_top50_all || [];
+    } else {
+        mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
+    }
+
+    const uniqueValues = new Set();
+    mpos.forEach(m => {
+        let val = "";
+        if (colName === "rank") val = String(m.rank);
+        else if (colName === "zone") val = m.zone;
+        else if (colName === "fm") val = m.fm_name || 'Unknown';
+        else if (colName === "code") val = m.mpo_code;
+        else if (colName === "market") val = m.market;
+        else if (colName === "units") val = `${m.units} U`;
+        else if (colName === "parties") val = `${m.parties}`;
+        else if (colName === "invoices") val = `${m.invoices}`;
+        else if (colName === "sales") val = formatBDT(m.sales);
+        
+        if (val) uniqueValues.add(val);
+    });
+
+    const valuesArray = Array.from(uniqueValues).sort((a, b) => {
+        const numA = parseFloat(a.replace(/[^0-9.]/g, ''));
+        const numB = parseFloat(b.replace(/[^0-9.]/g, ''));
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return a.localeCompare(b);
+    });
+
+    if (!TEMP_FILTERS_SELECTIONS_COPY2[colName]) {
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY2[colName]) {
+            TEMP_FILTERS_SELECTIONS_COPY2[colName] = new Set(STRATEGIC_FILTERS_SELECTIONS_COPY2[colName]);
+        } else {
+            TEMP_FILTERS_SELECTIONS_COPY2[colName] = new Set(valuesArray);
+        }
+    }
+
+    optionsDiv.innerHTML = valuesArray.map(val => {
+        const isChecked = TEMP_FILTERS_SELECTIONS_COPY2[colName].has(val);
+        return `
+            <label class="flex items-center gap-2 cursor-pointer py-0.5 hover:bg-slate-900 rounded px-1 w-full text-slate-300 hover:text-white">
+                <input type="checkbox" class="option-chk-item" value="${val}" ${isChecked ? 'checked' : ''} onchange="handleOptionCheckboxChangeCopy2('${colName}', '${val}', this.checked)">
+                <span class="truncate" title="${val}">${val}</span>
+            </label>
+        `;
+    }).join('');
+}
+
+function handleOptionCheckboxChangeCopy2(colName, value, checked) {
+    if (!TEMP_FILTERS_SELECTIONS_COPY2[colName]) {
+        TEMP_FILTERS_SELECTIONS_COPY2[colName] = new Set();
+    }
+    if (checked) {
+        TEMP_FILTERS_SELECTIONS_COPY2[colName].add(value);
+    } else {
+        TEMP_FILTERS_SELECTIONS_COPY2[colName].delete(value);
+    }
+}
+
+function searchFilterOptionsCopy2(colName, searchVal) {
+    const optionsDiv = document.getElementById(`options-${colName}-copy2`);
+    if (!optionsDiv) return;
+    const items = optionsDiv.querySelectorAll('label');
+    const query = searchVal.trim().toLowerCase();
+    items.forEach(item => {
+        const txt = item.textContent.toLowerCase();
+        if (query === "" || txt.includes(query)) {
+            item.style.display = "flex";
+        } else {
+            item.style.display = "none";
+        }
+    });
+}
+
+function selectAllFilterOptionsCopy2(colName, selectAll) {
+    const optionsDiv = document.getElementById(`options-${colName}-copy2`);
+    if (!optionsDiv) return;
+    const checkboxes = optionsDiv.querySelectorAll('input[type="checkbox"]');
+    
+    checkboxes.forEach(chk => {
+        const label = chk.closest('label');
+        if (label && label.style.display !== "none") {
+            chk.checked = selectAll;
+            handleOptionCheckboxChangeCopy2(colName, chk.value, selectAll);
+        }
+    });
+}
+
+function applyFilterCopy2(colName) {
+    STRATEGIC_FILTERS_SELECTIONS_COPY2[colName] = TEMP_FILTERS_SELECTIONS_COPY2[colName] ? Array.from(TEMP_FILTERS_SELECTIONS_COPY2[colName]) : null;
+    
+    const popover = document.getElementById(`popover-${colName}-copy2`);
+    if (popover) popover.classList.add("hidden");
+
+    STRATEGIC_PAGE_COPY2 = 1;
+    renderStrategicMPOTable();
+}
+
+// Fixed function reference in HTML
+function selectAllFilterOptionsCopy2Helper(colName, selectAll) {
+    selectAllFilterOptionsCopy2(colName, selectAll);
+}
+
+function cancelFilterCopy2(colName) {
+    const popover = document.getElementById(`popover-${colName}-copy2`);
+    if (popover) popover.classList.add("hidden");
+}
+
+function clearColumnFilterCopy2(colName) {
+    STRATEGIC_FILTERS_SELECTIONS_COPY2[colName] = null;
+    TEMP_FILTERS_SELECTIONS_COPY2[colName] = null;
+    const popover = document.getElementById(`popover-${colName}-copy2`);
+    if (popover) popover.classList.add("hidden");
+    STRATEGIC_PAGE_COPY2 = 1;
+    renderStrategicMPOTable();
+}
+
+function toggleColumnLockCopy2() {
+    COLUMNS_LOCKED_COPY2 = !COLUMNS_LOCKED_COPY2;
+    const btn = document.getElementById("btn-lock-columns-copy2");
+    if (btn) {
+        if (COLUMNS_LOCKED_COPY2) {
+            btn.innerHTML = "🔒 Columns Locked";
+            btn.className = "px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5";
+            removeResizersCopy2();
+        } else {
+            btn.innerHTML = "🔓 Resizing Unlocked";
+            btn.className = "px-3.5 py-2 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1.5 shadow-neon-cyan";
+            createResizersCopy2();
+        }
+    }
+}
+
+function createResizersCopy2() {
+    const table = document.getElementById("table-strategic-mpos-copy2");
+    if (!table) return;
+    const cols = table.querySelectorAll("th");
+    cols.forEach(col => {
+        const resizer = document.createElement("div");
+        resizer.classList.add("resizer");
+        resizer.style.height = table.offsetHeight + "px";
+        col.appendChild(resizer);
+        col.style.position = "relative";
+        
+        let x = 0;
+        let w = 0;
+        
+        const mouseDownHandler = function(e) {
+            x = e.clientX;
+            const styles = window.getComputedStyle(col);
+            w = parseInt(styles.width, 10);
+            document.addEventListener("mousemove", mouseMoveHandler);
+            document.addEventListener("mouseup", mouseUpHandler);
+            resizer.classList.add("resizing");
+        };
+        
+        const mouseMoveHandler = function(e) {
+            const dx = e.clientX - x;
+            col.style.width = `${w + dx}px`;
+        };
+        
+        const mouseUpHandler = function() {
+            document.removeEventListener("mousemove", mouseMoveHandler);
+            document.removeEventListener("mouseup", mouseUpHandler);
+            resizer.classList.remove("resizing");
+        };
+        
+        resizer.addEventListener("mousedown", mouseDownHandler);
+    });
+}
+
+function removeResizersCopy2() {
+    const table = document.getElementById("table-strategic-mpos-copy2");
+    if (!table) return;
+    const resizers = table.querySelectorAll(".resizer");
+    resizers.forEach(r => r.remove());
+}
+
+

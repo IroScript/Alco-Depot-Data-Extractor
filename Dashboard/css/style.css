@@ -597,27 +597,45 @@ tr:hover td:first-child {
 }
 
 /* Strategic table zero padding override & overflow hidden for collapse */
-#table-strategic-mpos {
+#table-strategic-mpos,
+#table-strategic-mpos-copy,
+#table-strategic-mpos-copy2 {
     table-layout: fixed !important;
 }
 #table-strategic-mpos th,
 #table-strategic-mpos td,
-#table-strategic-mpos .excel-header-text {
+#table-strategic-mpos .excel-header-text,
+#table-strategic-mpos-copy th,
+#table-strategic-mpos-copy td,
+#table-strategic-mpos-copy .excel-header-text,
+#table-strategic-mpos-copy2 th,
+#table-strategic-mpos-copy2 td,
+#table-strategic-mpos-copy2 .excel-header-text {
     font-size: 1.08em !important;
 }
 #table-strategic-mpos td *,
 #table-strategic-mpos .cell-clip,
-#table-strategic-mpos .btn-action {
+#table-strategic-mpos .btn-action,
+#table-strategic-mpos-copy td *,
+#table-strategic-mpos-copy .cell-clip,
+#table-strategic-mpos-copy .btn-action,
+#table-strategic-mpos-copy2 td *,
+#table-strategic-mpos-copy2 .cell-clip,
+#table-strategic-mpos-copy2 .btn-action {
     font-size: 1.08em !important;
 }
-#table-strategic-mpos th {
+#table-strategic-mpos th,
+#table-strategic-mpos-copy th,
+#table-strategic-mpos-copy2 th {
     padding: 2px 4px !important;
     overflow: visible !important;
     text-overflow: clip !important;
     white-space: nowrap !important;
     min-width: 0px !important;
 }
-#table-strategic-mpos td {
+#table-strategic-mpos td,
+#table-strategic-mpos-copy td,
+#table-strategic-mpos-copy2 td {
     padding: 2px 4px !important;
     overflow: hidden !important;
     text-overflow: clip !important;
@@ -625,7 +643,9 @@ tr:hover td:first-child {
     min-width: 0px !important;
 }
 /* Cell clipping wrapper - reliable overflow clipping inside table cells */
-#table-strategic-mpos td {
+#table-strategic-mpos td,
+#table-strategic-mpos-copy td,
+#table-strategic-mpos-copy2 td {
     padding: 0 !important;
 }
 .cell-clip {

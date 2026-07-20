@@ -333,8 +333,10 @@
 
         <!-- TAB: 6 STRATEGIC PRODUCTS (TOP 50 MPO BY UNIT) -->
         <section id="tab-strategic-6" class="tab-content space-y-6">
-            <!-- Strategic 6 Product Selector Cards/Buttons -->
-            <div class="backdrop-blur-xl bg-slate-950/80 cyber-border p-6 rounded-2xl relative overflow-hidden">
+            <!-- MPO Level Performance Section Container -->
+            <div class="p-6 rounded-2xl border border-cyan-500/20 bg-slate-950/30 space-y-6">
+                <!-- Strategic 6 Product Selector Cards/Buttons -->
+                <div class="backdrop-blur-xl bg-slate-950/80 cyber-border p-6 rounded-2xl relative overflow-hidden">
                 <div class="flex justify-between items-center mb-4">
                     <div>
                         <span class="text-[10px] font-cyber tracking-[0.4em] text-cyan-400 uppercase bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-500/30">Strategic Hierarchy</span>
@@ -578,8 +580,513 @@
                 </table>
             </div>
             
-            <!-- Strategic MPO Pagination -->
-            <div id="strategic-mpo-pagination" class="flex flex-wrap justify-center gap-1.5 mt-4"></div>
+            </div> <!-- Close MPO Level Performance Section Container -->
+
+            <!-- ==========================================
+                 SECTION 2: FIELD MANAGER PERFORMANCE
+                 ========================================== -->
+            <div class="p-6 rounded-2xl border border-purple-500/20 bg-slate-950/30 space-y-6 mt-8">
+                <!-- Strategic 6 Product Selector Cards/Buttons (Field Manager) -->
+                <div class="backdrop-blur-xl bg-slate-950/80 cyber-border p-6 rounded-2xl relative overflow-hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <span class="text-[10px] font-cyber tracking-[0.4em] text-purple-400 uppercase bg-purple-950/80 px-2.5 py-1 rounded border border-purple-500/30">Field Manager Hierarchy</span>
+                            <h3 class="font-cyber font-bold text-xl text-white mt-2">🏆 6 STRATEGIC PRODUCT GROUPS (FIELD MANAGER RANKING BY UNIT)</h3>
+                            <p class="font-tech text-xs text-slate-400 mt-1">Select a product button below to view the Top 50 FMs ranked strictly by Quantity Sold (UNIT). FM Market Name and Month-wise breakdown are fully integrated.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" id="strategic-6-buttons-container-copy">
+                        <div class="col-span-full text-center py-6 text-purple-400 font-cyber animate-pulse">LOADING STRATEGIC PRODUCTS...</div>
+                    </div>
+                </div>
+
+                <!-- Month Filter & Active Product Banner (Field Manager) -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-950/90 p-4 rounded-xl border border-purple-500/40 shadow-neon-purple mt-6">
+                    <div>
+                        <div class="font-cyber text-xs text-purple-400" style="font-size: 14.4px;">ACTIVE STRATEGIC VIEW: (Field Manager)</div>
+                        <h4 id="strategic-active-title-copy" class="font-cyber font-black text-xl text-white" style="font-size: 24px;">MOKAST 10 TAB</h4>
+                        <p id="strategic-active-subtitle-copy" class="font-tech text-xs text-slate-400" style="font-size: 14.4px;">Merged Product Codes: MON1, MOO1, MOP1</p>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Export/Print options (left side) -->
+                        <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
+                            <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-blue-600/80 border border-blue-500/50 text-white font-tech text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1">
+                                🖨️ Print
+                            </button>
+                            <button onclick="exportStrategicToCSV()" class="px-3 py-1.5 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1">
+                                📊 CSV
+                            </button>
+                            <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-rose-600/80 border border-rose-500/50 text-white font-tech text-xs font-bold hover:bg-rose-700 transition-all flex items-center gap-1">
+                                📄 PDF
+                            </button>
+                        </div>
+                        <button id="btn-lock-columns-copy" class="px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5" onclick="toggleColumnLockCopy()">
+                            🔒 Columns Locked
+                        </button>
+                        <!-- Month Filter Pills -->
+                        <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800" id="strategic-month-pills-copy">
+                            <button class="strat-month-pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold shadow-neon-cyan" data-month="ALL">ALL MONTHS (JAN - JUN)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top 50 MPO Table (Field Manager) for Selected Strategic Product & Month -->
+                <div class="overflow-x-auto rounded-xl border border-purple-500/30 backdrop-blur-xl bg-slate-950/70 shadow-lg">
+                    <table id="table-strategic-mpos-copy" class="text-left border-collapse table-fixed w-max">
+                        <thead>
+                            <tr class="bg-slate-900/90 text-purple-300 font-cyber text-xs" style="height: 28px;">
+                                <!-- Rank -->
+                                <th class="w-[60px]" style="position: relative; height: 28px;">
+                                    <div class="excel-header-wrapper" style="border-bottom-color: rgba(168, 85, 247, 0.4);">
+                                        <span class="excel-header-text">RANK 🏆 (Field Manager)</span>
+                                        <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'rank')">▼</button>
+                                    </div>
+                                <div id="popover-rank-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('rank', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('rank', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('rank', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-rank-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('rank')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('rank')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('rank')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Zone -->
+                            <th class="w-[75px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(168, 85, 247, 0.4);">
+                                    <span class="excel-header-text">ZONE</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'zone')">▼</button>
+                                </div>
+                                <div id="popover-zone-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('zone', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('zone', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('zone', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-zone-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('zone')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('zone')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('zone')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Field Manager -->
+                            <th class="w-[170px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(168, 85, 247, 0.4);">
+                                    <span class="excel-header-text">FIELD MANAGER</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'fm')">▼</button>
+                                </div>
+                                <div id="popover-fm-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('fm', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('fm', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('fm', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-fm-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('fm')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('fm')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('fm')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- MPO Code -->
+                            <th class="w-[90px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(168, 85, 247, 0.4);">
+                                    <span class="excel-header-text">MPO CODE 👤</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'code')">▼</button>
+                                </div>
+                                <div id="popover-code-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('code', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('code', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('code', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-code-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('code')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('code')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('code')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Market Name -->
+                            <th class="w-[150px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(168, 85, 247, 0.4);">
+                                    <span class="excel-header-text">MARKET NAME 📍</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'market')">▼</button>
+                                </div>
+                                <div id="popover-market-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('market', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('market', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('market', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-market-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('market')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('market')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('market')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Total Units -->
+                            <th class="bg-purple-950/50 text-purple-200 w-[130px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="background: rgba(88, 28, 135, 0.9); border-bottom-color: rgba(168, 85, 247, 0.4);">
+                                    <span class="excel-header-text">TOTAL UNITS 📦</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'units')">▼</button>
+                                </div>
+                                <div id="popover-units-copy" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('units', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('units', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('units', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-units-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('units')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('units')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('units')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Parties -->
+                            <th class="w-[110px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(168, 85, 247, 0.4);">
+                                    <span class="excel-header-text">PARTIES 👥</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'parties')">▼</button>
+                                </div>
+                                <div id="popover-parties-copy" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('parties', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('parties', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('parties', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-parties-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('parties')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('parties')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('parties')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Invoices -->
+                            <th class="w-[110px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(168, 85, 247, 0.4);">
+                                    <span class="excel-header-text">INVOICES 🧾</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'invoices')">▼</button>
+                                </div>
+                                <div id="popover-invoices-copy" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('invoices', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('invoices', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('invoices', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-invoices-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('invoices')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('invoices')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('invoices')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Value in Tk. -->
+                            <th class="w-[140px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(168, 85, 247, 0.4);">
+                                    <span class="excel-header-text">Value in Tk. (Incl. VAT)</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'sales')">▼</button>
+                                </div>
+                                <div id="popover-sales-copy" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('sales', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('sales', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('sales', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-sales-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('sales')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('sales')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('sales')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Action -->
+                            <th class="w-[130px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(168, 85, 247, 0.4);">
+                                    <span class="excel-header-text">HISTORY</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-strategic-mpos-copy" class="font-tech text-sm divide-y divide-slate-800/60">
+                        <!-- Loaded by JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+                <!-- Strategic MPO Pagination (Copy) -->
+                <div id="strategic-mpo-pagination-copy" class="flex flex-wrap justify-center gap-1.5 mt-4"></div>
+            </div> <!-- Close Field Manager Section Container -->
+
+            <!-- ==========================================
+                 SECTION 3: SECTOR HEAD PERFORMANCE
+                 ========================================== -->
+            <div class="p-6 rounded-2xl border border-amber-500/20 bg-slate-950/30 space-y-6 mt-8">
+                <!-- Strategic 6 Product Selector Cards/Buttons (Sector Head) -->
+                <div class="backdrop-blur-xl bg-slate-950/80 cyber-border p-6 rounded-2xl relative overflow-hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <span class="text-[10px] font-cyber tracking-[0.4em] text-amber-400 uppercase bg-amber-950/80 px-2.5 py-1 rounded border border-amber-500/30">Sector Head Hierarchy</span>
+                            <h3 class="font-cyber font-bold text-xl text-white mt-2">🏆 6 STRATEGIC PRODUCT GROUPS (SECTOR HEAD RANKING BY UNIT)</h3>
+                            <p class="font-tech text-xs text-slate-400 mt-1">Select a product button below to view the Top 50 FMs/Depots ranked strictly by Quantity Sold (UNIT). Market Name and Month-wise breakdown are fully integrated.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3" id="strategic-6-buttons-container-copy2">
+                        <div class="col-span-full text-center py-6 text-amber-400 font-cyber animate-pulse">LOADING STRATEGIC PRODUCTS...</div>
+                    </div>
+                </div>
+
+                <!-- Month Filter & Active Product Banner (Sector Head) -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-950/90 p-4 rounded-xl border border-amber-500/40 shadow-neon-amber mt-6">
+                    <div>
+                        <div class="font-cyber text-xs text-amber-400" style="font-size: 14.4px;">ACTIVE STRATEGIC VIEW: (Sector Head)</div>
+                        <h4 id="strategic-active-title-copy2" class="font-cyber font-black text-xl text-white" style="font-size: 24px;">MOKAST 10 TAB</h4>
+                        <p id="strategic-active-subtitle-copy2" class="font-tech text-xs text-slate-400" style="font-size: 14.4px;">Merged Product Codes: MON1, MOO1, MOP1</p>
+                    </div>
+                
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Export/Print options (left side) -->
+                    <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
+                        <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-blue-600/80 border border-blue-500/50 text-white font-tech text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1">
+                            🖨️ Print
+                        </button>
+                        <button onclick="exportStrategicToCSV()" class="px-3 py-1.5 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1">
+                            📊 CSV
+                        </button>
+                        <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-rose-600/80 border border-rose-500/50 text-white font-tech text-xs font-bold hover:bg-rose-700 transition-all flex items-center gap-1">
+                            📄 PDF
+                        </button>
+                    </div>
+                    <button id="btn-lock-columns-copy2" class="px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5" onclick="toggleColumnLockCopy2()">
+                        🔒 Columns Locked
+                    </button>
+                    <!-- Month Filter Pills -->
+                    <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800" id="strategic-month-pills-copy2">
+                        <button class="strat-month-pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold shadow-neon-cyan" data-month="ALL">ALL MONTHS (JAN - JUN)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top 50 MPO Table (Copy 2) for Selected Strategic Product & Month -->
+            <div class="overflow-x-auto rounded-xl border border-amber-500/30 backdrop-blur-xl bg-slate-950/70 shadow-lg">
+                <table id="table-strategic-mpos-copy2" class="text-left border-collapse table-fixed w-max">
+                    <thead>
+                        <tr class="bg-slate-900/90 text-amber-300 font-cyber text-xs" style="height: 28px;">
+                            <!-- Rank -->
+                            <th class="w-[60px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(245, 158, 11, 0.4);">
+                                    <span class="excel-header-text">RANK 🏆 (Sector Head)</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'rank')">▼</button>
+                                </div>
+                                <div id="popover-rank-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('rank', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('rank', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('rank', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-rank-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('rank')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('rank')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('rank')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Zone -->
+                            <th class="w-[75px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(245, 158, 11, 0.4);">
+                                    <span class="excel-header-text">ZONE</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'zone')">▼</button>
+                                </div>
+                                <div id="popover-zone-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('zone', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('zone', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('zone', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-zone-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('zone')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('zone')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('zone')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Field Manager -->
+                            <th class="w-[170px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(245, 158, 11, 0.4);">
+                                    <span class="excel-header-text">FIELD MANAGER</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'fm')">▼</button>
+                                </div>
+                                <div id="popover-fm-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('fm', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('fm', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('fm', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-fm-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('fm')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('fm')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('fm')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- MPO Code -->
+                            <th class="w-[90px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(245, 158, 11, 0.4);">
+                                    <span class="excel-header-text">MPO CODE 👤</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'code')">▼</button>
+                                </div>
+                                <div id="popover-code-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('code', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('code', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptions('code', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-code-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('code')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('code')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('code')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Market Name -->
+                            <th class="w-[150px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(245, 158, 11, 0.4);">
+                                    <span class="excel-header-text">MARKET NAME 📍</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'market')">▼</button>
+                                </div>
+                                <div id="popover-market-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('market', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('market', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('market', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-market-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('market')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('market')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('market')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Total Units -->
+                            <th class="bg-amber-950/50 text-amber-200 w-[130px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="background: rgba(146, 64, 14, 0.9); border-bottom-color: rgba(245, 158, 11, 0.4);">
+                                    <span class="excel-header-text">TOTAL UNITS 📦</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'units')">▼</button>
+                                </div>
+                                <div id="popover-units-copy2" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('units', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('units', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('units', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-units-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('units')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('units')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('units')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Parties -->
+                            <th class="w-[110px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(245, 158, 11, 0.4);">
+                                    <span class="excel-header-text">PARTIES 👥</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'parties')">▼</button>
+                                </div>
+                                <div id="popover-parties-copy2" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('parties', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('parties', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('parties', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-parties-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('parties')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('parties')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('parties')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Invoices -->
+                            <th class="w-[110px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(245, 158, 11, 0.4);">
+                                    <span class="excel-header-text">INVOICES 🧾</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'invoices')">▼</button>
+                                </div>
+                                <div id="popover-invoices-copy2" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('invoices', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('invoices', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('invoices', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-invoices-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('invoices')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('invoices')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('invoices')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Value in Tk. -->
+                            <th class="w-[140px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(245, 158, 11, 0.4);">
+                                    <span class="excel-header-text">Value in Tk. (Incl. VAT)</span>
+                                    <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'sales')">▼</button>
+                                </div>
+                                <div id="popover-sales-copy2" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('sales', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('sales', true)">Select All</button>
+                                        <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('sales', false)">Clear</button>
+                                    </div>
+                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-sales-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                        <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('sales')">Cancel</button>
+                                        <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('sales')">Clear</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('sales')">OK</button>
+                                    </div>
+                                </div>
+                            </th>
+                            <!-- Action -->
+                            <th class="w-[130px]" style="position: relative; height: 28px;">
+                                <div class="excel-header-wrapper" style="border-bottom-color: rgba(245, 158, 11, 0.4);">
+                                    <span class="excel-header-text">HISTORY</span>
+                                </div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-strategic-mpos-copy2" class="font-tech text-sm divide-y divide-slate-800/60">
+                        <!-- Loaded by JS -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Strategic MPO Pagination (Copy 2) -->
+            <div id="strategic-mpo-pagination-copy2" class="flex flex-wrap justify-center gap-1.5 mt-4"></div>
+            </div> <!-- Close Sector Head Section Container -->
         </section>
 
         <!-- TAB 2: TOP 50 PRODUCTS -->

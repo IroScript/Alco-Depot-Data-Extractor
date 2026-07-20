@@ -908,6 +908,7 @@ function renderStrategicMPOTable() {
         if (!fmsMap[f]) {
             fmsMap[f] = {
                 fm_name: f,
+                zone: m.zone || 'Unknown',
                 total_mpos: 0,
                 vacant_count: 0,
                 actual_market: 0,
@@ -949,6 +950,7 @@ function renderStrategicMPOTable() {
     // Apply column filters for Copy 1 table
     const filteredFMs = fmsList.filter(f => {
         if (STRATEGIC_FILTERS_SELECTIONS_COPY.rank && !STRATEGIC_FILTERS_SELECTIONS_COPY.rank.includes(String(f.rank))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.zone && !STRATEGIC_FILTERS_SELECTIONS_COPY.zone.includes(f.zone)) return false;
         if (STRATEGIC_FILTERS_SELECTIONS_COPY.fm && !STRATEGIC_FILTERS_SELECTIONS_COPY.fm.includes(f.fm_name)) return false;
         if (STRATEGIC_FILTERS_SELECTIONS_COPY.total_mpos && !STRATEGIC_FILTERS_SELECTIONS_COPY.total_mpos.includes(String(f.total_mpos))) return false;
         if (STRATEGIC_FILTERS_SELECTIONS_COPY.vacant_count && !STRATEGIC_FILTERS_SELECTIONS_COPY.vacant_count.includes(String(f.vacant_count))) return false;
@@ -981,6 +983,7 @@ function renderStrategicMPOTable() {
             tbodyCopy.innerHTML = paginatedFMs.map(f => `
                 <tr class="hover:bg-purple-950/20 transition-colors">
                     <td><div class="cell-clip">${f.rank}</div></td>
+                    <td><div class="cell-clip" title="${f.zone}">${f.zone}</div></td>
                     <td><div class="cell-clip" title="${f.fm_name}">${f.fm_name}</div></td>
                     <td><div class="cell-clip" title="${f.total_mpos}">${f.total_mpos}</div></td>
                     <td><div class="cell-clip" title="${f.vacant_count}">${f.vacant_count}</div></td>
@@ -2740,18 +2743,57 @@ function populateFilterOptionsCopy(colName) {
         mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
     }
 
-    const uniqueValues = new Set();
+    // Group by FM first
+    const fmsMap = {};
     mpos.forEach(m => {
+        const f = m.fm_name || 'Unknown';
+        if (!fmsMap[f]) {
+            fmsMap[f] = {
+                fm_name: f,
+                zone: m.zone || 'Unknown',
+                total_mpos: 0,
+                vacant_count: 0,
+                actual_market: 0,
+                units: 0,
+                parties: 0,
+                invoices: 0,
+                sales: 0
+            };
+        }
+        fmsMap[f].total_mpos += 1;
+        if (m.is_vacant) {
+            fmsMap[f].vacant_count += 1;
+        } else {
+            fmsMap[f].units += m.units || 0;
+            fmsMap[f].parties += m.parties || 0;
+            fmsMap[f].invoices += m.invoices || 0;
+            fmsMap[f].sales += m.sales || 0;
+        }
+    });
+
+    const fmsList = Object.values(fmsMap).map(f => {
+        f.actual_market = f.total_mpos - f.vacant_count;
+        return f;
+    });
+
+    fmsList.sort((a, b) => b.units - a.units);
+    fmsList.forEach((f, idx) => {
+        f.rank = idx + 1;
+    });
+
+    const uniqueValues = new Set();
+    fmsList.forEach(f => {
         let val = "";
-        if (colName === "rank") val = String(m.rank);
-        else if (colName === "zone") val = m.zone;
-        else if (colName === "fm") val = m.fm_name || 'Unknown';
-        else if (colName === "code") val = m.mpo_code;
-        else if (colName === "market") val = m.market;
-        else if (colName === "units") val = `${m.units} U`;
-        else if (colName === "parties") val = `${m.parties}`;
-        else if (colName === "invoices") val = `${m.invoices}`;
-        else if (colName === "sales") val = formatBDT(m.sales);
+        if (colName === "rank") val = String(f.rank);
+        else if (colName === "zone") val = f.zone;
+        else if (colName === "fm") val = f.fm_name;
+        else if (colName === "total_mpos") val = String(f.total_mpos);
+        else if (colName === "vacant_count") val = String(f.vacant_count);
+        else if (colName === "actual_market") val = String(f.actual_market);
+        else if (colName === "units") val = `${Math.round(f.units).toLocaleString()} U`;
+        else if (colName === "parties") val = `${f.parties}`;
+        else if (colName === "invoices") val = `${f.invoices}`;
+        else if (colName === "sales") val = formatBDTRound(f.sales);
         
         if (val) uniqueValues.add(val);
     });

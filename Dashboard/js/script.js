@@ -274,6 +274,17 @@ function formatBDT(val) {
     return "৳ " + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatBDTRound(val) {
+    const num = Math.round(Number(val) || 0);
+    const absNum = Math.abs(num);
+    if (absNum >= 10000000) {
+        return "৳ " + (num / 10000000).toFixed(2) + " Cr";
+    } else if (absNum >= 100000) {
+        return "৳ " + (num / 100000).toFixed(2) + " L";
+    }
+    return "৳ " + num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+
 /* Render KPI Matrix */
 function renderKPIs(kpis) {
     if (!kpis) return;
@@ -1014,13 +1025,13 @@ function renderStrategicMPOTable() {
         if (STRATEGIC_FILTERS_SELECTIONS_COPY2.vacant_count && !STRATEGIC_FILTERS_SELECTIONS_COPY2.vacant_count.includes(String(z.vacant_count))) return false;
         if (STRATEGIC_FILTERS_SELECTIONS_COPY2.actual_market && !STRATEGIC_FILTERS_SELECTIONS_COPY2.actual_market.includes(String(z.actual_market))) return false;
         if (STRATEGIC_FILTERS_SELECTIONS_COPY2.units) {
-            const unitsLabel = `${Number(z.units.toFixed(2)).toLocaleString()} U`;
+            const unitsLabel = `${Math.round(z.units).toLocaleString()} U`;
             if (!STRATEGIC_FILTERS_SELECTIONS_COPY2.units.includes(unitsLabel)) return false;
         }
         if (STRATEGIC_FILTERS_SELECTIONS_COPY2.parties && !STRATEGIC_FILTERS_SELECTIONS_COPY2.parties.includes(String(z.parties))) return false;
         if (STRATEGIC_FILTERS_SELECTIONS_COPY2.invoices && !STRATEGIC_FILTERS_SELECTIONS_COPY2.invoices.includes(String(z.invoices))) return false;
         if (STRATEGIC_FILTERS_SELECTIONS_COPY2.sales) {
-            const salesLabel = formatBDT(z.sales);
+            const salesLabel = formatBDTRound(z.sales);
             if (!STRATEGIC_FILTERS_SELECTIONS_COPY2.sales.includes(salesLabel)) return false;
         }
         return true;
@@ -1045,14 +1056,14 @@ function renderStrategicMPOTable() {
                     <td><div class="cell-clip" title="${z.total_mpos}">${z.total_mpos}</div></td>
                     <td><div class="cell-clip" title="${z.vacant_count}">${z.vacant_count}</div></td>
                     <td><div class="cell-clip" title="${z.actual_market}">${z.actual_market}</div></td>
-                    <td><div class="cell-clip">📦 ${Number(z.units.toFixed(2)).toLocaleString()} U</div></td>
-                    <td><div class="cell-clip text-amber-300 font-bold">📦 ${Number(z.per_mpo_units.toFixed(2)).toLocaleString()} U</div></td>
+                    <td><div class="cell-clip">📦 ${Math.round(z.units).toLocaleString()} U</div></td>
+                    <td><div class="cell-clip text-amber-300 font-bold">📦 ${Math.round(z.per_mpo_units).toLocaleString()} U</div></td>
                     <td><div class="cell-clip">${Number(z.parties).toLocaleString()} Parties 👥</div></td>
-                    <td><div class="cell-clip text-amber-300 font-bold">${Number(z.per_mpo_parties.toFixed(2)).toLocaleString()} Parties 👥</div></td>
+                    <td><div class="cell-clip text-amber-300 font-bold">${Math.round(z.per_mpo_parties).toLocaleString()} Parties 👥</div></td>
                     <td><div class="cell-clip">${Number(z.invoices).toLocaleString()} Inv 🧾</div></td>
-                    <td><div class="cell-clip text-amber-300 font-bold">${Number(z.per_mpo_invoices.toFixed(2)).toLocaleString()} Inv 🧾</div></td>
-                    <td><div class="cell-clip">${formatBDT(z.sales)}</div></td>
-                    <td><div class="cell-clip text-amber-300 font-bold">${formatBDT(z.per_mpo_sales)}</div></td>
+                    <td><div class="cell-clip text-amber-300 font-bold">${Math.round(z.per_mpo_invoices).toLocaleString()} Inv 🧾</div></td>
+                    <td><div class="cell-clip">${formatBDTRound(z.sales)}</div></td>
+                    <td><div class="cell-clip text-amber-300 font-bold">${formatBDTRound(z.per_mpo_sales)}</div></td>
                     <td>
                         <div class="cell-clip">
                             <button class="btn-action text-[10px] py-0.5 px-2 bg-amber-900/60 hover:bg-amber-800 border border-amber-400" onclick="openZoneDrillModal('${z.zone}')">
@@ -1679,10 +1690,10 @@ function openZoneDrillModal(zoneName) {
         return `
         <tr class="hover:bg-cyan-950/30 transition-colors border-b border-slate-800/40">
             <td><strong class="font-cyber text-cyan-300">${fmtMonth(mb.month)}</strong></td>
-            <td class="font-cyber text-emerald-300"><span class="inline-block px-2 py-0.5 rounded font-bold text-emerald-300 bg-emerald-950/60 border-l-4 border-emerald-500">📦 ${Number(mb.units.toFixed(2)).toLocaleString()} U</span></td>
-            <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-cyan-300 bg-cyan-950/60 border-l-4 border-cyan-500">${Number(mb.invoices.toFixed(2)).toLocaleString()} Inv 🧾</span></td>
-            <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-purple-300 bg-purple-950/60 border-l-4 border-purple-500">${Number(mb.parties.toFixed(2)).toLocaleString()} Parties 👥</span></td>
-            <td class="font-cyber text-amber-300"><span class="inline-block px-2 py-0.5 rounded font-bold text-amber-300 bg-amber-950/60 border-l-4 border-amber-500">৳ ${Number(mb.sales.toFixed(2)).toLocaleString()}</span></td>
+            <td class="font-cyber text-emerald-300"><span class="inline-block px-2 py-0.5 rounded font-bold text-emerald-300 bg-emerald-950/60 border-l-4 border-emerald-500">📦 ${Math.round(mb.units).toLocaleString()} U</span></td>
+            <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-cyan-300 bg-cyan-950/60 border-l-4 border-cyan-500">${Math.round(mb.invoices).toLocaleString()} Inv 🧾</span></td>
+            <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-purple-300 bg-purple-950/60 border-l-4 border-purple-500">${Math.round(mb.parties).toLocaleString()} Parties 👥</span></td>
+            <td class="font-cyber text-amber-300"><span class="inline-block px-2 py-0.5 rounded font-bold text-amber-300 bg-amber-950/60 border-l-4 border-amber-500">৳ ${Math.round(mb.sales).toLocaleString()}</span></td>
         </tr>`;
     }).join('');
 

@@ -181,13 +181,13 @@ function initEventListeners() {
     document.addEventListener("click", (e) => {
         const popovers = document.querySelectorAll('[id^="popover-"]');
         popovers.forEach(popover => {
-            const colName = popover.id.replace("popover-", "");
-            const triggerCol = document.getElementById(`filter-col-${colName}`);
-            if (triggerCol && !triggerCol.contains(e.target)) {
-                popover.classList.add("hidden");
-                const th = popover.closest('th');
-                if (th) th.style.zIndex = "";
-            }
+            if (popover.classList.contains("hidden")) return;
+            // Check if click is inside the popover itself
+            if (popover.contains(e.target)) return;
+            // Check if click is on the trigger button
+            const triggerBtn = popover._triggerBtn;
+            if (triggerBtn && triggerBtn.contains(e.target)) return;
+            popover.classList.add("hidden");
         });
     });
 }
@@ -2146,20 +2146,17 @@ function exportTableToCSV(tableId, filename) {
 function toggleFilterPopover(event, colName) {
     event.stopPropagation();
     
-    // Hide all other popovers and reset z-index
+    // Hide all other popovers
     const allPopovers = document.querySelectorAll('[id^="popover-"]');
     allPopovers.forEach(p => {
         if (p.id !== `popover-${colName}`) {
             p.classList.add("hidden");
-            const parentTh = p.closest('th');
-            if (parentTh) parentTh.style.zIndex = "";
         }
     });
 
     const popover = document.getElementById(`popover-${colName}`);
     if (popover) {
         const isHidden = popover.classList.contains("hidden");
-        const th = popover.closest('th');
         if (isHidden) {
             // Reset temp selections to current actual selections
             if (STRATEGIC_FILTERS_SELECTIONS[colName]) {
@@ -2168,13 +2165,30 @@ function toggleFilterPopover(event, colName) {
                 TEMP_FILTERS_SELECTIONS[colName] = null; // means all selected initially
             }
             populateFilterOptions(colName);
-            popover.classList.remove("hidden");
-            if (th) th.style.zIndex = "100";
+            // Portal: move popover to body and position fixed
+            _portalPopover(popover, event.currentTarget);
         } else {
             popover.classList.add("hidden");
-            if (th) th.style.zIndex = "";
         }
     }
+}
+
+/** Portal helper: moves a popover to document.body with fixed positioning */
+function _portalPopover(popover, triggerBtn) {
+    // Move to body if not already there
+    if (popover.parentElement !== document.body) {
+        document.body.appendChild(popover);
+    }
+    // Store reference to trigger for click-outside detection
+    popover._triggerBtn = triggerBtn;
+    // Position relative to trigger button
+    const rect = triggerBtn.getBoundingClientRect();
+    popover.style.position = 'fixed';
+    popover.style.top = (rect.bottom + 4) + 'px';
+    popover.style.left = rect.left + 'px';
+    popover.style.zIndex = '99999';
+    popover.classList.remove('absolute');
+    popover.classList.remove('hidden');
 }
 
 function populateFilterOptions(colName) {
@@ -2723,20 +2737,17 @@ function renderProductMonthPills() {
 function toggleFilterPopoverCopy(event, colName) {
     event.stopPropagation();
     
-    // Hide all other popovers and reset z-index
+    // Hide all other popovers
     const allPopovers = document.querySelectorAll('[id^="popover-"]');
     allPopovers.forEach(p => {
         if (p.id !== `popover-${colName}-copy`) {
             p.classList.add("hidden");
-            const parentTh = p.closest('th');
-            if (parentTh) parentTh.style.zIndex = "";
         }
     });
 
     const popover = document.getElementById(`popover-${colName}-copy`);
     if (popover) {
         const isHidden = popover.classList.contains("hidden");
-        const th = popover.closest('th');
         if (isHidden) {
             if (STRATEGIC_FILTERS_SELECTIONS_COPY[colName]) {
                 TEMP_FILTERS_SELECTIONS_COPY[colName] = new Set(STRATEGIC_FILTERS_SELECTIONS_COPY[colName]);
@@ -2744,11 +2755,9 @@ function toggleFilterPopoverCopy(event, colName) {
                 TEMP_FILTERS_SELECTIONS_COPY[colName] = null;
             }
             populateFilterOptionsCopy(colName);
-            popover.classList.remove("hidden");
-            if (th) th.style.zIndex = "100";
+            _portalPopover(popover, event.currentTarget);
         } else {
             popover.classList.add("hidden");
-            if (th) th.style.zIndex = "";
         }
     }
 }
@@ -2976,19 +2985,7 @@ function removeResizersCopy() {
 }
 
 // Global click outside popovers handler for all sections
-document.addEventListener("click", (e) => {
-    const popovers = document.querySelectorAll('[id^="popover-"]');
-    popovers.forEach(popover => {
-        if (!popover.classList.contains("hidden")) {
-            const colName = popover.id.replace("popover-", "").replace("-copy2", "").replace("-copy", "");
-            const th = popover.closest('th');
-            if (th && !th.contains(e.target)) {
-                popover.classList.add("hidden");
-                th.style.zIndex = "";
-            }
-        }
-    });
-});
+// (Handled by the unified listener in initializeDashboard)
 
 /* ==========================================================================
    COPIED STRATEGIC TABLE 2 HANDLERS & FILTERS (Copy 2)
@@ -2996,20 +2993,17 @@ document.addEventListener("click", (e) => {
 function toggleFilterPopoverCopy2(event, colName) {
     event.stopPropagation();
     
-    // Hide all other popovers and reset z-index
+    // Hide all other popovers
     const allPopovers = document.querySelectorAll('[id^="popover-"]');
     allPopovers.forEach(p => {
         if (p.id !== `popover-${colName}-copy2`) {
             p.classList.add("hidden");
-            const parentTh = p.closest('th');
-            if (parentTh) parentTh.style.zIndex = "";
         }
     });
 
     const popover = document.getElementById(`popover-${colName}-copy2`);
     if (popover) {
         const isHidden = popover.classList.contains("hidden");
-        const th = popover.closest('th');
         if (isHidden) {
             if (STRATEGIC_FILTERS_SELECTIONS_COPY2[colName]) {
                 TEMP_FILTERS_SELECTIONS_COPY2[colName] = new Set(STRATEGIC_FILTERS_SELECTIONS_COPY2[colName]);
@@ -3017,11 +3011,9 @@ function toggleFilterPopoverCopy2(event, colName) {
                 TEMP_FILTERS_SELECTIONS_COPY2[colName] = null;
             }
             populateFilterOptionsCopy2(colName);
-            popover.classList.remove("hidden");
-            if (th) th.style.zIndex = "100";
+            _portalPopover(popover, event.currentTarget);
         } else {
             popover.classList.add("hidden");
-            if (th) th.style.zIndex = "";
         }
     }
 }

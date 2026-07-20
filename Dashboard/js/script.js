@@ -662,6 +662,8 @@ function getProductIcon(prodName) {
    STRATEGIC 6 PRODUCTS // TOP 50 MPO BY UNIT HIERARCHY ENGINE
    ========================================================================== */
 let ACTIVE_STRATEGIC_PROD = "MOKAST 10 TAB";
+let ACTIVE_STRATEGIC_PRODS = [];
+let CURRENT_AGGREGATED_MPOS = [];
 let ACTIVE_STRATEGIC_MONTH = "ALL";
 
 function renderStrategic6Products() {
@@ -680,13 +682,20 @@ function renderStrategic6Products() {
         return;
     }
 
+    if (ACTIVE_STRATEGIC_PRODS.length === 0 && keys.length > 0) {
+        ACTIVE_STRATEGIC_PRODS = [ACTIVE_STRATEGIC_PROD];
+    }
+
     if (!stratData[ACTIVE_STRATEGIC_PROD] && keys.length > 0) {
         ACTIVE_STRATEGIC_PROD = keys[0];
     }
 
+    // Update the dropdown checkboxes selection UI
+    updateProdGroupDropdownUI(keys);
+
     const htmlContent = keys.map(prodName => {
         const item = stratData[prodName];
-        const isActive = (prodName === ACTIVE_STRATEGIC_PROD);
+        const isActive = ACTIVE_STRATEGIC_PRODS.includes(prodName);
         
         let displayUnits = item.total_units;
         let displayParties = item.total_parties;
@@ -756,6 +765,7 @@ function renderStrategic6Products() {
 
 function selectStrategicProduct(prodName) {
     ACTIVE_STRATEGIC_PROD = prodName;
+    ACTIVE_STRATEGIC_PRODS = [prodName];
     STRATEGIC_PAGE = 1;
     STRATEGIC_PAGE_COPY = 1;
     STRATEGIC_PAGE_COPY2 = 1;
@@ -821,12 +831,72 @@ function renderStrategicMPOTable() {
     if (titleElCopy2) titleElCopy2.textContent = `${titleText} (Sector Head)`;
     if (subElCopy2) subElCopy2.textContent = subtitleText;
 
-    let mpos = [];
-    if (ACTIVE_STRATEGIC_MONTH === "ALL") {
-        mpos = prodItem.mpo_top50_all || [];
-    } else {
-        mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
+    // Aggregate MPOs across all active products (multi-select)
+    if (!ACTIVE_STRATEGIC_PRODS || ACTIVE_STRATEGIC_PRODS.length === 0) {
+        ACTIVE_STRATEGIC_PRODS = [ACTIVE_STRATEGIC_PROD];
     }
+    
+    const mpoMap = {};
+    ACTIVE_STRATEGIC_PRODS.forEach(prodName => {
+        const item = stratData[prodName];
+        if (!item) return;
+        
+        let list = [];
+        if (ACTIVE_STRATEGIC_MONTH === "ALL") {
+            list = item.mpo_top50_all || [];
+        } else {
+            list = (item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
+        }
+        
+        list.forEach(m => {
+            const code = m.mpo_code;
+            if (!mpoMap[code]) {
+                mpoMap[code] = {
+                    mpo_code: code,
+                    fm_name: m.fm_name || 'Unknown',
+                    zone: m.zone || 'Unknown',
+                    market: m.market || 'Unknown',
+                    units: 0,
+                    parties: 0,
+                    invoices: 0,
+                    sales: 0,
+                    is_vacant: m.is_vacant,
+                    monthly_breakdown: {}
+                };
+            }
+            mpoMap[code].units += m.units || 0;
+            mpoMap[code].parties += m.parties || 0;
+            mpoMap[code].invoices += m.invoices || 0;
+            mpoMap[code].sales += m.sales || 0;
+            if (!m.is_vacant) {
+                mpoMap[code].is_vacant = false;
+            }
+            
+            (m.monthly_breakdown || []).forEach(mb => {
+                const mo = mb.month;
+                if (!mpoMap[code].monthly_breakdown[mo]) {
+                    mpoMap[code].monthly_breakdown[mo] = { month: mo, units: 0, parties: 0, invoices: 0, sales: 0 };
+                }
+                mpoMap[code].monthly_breakdown[mo].units += mb.units || mb.quantity || 0;
+                mpoMap[code].monthly_breakdown[mo].parties += mb.parties || 0;
+                mpoMap[code].monthly_breakdown[mo].invoices += mb.invoices || 0;
+                mpoMap[code].monthly_breakdown[mo].sales += mb.sales || 0;
+            });
+        });
+    });
+
+    let mpos = Object.values(mpoMap).map(m => {
+        m.monthly_breakdown = Object.values(m.monthly_breakdown);
+        return m;
+    });
+
+    // Sort and set Rank
+    mpos.sort((a, b) => b.units - a.units);
+    mpos.forEach((m, idx) => {
+        m.rank = idx + 1;
+    });
+
+    CURRENT_AGGREGATED_MPOS = mpos;
 
     // Apply Excel-like column filters for original table
     const filteredMpos = mpos.filter(m => {
@@ -1452,59 +1522,11 @@ function openDrillModal(type, code) {
             subtitle.innerHTML = `<span class="text-emerald-400 font-bold">🔒 STRICT CODE ANCHOR</span> // TOTAL UNITS: <span class="text-white font-cyber">${Number(totalUnits).toLocaleString()}</span> // UNIQUE PARTIES: <span class="text-purple-300 font-bold">${item.total_parties}</span>`;
         }
     } else if (type === "mpo") {
-        // Search priority:
-        //  1. Strategic-context monthly data (mpo_top50_by_month or mpo_top50_all) — has units
-        //  2. Top-50 MPOs aggregate (top_50_mpos) — fallback, units may be 0 if stale
-        let stratAllEntry = null;
-        let stratMonthEntry = null;
-        if (GLOBAL_DATA.strategic_6_products && GLOBAL_DATA.strategic_6_products[ACTIVE_STRATEGIC_PROD]) {
-            const stratItem = GLOBAL_DATA.strategic_6_products[ACTIVE_STRATEGIC_PROD];
-            stratAllEntry = (stratItem.mpo_top50_all || []).find(m => m.mpo_code === code) || null;
-            if (ACTIVE_STRATEGIC_MONTH !== "ALL") {
-                const monthBucket = (stratItem.mpo_top50_by_month && stratItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) || [];
-                stratMonthEntry = monthBucket.find(m => m.mpo_code === code) || null;
-            }
-        }
-
-        // Priority: strategic-all entry (has full monthly_breakdown with units)
-        if (stratAllEntry && stratAllEntry.monthly_breakdown && stratAllEntry.monthly_breakdown.length > 0) {
-            item = stratAllEntry;
+        const aggMpo = CURRENT_AGGREGATED_MPOS.find(m => m.mpo_code === code);
+        if (aggMpo) {
+            item = aggMpo;
         } else {
-            // Fallback: top_50_mpos aggregate
             item = GLOBAL_DATA.top_50_mpos.find(m => m.mpo_code === code);
-            // If still no monthly_breakdown, try patching from stratMonthEntry or stratAllEntry
-            if (!item || !item.monthly_breakdown || item.monthly_breakdown.length === 0) {
-                const synthSource = stratMonthEntry || stratAllEntry;
-                if (synthSource) {
-                    item = item || {};
-                    item.mpo_code = item.mpo_code || code;
-                    item.market = item.market || synthSource.market;
-                    item.zone = item.zone || synthSource.zone;
-                    item.depot = item.depot || synthSource.depot;
-                    item.is_vacant = item.is_vacant || stratAllEntry?.is_vacant || stratMonthEntry?.is_vacant || false;
-                    item.monthly_breakdown = [{
-                        month: ACTIVE_STRATEGIC_MONTH === "ALL" ? "2026-01" : ACTIVE_STRATEGIC_MONTH,
-                        sales: synthSource.sales || 0,
-                        units: synthSource.units || 0,
-                        quantity: synthSource.units || 0,
-                        invoices: synthSource.invoices || 0,
-                        parties: synthSource.parties || 0
-                    }];
-                }
-            } else {
-                // Has monthly_breakdown but may lack units — patch from strategic
-                const needsPatch = item.monthly_breakdown.every(mb => (mb.units || 0) === 0 && (mb.quantity || 0) === 0);
-                if (needsPatch && stratAllEntry && stratAllEntry.monthly_breakdown) {
-                    item.monthly_breakdown = item.monthly_breakdown.map(mb => {
-                        const sm = stratAllEntry.monthly_breakdown.find(s => s.month === mb.month);
-                        return {
-                            ...mb,
-                            units: sm ? (sm.units || sm.quantity || 0) : 0,
-                            quantity: sm ? (sm.units || sm.quantity || 0) : 0
-                        };
-                    });
-                }
-            }
         }
 
         if (item) {
@@ -1693,10 +1715,7 @@ function openZoneDrillModal(zoneName) {
         return s;
     };
 
-    const stratItem = GLOBAL_DATA.strategic_6_products[ACTIVE_STRATEGIC_PROD];
-    if (!stratItem) return;
-
-    const zoneMpos = (stratItem.mpo_top50_all || []).filter(m => (m.zone || 'Unknown') === zoneName);
+    const zoneMpos = CURRENT_AGGREGATED_MPOS.filter(m => (m.zone || 'Unknown') === zoneName);
     const totalMposCount = zoneMpos.length;
     const vacantMposCount = zoneMpos.filter(m => m.is_vacant).length;
     const actualMposCount = totalMposCount - vacantMposCount;
@@ -1901,10 +1920,7 @@ function openFMDrillModal(fmName) {
         return s;
     };
 
-    const stratItem = GLOBAL_DATA.strategic_6_products[ACTIVE_STRATEGIC_PROD];
-    if (!stratItem) return;
-
-    const fmMpos = (stratItem.mpo_top50_all || []).filter(m => (m.fm_name || 'Unknown') === fmName);
+    const fmMpos = CURRENT_AGGREGATED_MPOS.filter(m => (m.fm_name || 'Unknown') === fmName);
     const totalMposCount = fmMpos.length;
     const vacantMposCount = fmMpos.filter(m => m.is_vacant).length;
     const actualMposCount = totalMposCount - vacantMposCount;
@@ -3178,6 +3194,101 @@ function removeResizersCopy2() {
     if (!table) return;
     const resizers = table.querySelectorAll(".resizer");
     resizers.forEach(r => r.remove());
+}
+
+/* ==========================================================================
+   STRATEGIC PRODUCT MULTI-SELECT DROPDOWN FILTER
+   ========================================================================== */
+function toggleProdGroupDropdown(event) {
+    if (event) event.stopPropagation();
+    const panel = document.getElementById("prod-group-dropdown-panel");
+    if (panel) {
+        panel.classList.toggle("hidden");
+    }
+}
+
+// Global click handler to close dropdown when clicking outside
+document.addEventListener("click", function(event) {
+    const wrapper = document.getElementById("prod-group-filter-wrapper");
+    const panel = document.getElementById("prod-group-dropdown-panel");
+    if (wrapper && panel && !wrapper.contains(event.target)) {
+        panel.classList.add("hidden");
+    }
+});
+
+function updateProdGroupDropdownUI(keys) {
+    const checkboxesDiv = document.getElementById("prod-group-checkboxes");
+    const labelSpan = document.getElementById("selected-prod-group-label");
+    if (!checkboxesDiv) return;
+
+    // Build list of checkboxes
+    checkboxesDiv.innerHTML = keys.map(k => {
+        const isChecked = ACTIVE_STRATEGIC_PRODS.includes(k);
+        return `
+            <label class="flex items-center gap-2 cursor-pointer py-1 hover:bg-slate-900 rounded px-1.5 transition-colors">
+                <input type="checkbox" class="prod-group-chk" value="${k}" ${isChecked ? 'checked' : ''}>
+                <span class="truncate" title="${k}">${k}</span>
+            </label>
+        `;
+    }).join('');
+
+    // Update label
+    if (labelSpan) {
+        if (ACTIVE_STRATEGIC_PRODS.length === keys.length) {
+            labelSpan.textContent = "ALL PRODUCTS SELECTED";
+            labelSpan.className = "truncate max-w-[200px] text-cyan-400 font-bold";
+        } else if (ACTIVE_STRATEGIC_PRODS.length === 1) {
+            labelSpan.textContent = ACTIVE_STRATEGIC_PRODS[0];
+            labelSpan.className = "truncate max-w-[200px] text-slate-200";
+        } else {
+            labelSpan.textContent = `${ACTIVE_STRATEGIC_PRODS.length} PRODUCTS SELECTED`;
+            labelSpan.className = "truncate max-w-[200px] text-cyan-400 font-bold";
+        }
+    }
+}
+
+function selectAllProdGroups(status) {
+    const chks = document.querySelectorAll(".prod-group-chk");
+    chks.forEach(chk => {
+        chk.checked = status;
+    });
+}
+
+function applyProdGroupSelection() {
+    const chks = document.querySelectorAll(".prod-group-chk");
+    const selected = [];
+    chks.forEach(chk => {
+        if (chk.checked) selected.push(chk.value);
+    });
+
+    if (selected.length === 0) {
+        alert("Please select at least one product group.");
+        return;
+    }
+
+    ACTIVE_STRATEGIC_PRODS = selected;
+    if (selected.length > 0) {
+        ACTIVE_STRATEGIC_PROD = selected[0];
+    }
+
+    // Hide dropdown panel
+    const panel = document.getElementById("prod-group-dropdown-panel");
+    if (panel) panel.classList.add("hidden");
+
+    // Reset pagination
+    STRATEGIC_PAGE = 1;
+    STRATEGIC_PAGE_COPY = 1;
+    STRATEGIC_PAGE_COPY2 = 1;
+
+    // Reset all column filters
+    STRATEGIC_FILTERS_SELECTIONS = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
+    STRATEGIC_FILTERS_SELECTIONS_COPY = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
+    STRATEGIC_FILTERS_SELECTIONS_COPY2 = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
+    TEMP_FILTERS_SELECTIONS = {};
+    TEMP_FILTERS_SELECTIONS_COPY = {};
+    TEMP_FILTERS_SELECTIONS_COPY2 = {};
+
+    renderStrategic6Products();
 }
 
 

@@ -337,11 +337,30 @@
             <div class="p-6 rounded-2xl border border-cyan-500/20 bg-slate-950/30 space-y-6">
                 <!-- Strategic 6 Product Selector Cards/Buttons -->
                 <div class="backdrop-blur-xl bg-slate-950/80 cyber-border p-6 rounded-2xl relative overflow-hidden">
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
                     <div>
                         <span class="text-[10px] font-cyber tracking-[0.4em] text-cyan-400 uppercase bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-500/30">Strategic Hierarchy</span>
                         <h3 class="font-cyber font-bold text-xl text-white mt-2">🏆 6 STRATEGIC PRODUCT GROUPS (MPO RANKING BY UNIT)</h3>
-                        <p class="font-tech text-xs text-slate-400 mt-1">Select a product button below to view the Top 50 MPOs ranked strictly by Quantity Sold (UNIT). MPO Market Name and Month-wise breakdown are fully integrated.</p>
+                        <p class="font-tech text-xs text-slate-400 mt-1">Select a product button below to view the Top 50 MPOs ranked strictly by Quantity Sold (UNIT). Market Name and Month-wise breakdown are fully integrated.</p>
+                    </div>
+                    <!-- Dynamic Product Group Multi-Select Dropdown -->
+                    <div class="relative min-w-[240px] w-full sm:w-auto" id="prod-group-filter-wrapper">
+                        <button onclick="toggleProdGroupDropdown(event)" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs font-tech font-bold hover:bg-slate-800 transition-all">
+                            <span id="selected-prod-group-label" class="truncate max-w-[200px]">ALL PRODUCTS SELECTED</span>
+                            <span class="text-cyan-400 text-[10px]">▼</span>
+                        </button>
+                        <div id="prod-group-dropdown-panel" class="hidden absolute right-0 top-full mt-2 w-full sm:w-max min-w-[260px] bg-slate-950 border border-slate-800 rounded-xl p-3 shadow-2xl z-50 text-slate-200 text-xs space-y-2.5">
+                            <div class="flex justify-between items-center text-[10px] text-slate-400 border-b border-slate-800/80 pb-2">
+                                <button class="hover:text-white transition-colors" onclick="selectAllProdGroups(true)">Select All</button>
+                                <button class="hover:text-white transition-colors" onclick="selectAllProdGroups(false)">Clear</button>
+                            </div>
+                            <div class="space-y-2 max-h-[220px] overflow-y-auto pr-1" id="prod-group-checkboxes">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                            <div class="flex justify-end pt-2 border-t border-slate-800/80">
+                                <button onclick="applyProdGroupSelection()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase font-cyber tracking-wider transition-all">Apply Selection</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

@@ -941,8 +941,8 @@ function renderStrategicMPOTable() {
         return f;
     });
 
-    // Sort FMs by units (highest units first)
-    fmsList.sort((a, b) => b.units - a.units);
+    // Sort FMs by per_mpo_units (highest per_mpo_units first)
+    fmsList.sort((a, b) => b.per_mpo_units - a.per_mpo_units);
     fmsList.forEach((f, idx) => {
         f.rank = idx + 1;
     });
@@ -1063,8 +1063,8 @@ function renderStrategicMPOTable() {
         return z;
     });
 
-    // Sort zones by units (highest units first)
-    zonesList.sort((a, b) => b.units - a.units);
+    // Sort zones by per_mpo_units (highest per_mpo_units first)
+    zonesList.sort((a, b) => b.per_mpo_units - a.per_mpo_units);
     zonesList.forEach((z, idx) => {
         z.rank = idx + 1;
     });

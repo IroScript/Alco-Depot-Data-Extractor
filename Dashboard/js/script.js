@@ -3334,4 +3334,29 @@ function applyProdGroupSelection(suffix) {
     renderStrategic6Products();
 }
 
+function toggleLightTheme() {
+    document.body.classList.toggle("light-theme");
+    const isLight = document.body.classList.contains("light-theme");
+    const btn = document.getElementById("btn-theme-toggle");
+    if (btn) {
+        if (isLight) {
+            btn.innerHTML = "<span>🌙</span> Dark Theme";
+            localStorage.setItem("dashboard-theme", "light");
+        } else {
+            btn.innerHTML = "<span>💡</span> Light Theme";
+            localStorage.setItem("dashboard-theme", "dark");
+        }
+    }
+}
+
+// Load theme on startup
+document.addEventListener("DOMContentLoaded", () => {
+    const savedTheme = localStorage.getItem("dashboard-theme");
+    if (savedTheme === "light") {
+        document.body.classList.add("light-theme");
+        const btn = document.getElementById("btn-theme-toggle");
+        if (btn) btn.innerHTML = "<span>🌙</span> Dark Theme";
+    }
+});
+
 

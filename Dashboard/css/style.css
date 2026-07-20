@@ -747,3 +747,135 @@ tr:hover td:first-child {
     box-shadow: 0 0 15px rgba(6, 182, 212, 0.4) !important;
     transform: scale(1.05) !important;
 }
+
+/* ==========================================
+   LIGHT THEME MODE OVERRIDES
+   ========================================== */
+body.light-theme {
+    background-color: #f8fafc !important;
+    --bg-main: #f8fafc;
+    --bg-panel: rgba(255, 255, 255, 0.9);
+    --bg-panel-hover: rgba(241, 245, 249, 0.95);
+    --border-color: rgba(6, 182, 212, 0.45);
+    --border-highlight: rgba(168, 85, 247, 0.95);
+    
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+}
+
+/* Overriding Tailwind specific dark colors */
+body.light-theme .bg-slate-950,
+body.light-theme .bg-slate-950\/70,
+body.light-theme .bg-slate-950\/95,
+body.light-theme .bg-slate-950\/30,
+body.light-theme .bg-slate-950\/80,
+body.light-theme .bg-slate-900\/90,
+body.light-theme .bg-slate-900,
+body.light-theme .bg-slate-950\/90 {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+}
+
+body.light-theme .bg-cyan-950\/60,
+body.light-theme .bg-cyan-950\/80 {
+    background-color: rgba(6, 182, 212, 0.12) !important;
+}
+
+body.light-theme .bg-purple-950\/40,
+body.light-theme .bg-purple-950\/80 {
+    background-color: rgba(168, 85, 247, 0.12) !important;
+}
+
+body.light-theme .bg-amber-950\/80 {
+    background-color: rgba(245, 158, 11, 0.12) !important;
+}
+
+body.light-theme .bg-emerald-950\/60 {
+    background-color: rgba(16, 185, 129, 0.12) !important;
+}
+
+body.light-theme .bg-indigo-600\/30 {
+    background-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+body.light-theme .text-slate-200,
+body.light-theme .text-slate-300,
+body.light-theme .text-white {
+    color: #0f172a !important;
+}
+
+body.light-theme .text-slate-400 {
+    color: #475569 !important;
+}
+
+body.light-theme h1,
+body.light-theme h2,
+body.light-theme h3,
+body.light-theme h4,
+body.light-theme th,
+body.light-theme td {
+    color: #0f172a !important;
+}
+
+body.light-theme .excel-header-wrapper {
+    background: #edf2f7 !important;
+}
+
+body.light-theme #quantum-3d-canvas {
+    filter: invert(1);
+}
+
+body.light-theme .excel-filter-btn {
+    color: #334155 !important;
+}
+
+body.light-theme .border-slate-800 {
+    border-color: #e2e8f0 !important;
+}
+
+body.light-theme .tab-content {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.light-theme input, 
+body.light-theme select {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+}
+
+body.light-theme .strat-month-pill {
+    background-color: #edf2f7 !important;
+    color: #334155 !important;
+}
+
+body.light-theme .strat-month-pill.active {
+    background-color: #06b6d4 !important;
+    color: #ffffff !important;
+}
+
+body.light-theme .strat-btn {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+}
+
+body.light-theme .strat-btn:hover {
+    border-color: #06b6d4 !important;
+}
+
+body.light-theme .strat-btn.active {
+    background: linear-gradient(to top right, rgba(6, 182, 212, 0.2), rgba(79, 70, 229, 0.2), rgba(147, 51, 234, 0.2)) !important;
+    border-color: #06b6d4 !important;
+}
+
+body.light-theme ::-webkit-scrollbar-track {
+    background: #edf2f7 !important;
+}
+
+body.light-theme ::-webkit-scrollbar-thumb {
+    background: #cbd5e1 !important;
+    border-color: #cbd5e1 !important;
+}
+

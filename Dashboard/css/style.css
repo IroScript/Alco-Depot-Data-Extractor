@@ -751,6 +751,9 @@ tr:hover td:first-child {
 /* ==========================================
    LIGHT THEME MODE OVERRIDES
    ========================================== */
+/* ==========================================
+   LIGHT THEME MODE OVERRIDES
+   ========================================== */
 body.light-theme {
     background-color: #f8fafc !important;
     --bg-main: #f8fafc;
@@ -771,15 +774,20 @@ body.light-theme * {
 /* Force dark text for readability on light backgrounds, excluding badges and action buttons */
 body.light-theme,
 body.light-theme p,
-body.light-theme span:not(.strat-month-pill):not(.prod-month-pill):not(.excel-header-text),
+body.light-theme span:not(.strat-month-pill):not(.prod-month-pill):not(.excel-header-text):not(.active *),
 body.light-theme td,
 body.light-theme th,
 body.light-theme h1,
 body.light-theme h2,
 body.light-theme h3,
 body.light-theme h4,
-body.light-theme a:not(.tab-link) {
+body.light-theme a:not(.tab-link):not(.active *) {
     color: #0f172a !important; /* Deep slate */
+}
+
+/* Override the cell-clip class color specifically */
+body.light-theme .cell-clip {
+    color: #0f172a !important;
 }
 
 /* Muted subtitles/labels */
@@ -814,6 +822,15 @@ body.light-theme .text-rose-300 {
     color: #e11d48 !important; /* Rich Rose */
 }
 
+/* Header bar and specific dark backgrounds */
+body.light-theme header,
+body.light-theme .bg-black\/80 {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    border-bottom-color: #cbd5e1 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
+}
+
 /* Overriding Tailwind specific dark background colors */
 body.light-theme .bg-slate-950,
 body.light-theme .bg-slate-950\/70,
@@ -832,16 +849,30 @@ body.light-theme .bg-cyan-950\/60,
 body.light-theme .bg-cyan-950\/80 {
     background-color: rgba(6, 182, 212, 0.12) !important;
 }
+body.light-theme .bg-cyan-950\/60 *,
+body.light-theme .bg-cyan-950\/80 * {
+    color: #0891b2 !important;
+}
+
 body.light-theme .bg-purple-950\/40,
 body.light-theme .bg-purple-950\/80 {
     background-color: rgba(168, 85, 247, 0.12) !important;
 }
+body.light-theme .bg-purple-950\/40 *,
+body.light-theme .bg-purple-950\/80 * {
+    color: #7c3aed !important;
+}
+
 body.light-theme .bg-amber-950\/80 {
     background-color: rgba(245, 158, 11, 0.12) !important;
 }
 body.light-theme .bg-emerald-950\/60 {
     background-color: rgba(16, 185, 129, 0.12) !important;
 }
+body.light-theme .bg-emerald-950\/60 * {
+    color: #059669 !important;
+}
+
 body.light-theme .bg-indigo-600\/30 {
     background-color: rgba(99, 102, 241, 0.15) !important;
 }
@@ -860,8 +891,10 @@ body.light-theme tr {
     background-color: #ffffff !important;
     border-bottom: 1px solid #e2e8f0 !important;
 }
-body.light-theme tr:hover td {
+body.light-theme tr:hover td,
+body.light-theme tr:hover td .cell-clip {
     background: #f1f5f9 !important;
+    color: #0f172a !important;
 }
 body.light-theme .excel-header-wrapper {
     background: #edf2f7 !important;
@@ -895,17 +928,27 @@ body.light-theme .tab-link:not(.active) {
 }
 
 /* Month filter pills */
-body.light-theme .strat-month-pill,
-body.light-theme .prod-month-pill,
-body.light-theme .pill {
+body.light-theme .strat-month-pill:not(.active),
+body.light-theme .prod-month-pill:not(.active),
+body.light-theme .pill:not(.active) {
     background-color: #edf2f7 !important;
     color: #334155 !important;
+    border-color: #cbd5e1 !important;
 }
 body.light-theme .strat-month-pill.active,
 body.light-theme .prod-month-pill.active,
 body.light-theme .pill.active {
     background-color: #06b6d4 !important;
     color: #ffffff !important;
+}
+
+/* Strategic Product Filter Dropdown Wrapper */
+body.light-theme #prod-group-filter-wrapper button,
+body.light-theme #prod-group-filter-wrapper-copy button,
+body.light-theme #prod-group-filter-wrapper-copy2 button {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
 }
 
 /* Strategic Buttons */
@@ -916,9 +959,15 @@ body.light-theme .strat-btn {
 body.light-theme .strat-btn:hover {
     border-color: #06b6d4 !important;
 }
+body.light-theme .strat-btn .text-slate-400 {
+    color: #475569 !important;
+}
 body.light-theme .strat-btn.active {
     background: linear-gradient(to top right, rgba(6, 182, 212, 0.15), rgba(79, 70, 229, 0.15), rgba(147, 51, 234, 0.15)) !important;
     border-color: #06b6d4 !important;
+}
+body.light-theme .strat-btn.active * {
+    color: #0f172a !important;
 }
 
 /* Scrollbars overrides */

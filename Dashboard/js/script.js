@@ -450,6 +450,30 @@ function renderMonthlyTable(trends) {
     }).join('');
 }
 
+function getProductIcon(prodName) {
+    if (!prodName) return "📦";
+    const name = prodName.toLowerCase();
+    if (name.includes("tab") || name.includes("tablet")) {
+        return "⚪"; // Round tablet icon
+    }
+    if (name.includes("cap") || name.includes("capsule") || name.includes("softgel")) {
+        return "💊"; // Capsule icon
+    }
+    if (name.includes("syp") || name.includes("syrup")) {
+        return "🍶"; // Syrup bottle
+    }
+    if (name.includes("susp") || name.includes("suspension")) {
+        return "🧪"; // Suspension
+    }
+    if (name.includes("inj") || name.includes("injection")) {
+        return "💉"; // Injection
+    }
+    if (name.includes("supp") || name.includes("suppository")) {
+        return "🕯️"; // Suppository
+    }
+    return "📦"; // Default icon
+}
+
 /* ==========================================================================
    STRATEGIC 6 PRODUCTS // TOP 50 MPO BY UNIT HIERARCHY ENGINE
    ========================================================================== */
@@ -475,16 +499,27 @@ function renderStrategic6Products() {
     container.innerHTML = keys.map(prodName => {
         const item = stratData[prodName];
         const isActive = (prodName === ACTIVE_STRATEGIC_PROD);
+        
+        let displayUnits = item.total_units;
+        let displayParties = item.total_parties;
+        let displayInvoices = item.total_invoices;
+        
+        if (ACTIVE_STRATEGIC_MONTH !== "ALL") {
+            const monthMpos = (item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
+            displayUnits = monthMpos.reduce((sum, m) => sum + (m.units || 0), 0);
+            displayParties = monthMpos.reduce((sum, m) => sum + (m.parties || 0), 0);
+            displayInvoices = monthMpos.reduce((sum, m) => sum + (m.invoices || 0), 0);
+        }
+
         return `
             <button class="strat-btn p-3 rounded-xl border text-left transition-all ${isActive ? 'bg-gradient-to-tr from-cyan-600/40 via-indigo-600/40 to-purple-600/40 border-cyan-400 shadow-neon-cyan transform scale-105' : 'bg-slate-900/80 border-slate-800 hover:border-cyan-500/50'}" onclick="selectStrategicProduct('${prodName.replace(/'/g, "\\'")}')">
                 <div class="flex justify-between items-center mb-1">
-                    <span class="text-[10px] font-cyber tracking-wider text-purple-400 bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-500/30">TOP 50 MPO</span>
-                    <span class="font-mono text-[10px] text-emerald-400">📦 ${Number(item.total_units).toLocaleString()} U</span>
+                    <span class="font-mono text-[10px] text-emerald-400">📦 ${Number(displayUnits).toLocaleString()} U</span>
                 </div>
-                <div class="font-cyber font-bold text-sm text-white truncate my-1" title="${prodName}">💊 ${prodName}</div>
+                <div class="font-cyber font-bold text-sm text-white truncate my-1" title="${prodName}">${getProductIcon(prodName)} ${prodName}</div>
                 <div class="flex justify-between items-center text-[11px] font-tech text-slate-400 border-t border-slate-800/80 pt-1 mt-1">
-                    <span>👥 ${Number(item.total_parties).toLocaleString()} Parties</span>
-                    <span>🧾 ${Number(item.total_invoices).toLocaleString()} Inv</span>
+                    <span>👥 ${Number(displayParties).toLocaleString()} Parties</span>
+                    <span>🧾 ${Number(displayInvoices).toLocaleString()} Inv</span>
                 </div>
             </button>
         `;
@@ -547,7 +582,7 @@ function renderStrategicMPOTable() {
     const subEl = document.getElementById("strategic-active-subtitle");
     
     const displayMonth = ACTIVE_STRATEGIC_MONTH === "ALL" ? "ALL" : (MONTH_MAP[ACTIVE_STRATEGIC_MONTH] || ACTIVE_STRATEGIC_MONTH);
-    if (titleEl) titleEl.textContent = `💊 ${prodItem.product_name} [ MONTH: ${displayMonth} ]`;
+    if (titleEl) titleEl.textContent = `${getProductIcon(prodItem.product_name)} ${prodItem.product_name} [ MONTH: ${displayMonth} ]`;
     if (subEl) subEl.textContent = `Merged Product Codes: ${(prodItem.merged_codes || []).join(', ')} // Total Units Sold: ${Number(prodItem.total_units).toLocaleString()} Units`;
 
     let mpos = [];
@@ -943,7 +978,7 @@ function openDrillModal(type, code) {
     if (type === "product") {
         item = GLOBAL_DATA.top_50_products.find(p => p.product_code === code);
         if (item) {
-            title.innerHTML = `💊 <span class="text-white">${item.product_name}</span> <span class="text-cyan-400 font-mono">(${item.product_code})</span> // 📍 MARKET: <span class="text-emerald-400">${item.market || 'ALL MARKETS'}</span> // ZONE: <span class="text-cyan-400">${item.zone || 'ALL ZONES'}</span>`;
+            title.innerHTML = `${getProductIcon(item.product_name)} <span class="text-white">${item.product_name}</span> <span class="text-cyan-400 font-mono">(${item.product_code})</span> // 📍 MARKET: <span class="text-emerald-400">${item.market || 'ALL MARKETS'}</span> // ZONE: <span class="text-cyan-400">${item.zone || 'ALL ZONES'}</span>`;
             const totalUnits = item.total_units || item.total_quantity || 0;
             subtitle.innerHTML = `<span class="text-emerald-400 font-bold">🔒 STRICT CODE ANCHOR</span> // TOTAL UNITS: <span class="text-white font-cyber">${Number(totalUnits).toLocaleString()}</span> // UNIQUE PARTIES: <span class="text-purple-300 font-bold">${item.total_parties}</span>`;
         }
@@ -1006,7 +1041,7 @@ function openDrillModal(type, code) {
         if (item) {
             // Title shows active strategic product name (e.g. "💊 MOKAST 10 TAB") + market + zone
             const productName = ACTIVE_STRATEGIC_PROD || 'PRODUCT';
-            title.innerHTML = `💊 <span class="text-cyan-300">${productName}</span> // 📍 MARKET: <span class="text-emerald-400 font-bold">${item.market||'Unknown'}</span> // ZONE: <span class="text-purple-300 font-bold">${item.zone}</span>`;
+            title.innerHTML = `${getProductIcon(productName)} <span class="text-cyan-300">${productName}</span> // 📍 MARKET: <span class="text-emerald-400 font-bold">${item.market||'Unknown'}</span> // ZONE: <span class="text-purple-300 font-bold">${item.zone}</span>`;
             subtitle.innerHTML = `<span class="text-purple-300 font-bold">👔 MPO ${item.mpo_code}</span> ${item.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-xs px-2 py-0.5 rounded border border-amber-500/40 ml-1 font-mono">VACANT</span>' : ''}`;
         }
     }
@@ -1429,4 +1464,167 @@ function removeResizers() {
     if (!table) return;
     const resizers = table.querySelectorAll(".resizer");
     resizers.forEach(r => r.remove());
+}
+
+function printFullStrategicTable() {
+    if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
+    const stratData = GLOBAL_DATA.strategic_6_products;
+    const prodItem = stratData[ACTIVE_STRATEGIC_PROD];
+    if (!prodItem) return;
+
+    let mpos = [];
+    if (ACTIVE_STRATEGIC_MONTH === "ALL") {
+        mpos = prodItem.mpo_top50_all || [];
+    } else {
+        mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
+    }
+
+    const filteredMpos = mpos.filter(m => {
+        if (STRATEGIC_FILTERS_SELECTIONS.rank && !STRATEGIC_FILTERS_SELECTIONS.rank.includes(String(m.rank))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.zone && !STRATEGIC_FILTERS_SELECTIONS.zone.includes(m.zone)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.fm && !STRATEGIC_FILTERS_SELECTIONS.fm.includes(m.fm_name || 'Unknown')) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.code && !STRATEGIC_FILTERS_SELECTIONS.code.includes(m.mpo_code)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.market && !STRATEGIC_FILTERS_SELECTIONS.market.includes(m.market)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.units) {
+            const unitsLabel = `${m.units} U`;
+            if (!STRATEGIC_FILTERS_SELECTIONS.units.includes(unitsLabel)) return false;
+        }
+        if (STRATEGIC_FILTERS_SELECTIONS.parties && !STRATEGIC_FILTERS_SELECTIONS.parties.includes(String(m.parties))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.invoices && !STRATEGIC_FILTERS_SELECTIONS.invoices.includes(String(m.invoices))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.sales) {
+            const salesLabel = formatBDT(m.sales);
+            if (!STRATEGIC_FILTERS_SELECTIONS.sales.includes(salesLabel)) return false;
+        }
+        return true;
+    });
+
+    const displayMonth = ACTIVE_STRATEGIC_MONTH === "ALL" ? "ALL" : (MONTH_MAP[ACTIVE_STRATEGIC_MONTH] || ACTIVE_STRATEGIC_MONTH);
+
+    let printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Strategic Product Performance: ${prodItem.product_name} - ${displayMonth}</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #1e293b; background-color: #ffffff; }
+                h1 { margin-bottom: 5px; font-size: 24px; color: #0f172a; }
+                h2 { margin-top: 0; font-size: 14px; color: #64748b; font-weight: normal; margin-bottom: 25px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; font-size: 11px; }
+                th { background-color: #f8fafc; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }
+                tr:nth-child(even) { background-color: #f8fafc; }
+                .text-right { text-align: right; }
+                @media print {
+                    button { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>🏆 Strategic Product Performance: ${prodItem.product_name}</h1>
+            <h2>Month: ${displayMonth} | Merged Codes: ${(prodItem.merged_codes || []).join(', ')} | Total Records: ${filteredMpos.length}</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>RANK</th>
+                        <th>ZONE</th>
+                        <th>FIELD MANAGER</th>
+                        <th>MPO CODE</th>
+                        <th>MPO MARKET NAME</th>
+                        <th>DEPOT</th>
+                        <th>QUANTITY (UNIT)</th>
+                        <th>PARTIES</th>
+                        <th>INVOICES</th>
+                        <th>NET SALES (BDT)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredMpos.map(m => `
+                        <tr>
+                            <td>${m.rank}</td>
+                            <td>${m.zone}</td>
+                            <td>${m.fm_name || 'Unknown'}</td>
+                            <td>${m.mpo_code}</td>
+                            <td>${m.market}</td>
+                            <td>${m.depot || 'Unknown'}</td>
+                            <td class="text-right">${Number(m.units).toLocaleString()}</td>
+                            <td class="text-right">${Number(m.parties).toLocaleString()}</td>
+                            <td class="text-right">${Number(m.invoices).toLocaleString()}</td>
+                            <td class="text-right">${formatBDT(m.sales)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 500);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+function exportStrategicToCSV() {
+    if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
+    const stratData = GLOBAL_DATA.strategic_6_products;
+    const prodItem = stratData[ACTIVE_STRATEGIC_PROD];
+    if (!prodItem) return;
+
+    let mpos = [];
+    if (ACTIVE_STRATEGIC_MONTH === "ALL") {
+        mpos = prodItem.mpo_top50_all || [];
+    } else {
+        mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
+    }
+
+    const filteredMpos = mpos.filter(m => {
+        if (STRATEGIC_FILTERS_SELECTIONS.rank && !STRATEGIC_FILTERS_SELECTIONS.rank.includes(String(m.rank))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.zone && !STRATEGIC_FILTERS_SELECTIONS.zone.includes(m.zone)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.fm && !STRATEGIC_FILTERS_SELECTIONS.fm.includes(m.fm_name || 'Unknown')) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.code && !STRATEGIC_FILTERS_SELECTIONS.code.includes(m.mpo_code)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.market && !STRATEGIC_FILTERS_SELECTIONS.market.includes(m.market)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.units) {
+            const unitsLabel = `${m.units} U`;
+            if (!STRATEGIC_FILTERS_SELECTIONS.units.includes(unitsLabel)) return false;
+        }
+        if (STRATEGIC_FILTERS_SELECTIONS.parties && !STRATEGIC_FILTERS_SELECTIONS.parties.includes(String(m.parties))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.invoices && !STRATEGIC_FILTERS_SELECTIONS.invoices.includes(String(m.invoices))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.sales) {
+            const salesLabel = formatBDT(m.sales);
+            if (!STRATEGIC_FILTERS_SELECTIONS.sales.includes(salesLabel)) return false;
+        }
+        return true;
+    });
+
+    const displayMonth = ACTIVE_STRATEGIC_MONTH === "ALL" ? "ALL" : (MONTH_MAP[ACTIVE_STRATEGIC_MONTH] || ACTIVE_STRATEGIC_MONTH);
+
+    let csvContent = "\uFEFF"; // Add BOM for Excel UTF-8 support
+    csvContent += "Rank,Zone,Field Manager,MPO Code,MPO Market Name,Depot,Quantity (Unit),Parties,Invoices,Net Sales (BDT)\n";
+
+    filteredMpos.forEach(m => {
+        const row = [
+            m.rank,
+            `"${m.zone.replace(/'/g, "''").replace(/"/g, '""')}"`,
+            `"${(m.fm_name || 'Unknown').replace(/'/g, "''").replace(/"/g, '""')}"`,
+            `"${m.mpo_code.replace(/'/g, "''").replace(/"/g, '""')}"`,
+            `"${m.market.replace(/'/g, "''").replace(/"/g, '""')}"`,
+            `"${(m.depot || 'Unknown').replace(/'/g, "''").replace(/"/g, '""')}"`,
+            m.units,
+            m.parties,
+            m.invoices,
+            m.sales
+        ].join(",");
+        csvContent += row + "\n";
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Strategic_Product_${prodItem.product_name.replace(/\s+/g, '_')}_${displayMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }

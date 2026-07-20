@@ -35,6 +35,7 @@ def create_zip():
         "FieldEdit",
         "fastapi_gateway",
         "Dashboard",
+        "sales.db",
         "step_1_extract_Product_Level_Net_Sales_csv.py",
         "step_2_generate_MPO_Target_vs_Achievement_report.py",
         "step_3_generate_Zone_Wise_Product_Sales_Report.py",

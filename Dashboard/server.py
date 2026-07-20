@@ -66,7 +66,11 @@ class DashboardHTTPRequestHandler(SimpleHTTPRequestHandler):
             return
 
         # Fallback to serving static files (index.html, css, js)
-        return super().do_GET()
+        try:
+            return super().do_GET()
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError) as e:
+            print(f"ℹ️ [Info] Client connection closed prematurely: {e}")
+            return
 
     def get_api_data(self):
         if os.path.exists(API_DATA_PATH):

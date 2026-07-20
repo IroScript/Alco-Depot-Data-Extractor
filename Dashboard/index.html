@@ -357,6 +357,18 @@
                 </div>
                 
                 <div class="flex flex-wrap items-center gap-3">
+                    <!-- Export/Print options (left side) -->
+                    <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
+                        <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-blue-600/80 border border-blue-500/50 text-white font-tech text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1">
+                            🖨️ Print
+                        </button>
+                        <button onclick="exportStrategicToCSV()" class="px-3 py-1.5 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1">
+                            📊 CSV
+                        </button>
+                        <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-rose-600/80 border border-rose-500/50 text-white font-tech text-xs font-bold hover:bg-rose-700 transition-all flex items-center gap-1">
+                            📄 PDF
+                        </button>
+                    </div>
                     <button id="btn-lock-columns" class="px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5" onclick="toggleColumnLock()">
                         🔒 Columns Locked
                     </button>

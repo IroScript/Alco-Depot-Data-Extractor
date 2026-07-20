@@ -901,52 +901,101 @@ function renderStrategicMPOTable() {
         }
     }
 
-    // Apply Excel-like column filters for copy table (Copy 1)
-    const filteredMposCopy = mpos.filter(m => {
-        if (STRATEGIC_FILTERS_SELECTIONS_COPY.rank && !STRATEGIC_FILTERS_SELECTIONS_COPY.rank.includes(String(m.rank))) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS_COPY.zone && !STRATEGIC_FILTERS_SELECTIONS_COPY.zone.includes(m.zone)) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS_COPY.fm && !STRATEGIC_FILTERS_SELECTIONS_COPY.fm.includes(m.fm_name || 'Unknown')) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS_COPY.code && !STRATEGIC_FILTERS_SELECTIONS_COPY.code.includes(m.mpo_code)) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS_COPY.market && !STRATEGIC_FILTERS_SELECTIONS_COPY.market.includes(m.market)) return false;
+    // Apply Grouping by Field Manager for copy table (Copy 1)
+    const fmsMap = {};
+    mpos.forEach(m => {
+        const f = m.fm_name || 'Unknown';
+        if (!fmsMap[f]) {
+            fmsMap[f] = {
+                fm_name: f,
+                total_mpos: 0,
+                vacant_count: 0,
+                actual_market: 0,
+                units: 0,
+                parties: 0,
+                invoices: 0,
+                sales: 0,
+                mpos: []
+            };
+        }
+        fmsMap[f].mpos.push(m);
+        fmsMap[f].total_mpos += 1;
+        if (m.is_vacant) {
+            fmsMap[f].vacant_count += 1;
+        } else {
+            fmsMap[f].units += m.units || 0;
+            fmsMap[f].parties += m.parties || 0;
+            fmsMap[f].invoices += m.invoices || 0;
+            fmsMap[f].sales += m.sales || 0;
+        }
+    });
+
+    const fmsList = Object.values(fmsMap).map(f => {
+        f.actual_market = f.total_mpos - f.vacant_count;
+        const divisor = f.actual_market > 0 ? f.actual_market : 1;
+        f.per_mpo_units = f.actual_market > 0 ? (f.units / divisor) : 0;
+        f.per_mpo_parties = f.actual_market > 0 ? (f.parties / divisor) : 0;
+        f.per_mpo_invoices = f.actual_market > 0 ? (f.invoices / divisor) : 0;
+        f.per_mpo_sales = f.actual_market > 0 ? (f.sales / divisor) : 0;
+        return f;
+    });
+
+    // Sort FMs by units (highest units first)
+    fmsList.sort((a, b) => b.units - a.units);
+    fmsList.forEach((f, idx) => {
+        f.rank = idx + 1;
+    });
+
+    // Apply column filters for Copy 1 table
+    const filteredFMs = fmsList.filter(f => {
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.rank && !STRATEGIC_FILTERS_SELECTIONS_COPY.rank.includes(String(f.rank))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.fm && !STRATEGIC_FILTERS_SELECTIONS_COPY.fm.includes(f.fm_name)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.total_mpos && !STRATEGIC_FILTERS_SELECTIONS_COPY.total_mpos.includes(String(f.total_mpos))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.vacant_count && !STRATEGIC_FILTERS_SELECTIONS_COPY.vacant_count.includes(String(f.vacant_count))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.actual_market && !STRATEGIC_FILTERS_SELECTIONS_COPY.actual_market.includes(String(f.actual_market))) return false;
         if (STRATEGIC_FILTERS_SELECTIONS_COPY.units) {
-            const unitsLabel = `${m.units} U`;
+            const unitsLabel = `${Math.round(f.units).toLocaleString()} U`;
             if (!STRATEGIC_FILTERS_SELECTIONS_COPY.units.includes(unitsLabel)) return false;
         }
-        if (STRATEGIC_FILTERS_SELECTIONS_COPY.parties && !STRATEGIC_FILTERS_SELECTIONS_COPY.parties.includes(String(m.parties))) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS_COPY.invoices && !STRATEGIC_FILTERS_SELECTIONS_COPY.invoices.includes(String(m.invoices))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.parties && !STRATEGIC_FILTERS_SELECTIONS_COPY.parties.includes(String(f.parties))) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS_COPY.invoices && !STRATEGIC_FILTERS_SELECTIONS_COPY.invoices.includes(String(f.invoices))) return false;
         if (STRATEGIC_FILTERS_SELECTIONS_COPY.sales) {
-            const salesLabel = formatBDT(m.sales);
+            const salesLabel = formatBDTRound(f.sales);
             if (!STRATEGIC_FILTERS_SELECTIONS_COPY.sales.includes(salesLabel)) return false;
         }
         return true;
     });
 
-    const totalRecordsCopy = filteredMposCopy.length;
+    const totalRecordsCopy = filteredFMs.length;
     const totalPagesCopy = Math.ceil(totalRecordsCopy / STRATEGIC_PER_PAGE_FM) || 1;
     if (STRATEGIC_PAGE_COPY > totalPagesCopy) STRATEGIC_PAGE_COPY = totalPagesCopy;
 
     const startIdxCopy = (STRATEGIC_PAGE_COPY - 1) * STRATEGIC_PER_PAGE_FM;
-    const paginatedMposCopy = filteredMposCopy.slice(startIdxCopy, startIdxCopy + STRATEGIC_PER_PAGE_FM);
+    const paginatedFMs = filteredFMs.slice(startIdxCopy, startIdxCopy + STRATEGIC_PER_PAGE_FM);
 
     const tbodyCopy = document.getElementById("tbody-strategic-mpos-copy");
     if (tbodyCopy) {
-        if (!paginatedMposCopy || paginatedMposCopy.length === 0) {
-            tbodyCopy.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 20px;">No records found.</td></tr>`;
+        if (!paginatedFMs || paginatedFMs.length === 0) {
+            tbodyCopy.innerHTML = `<tr><td colspan="14" style="text-align:center; padding: 20px;">No records found.</td></tr>`;
         } else {
-            tbodyCopy.innerHTML = paginatedMposCopy.map(m => `
+            tbodyCopy.innerHTML = paginatedFMs.map(f => `
                 <tr class="hover:bg-purple-950/20 transition-colors">
-                    <td><div class="cell-clip">${m.rank}</div></td>
-                    <td><div class="cell-clip" title="${m.zone}">${m.zone}</div></td>
-                    <td><div class="cell-clip" title="${m.fm_name || 'Unknown'}">${m.fm_name || 'Unknown'}</div></td>
-                    <td><div class="cell-clip" title="${m.mpo_code}">👤 ${m.mpo_code}</div></td>
-                    <td><div class="cell-clip" title="${m.market}">📍 ${m.market}${m.is_vacant ? ' (VACANT)' : ''}</div></td>
-                    <td><div class="cell-clip">📦 ${Number(m.units).toLocaleString()} U</div></td>
-                    <td><div class="cell-clip">${Number(m.parties).toLocaleString()} Parties 👥</div></td>
-                    <td><div class="cell-clip">${Number(m.invoices).toLocaleString()} Inv 🧾</div></td>
-                    <td><div class="cell-clip">${formatBDT(m.sales)}</div></td>
+                    <td><div class="cell-clip">${f.rank}</div></td>
+                    <td><div class="cell-clip" title="${f.fm_name}">${f.fm_name}</div></td>
+                    <td><div class="cell-clip" title="${f.total_mpos}">${f.total_mpos}</div></td>
+                    <td><div class="cell-clip" title="${f.vacant_count}">${f.vacant_count}</div></td>
+                    <td><div class="cell-clip" title="${f.actual_market}">${f.actual_market}</div></td>
+                    <td><div class="cell-clip">📦 ${Math.round(f.units).toLocaleString()} U</div></td>
+                    <td><div class="cell-clip text-purple-300 font-bold">📦 ${Math.round(f.per_mpo_units).toLocaleString()} U</div></td>
+                    <td><div class="cell-clip">${Number(f.parties).toLocaleString()} Parties 👥</div></td>
+                    <td><div class="cell-clip text-purple-300 font-bold">${Math.round(f.per_mpo_parties).toLocaleString()} Parties 👥</div></td>
+                    <td><div class="cell-clip">${Number(f.invoices).toLocaleString()} Inv 🧾</div></td>
+                    <td><div class="cell-clip text-purple-300 font-bold">${Math.round(f.per_mpo_invoices).toLocaleString()} Inv 🧾</div></td>
+                    <td><div class="cell-clip">${formatBDTRound(f.sales)}</div></td>
+                    <td><div class="cell-clip text-purple-300 font-bold">${formatBDTRound(f.per_mpo_sales)}</div></td>
                     <td>
                         <div class="cell-clip">
-                            <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">
+                            <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openFMDrillModal('${f.fm_name}')">
                                 📈 GRAPH
                             </button>
                         </div>
@@ -958,7 +1007,7 @@ function renderStrategicMPOTable() {
 
     const pagContainerCopy = document.getElementById("strategic-mpo-pagination-copy");
     if (pagContainerCopy) {
-        if (!paginatedMposCopy || paginatedMposCopy.length === 0) {
+        if (!paginatedFMs || paginatedFMs.length === 0) {
             pagContainerCopy.innerHTML = "";
         } else {
             let pagesHtmlCopy = "";
@@ -1683,6 +1732,214 @@ function openZoneDrillModal(zoneName) {
     const productName = ACTIVE_STRATEGIC_PROD || 'PRODUCT';
     title.innerHTML = `${getProductIcon(productName)} <span class="text-cyan-300">${productName}</span> // 📍 SH/Zone (ZONE column): <span class="text-emerald-400 font-bold">${zoneName}</span>`;
     subtitle.innerHTML = `<span class="text-amber-400 font-bold">📊 PER MPO TELEMETRY (Excludes Vacant Markets)</span> // Actual MPOs: <span class="text-white font-cyber">${actualMposCount}</span> (Total: ${totalMposCount}, Vacant: ${vacantMposCount})`;
+
+    const reversed = [...monthlyBreakdown].reverse();
+
+    tbody.innerHTML = reversed.map(mb => {
+        return `
+        <tr class="hover:bg-cyan-950/30 transition-colors border-b border-slate-800/40">
+            <td><strong class="font-cyber text-cyan-300">${fmtMonth(mb.month)}</strong></td>
+            <td class="font-cyber text-emerald-300"><span class="inline-block px-2 py-0.5 rounded font-bold text-emerald-300 bg-emerald-950/60 border-l-4 border-emerald-500">📦 ${Math.round(mb.units).toLocaleString()} U</span></td>
+            <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-cyan-300 bg-cyan-950/60 border-l-4 border-cyan-500">${Math.round(mb.invoices).toLocaleString()} Inv 🧾</span></td>
+            <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-purple-300 bg-purple-950/60 border-l-4 border-purple-500">${Math.round(mb.parties).toLocaleString()} Parties 👥</span></td>
+            <td class="font-cyber text-amber-300"><span class="inline-block px-2 py-0.5 rounded font-bold text-amber-300 bg-amber-950/60 border-l-4 border-amber-500">৳ ${Math.round(mb.sales).toLocaleString()}</span></td>
+        </tr>`;
+    }).join('');
+
+    const ctxModal = document.getElementById("modal-chart");
+    if (charts.modal) charts.modal.destroy();
+
+    if (ctxModal && window.Chart) {
+        const monthLabels = reversed.map(mb => fmtMonth(mb.month));
+        const unitsData = reversed.map(mb => mb.units);
+        const invoicesData = reversed.map(mb => mb.invoices);
+        const partiesData = reversed.map(mb => mb.parties);
+        const salesData = reversed.map(mb => mb.sales);
+
+        charts.modal = new Chart(ctxModal, {
+            type: "bar",
+            data: {
+                labels: monthLabels,
+                datasets: [
+                    {
+                        label: "Units 📦",
+                        data: unitsData,
+                        backgroundColor: "rgba(16, 185, 129, 0.85)",
+                        borderColor: "#10b981",
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        yAxisID: 'yCount'
+                    },
+                    {
+                        label: "Invoices 🧾",
+                        data: invoicesData,
+                        backgroundColor: "rgba(6, 182, 212, 0.85)",
+                        borderColor: "#06b6d4",
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        yAxisID: 'yCount'
+                    },
+                    {
+                        label: "Parties 👥",
+                        data: partiesData,
+                        backgroundColor: "rgba(168, 85, 247, 0.85)",
+                        borderColor: "#a855f7",
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        yAxisID: 'yCount'
+                    },
+                    {
+                        label: "Sales (৳)",
+                        data: salesData,
+                        backgroundColor: "rgba(251, 191, 36, 0.8)",
+                        borderColor: "#fbbf24",
+                        borderWidth: 2,
+                        borderRadius: 4,
+                        yAxisID: 'ySales'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { font: { family: 'Rajdhani', size: 12 }, color: '#fff' } },
+                    tooltip: {
+                        backgroundColor: 'rgba(2, 4, 10, 0.95)',
+                        borderColor: '#fbbf24',
+                        borderWidth: 2,
+                        titleFont: { family: 'Orbitron', size: 13 }
+                    }
+                },
+                scales: {
+                    yCount: {
+                        type: 'linear', position: 'left',
+                        title: { display: true, text: 'UNITS / INV / PARTIES', color: '#10b981', font: { family: 'Orbitron', size: 11, weight: 'bold' } },
+                        grid: { color: "rgba(100, 116, 139, 0.2)" },
+                        ticks: {
+                            color: '#10b981',
+                            precision: 0,
+                            font: { family: 'Rajdhani', size: 11, weight: 'bold' }
+                        },
+                        beginAtZero: true
+                    },
+                    ySales: {
+                        type: 'linear', position: 'right',
+                        title: { display: true, text: 'SALES (৳)', color: '#fbbf24', font: { family: 'Orbitron', size: 11, weight: 'bold' } },
+                        grid: { display: false },
+                        ticks: {
+                            color: '#fbbf24',
+                            precision: 0,
+                            font: { family: 'Rajdhani', size: 11, weight: 'bold' },
+                            callback: function(value) {
+                                if (value >= 100000) return (value / 1000).toFixed(0) + 'K';
+                                if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+                                return value;
+                            }
+                        },
+                        beginAtZero: true
+                    },
+                    x: { grid: { display: false }, ticks: { color: '#fff', font: { family: 'Rajdhani', size: 13, weight: 'bold' } } }
+                }
+            },
+            plugins: [{
+                id: 'inlineBarLabels',
+                afterDatasetsDraw(chart) {
+                    const { ctx } = chart;
+                    ctx.save();
+                    ctx.font = 'bold 11px Rajdhani, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    chart.data.datasets.forEach((dataset, datasetIndex) => {
+                        const meta = chart.getDatasetMeta(datasetIndex);
+                        if (!meta || meta.hidden) return;
+                        const color = dataset.borderColor || '#fff';
+                        meta.data.forEach((bar, index) => {
+                            const value = dataset.data[index];
+                            if (value === 0 || value == null) return;
+                            let label;
+                            if (datasetIndex === 3) {
+                                if (value >= 100000) label = (value / 1000).toFixed(0) + 'K';
+                                else if (value >= 1000) label = (value / 1000).toFixed(1) + 'K';
+                                else label = Math.round(value).toString();
+                            } else {
+                                label = Math.round(value).toString();
+                            }
+                            ctx.fillStyle = color;
+                            ctx.fillText(label, bar.x, bar.y - 4);
+                        });
+                    });
+                    ctx.restore();
+                }
+            }]
+        });
+    }
+
+    modal.classList.add("active");
+}
+
+function openFMDrillModal(fmName) {
+    const modal = document.getElementById("drill-modal");
+    const title = document.getElementById("modal-title");
+    const subtitle = document.getElementById("modal-subtitle");
+    const tbody = document.getElementById("modal-tbody");
+
+    if (!modal) return;
+
+    // Month label converter
+    const MONTH_NAMES = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+    const fmtMonth = (m) => {
+        if (!m) return "";
+        const s = String(m);
+        const parts = s.includes("-") ? s.split("-") : null;
+        if (parts && parts.length === 2) {
+            const yr = parts[0].slice(-2);
+            const mi = parseInt(parts[1], 10);
+            if (mi >= 1 && mi <= 12) return `${MONTH_NAMES[mi - 1]}' ${yr}`;
+        }
+        return s;
+    };
+
+    const stratItem = GLOBAL_DATA.strategic_6_products[ACTIVE_STRATEGIC_PROD];
+    if (!stratItem) return;
+
+    const fmMpos = (stratItem.mpo_top50_all || []).filter(m => (m.fm_name || 'Unknown') === fmName);
+    const totalMposCount = fmMpos.length;
+    const vacantMposCount = fmMpos.filter(m => m.is_vacant).length;
+    const actualMposCount = totalMposCount - vacantMposCount;
+    const divisor = actualMposCount > 0 ? actualMposCount : 1;
+
+    // Group monthly breakdowns of all non-vacant MPOs for this FM
+    const monthlyMap = {};
+    fmMpos.forEach(m => {
+        if (m.is_vacant) return;
+        (m.monthly_breakdown || []).forEach(mb => {
+            const month = mb.month;
+            if (!monthlyMap[month]) {
+                monthlyMap[month] = { month: month, units: 0, parties: 0, invoices: 0, sales: 0 };
+            }
+            monthlyMap[month].units += mb.units || mb.quantity || 0;
+            monthlyMap[month].parties += mb.parties || 0;
+            monthlyMap[month].invoices += mb.invoices || 0;
+            monthlyMap[month].sales += mb.sales || 0;
+        });
+    });
+
+    const months = Object.keys(monthlyMap).sort();
+    const monthlyBreakdown = months.map(month => {
+        const mb = monthlyMap[month];
+        return {
+            month: month,
+            units: actualMposCount > 0 ? (mb.units / divisor) : 0,
+            parties: actualMposCount > 0 ? (mb.parties / divisor) : 0,
+            invoices: actualMposCount > 0 ? (mb.invoices / divisor) : 0,
+            sales: actualMposCount > 0 ? (mb.sales / divisor) : 0
+        };
+    });
+
+    const productName = ACTIVE_STRATEGIC_PROD || 'PRODUCT';
+    title.innerHTML = `${getProductIcon(productName)} <span class="text-cyan-300">${productName}</span> // 📍 FM: <span class="text-emerald-400 font-bold">${fmName}</span>`;
+    subtitle.innerHTML = `<span class="text-purple-300 font-bold">📊 PER MPO TELEMETRY (Excludes Vacant Markets)</span> // Actual MPOs: <span class="text-white font-cyber">${actualMposCount}</span> (Total: ${totalMposCount}, Vacant: ${vacantMposCount})`;
 
     const reversed = [...monthlyBreakdown].reverse();
 

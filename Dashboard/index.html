@@ -590,9 +590,8 @@
                     <input type="text" id="search-product" placeholder="Search Product Code (e.g. DEJ1) or Name..." class="bg-transparent border-none text-sm font-tech text-white w-full focus:outline-none">
                 </div>
                 <div class="flex gap-2">
-                    <button class="pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold" data-filter-prod="all">ALL 50 PRODUCTS</button>
-                    <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-prod="top10">TOP 10 ONLY</button>
-                    <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-prod="top25">TOP 25 ONLY</button>
+                    <button class="pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold" data-filter-prod="top5">Top 5</button>
+                    <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-prod="all">Show All</button>
                 </div>
                 <!-- Export/Print options (top 50 products) -->
                 <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
@@ -604,7 +603,24 @@
                     </button>
                     <button onclick="printProductsTable()" class="px-3 py-1.5 rounded bg-rose-600/80 border border-rose-500/50 text-white font-tech text-xs font-bold hover:bg-rose-700 transition-all flex items-center gap-1">
                         📄 PDF
+                </div>
+            </div>
+
+            <!-- Month Filter & Active View Banner (Top 50 Products) -->
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-950/90 p-4 rounded-xl border border-cyan-500/40 shadow-neon-cyan">
+                <div>
+                    <div class="font-cyber text-xs text-cyan-400">ACTIVE VIEW MONTH (PRODUCTS):</div>
+                    <h4 id="product-active-month-title" class="font-cyber font-black text-xl text-white">ALL MONTHS</h4>
+                </div>
+                
+                <div class="flex flex-wrap items-center gap-3">
+                    <button id="btn-lock-columns-prod" class="px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5" onclick="toggleColumnLockProd()">
+                        🔒 Columns Locked
                     </button>
+                    <!-- Month Filter Pills -->
+                    <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800" id="product-month-pills">
+                        <button class="prod-month-pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold shadow-neon-cyan" data-month="ALL">ALL MONTHS (JAN - JUN)</button>
+                    </div>
                 </div>
             </div>
 
@@ -613,13 +629,12 @@
                     <thead>
                         <tr class="bg-slate-900/90 border-b border-cyan-500/30 text-cyan-300 font-cyber text-xs">
                             <th class="p-3">#</th>
-                            <th class="p-3">CODE 🔒</th>
                             <th class="p-3">PRODUCT NAME</th>
-                            <th class="p-3">NET REVENUE (৳)</th>
                             <th class="p-3">QTY SOLD</th>
                             <th class="p-3">TOTAL INVOICES</th>
                             <th class="p-3">VISITED PARTIES</th>
                             <th class="p-3">CONTRIB %</th>
+                            <th class="p-3">SALES VALUE</th>
                             <th class="p-3">ACTION</th>
                         </tr>
                     </thead>
@@ -628,6 +643,8 @@
                     </tbody>
                 </table>
             </div>
+            <!-- Products Pagination -->
+            <div id="products-pagination" class="flex flex-wrap justify-center gap-1.5 mt-4"></div>
         </section>
 
         <!-- Bottom Collapsible Toggle Bar -->

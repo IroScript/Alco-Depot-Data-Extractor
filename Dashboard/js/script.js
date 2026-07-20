@@ -85,17 +85,20 @@ function initEventListeners() {
     const searchProd = document.getElementById("search-product");
     if (searchProd) {
         searchProd.addEventListener("input", (e) => {
-            filterProducts(e.target.value.toLowerCase(), getActivePill("filter-prod"));
+            PRODUCTS_PAGE = 1;
+            renderProductsTable();
         });
     }
 
-    // Product Filter Pills
+    // Product Filter Pills (Top 5 / Show All)
     document.querySelectorAll("[data-filter-prod]").forEach(pill => {
         pill.addEventListener("click", () => {
             document.querySelectorAll("[data-filter-prod]").forEach(p => p.classList.remove("active"));
             pill.classList.add("active");
             const filterVal = pill.getAttribute("data-filter-prod");
-            if (searchProd) filterProducts(searchProd.value.toLowerCase(), filterVal);
+            ACTIVE_PRODUCT_PILL = filterVal;
+            PRODUCTS_PAGE = 1;
+            renderProductsTable();
         });
     });
 
@@ -225,16 +228,16 @@ function renderAllComponents() {
     renderCharts();
 }
 
-/* Format Currency in Bangladesh Standard */
 function formatBDT(val) {
     const num = Number(val) || 0;
     const absNum = Math.abs(num);
-    if (absNum >= 1000000) {
-        return "৳ " + (num / 1000000).toFixed(2) + " M";
-    } else if (absNum >= 1000) {
-        return "৳ " + (num / 1000).toFixed(2) + " K";
+    if (absNum >= 10000000) { // 1 Crore = 10,000,000
+        return "৳ " + (num / 10000000).toFixed(2) + " Cr";
+    } else if (absNum >= 100000) { // 1 Lakh = 100,000
+        return "৳ " + (num / 100000).toFixed(2) + " L";
     }
-    return "৳ " + num.toFixed(2);
+    // For values under 1 Lakh (e.g. 4000), use standard comma formatting for readability
+    return "৳ " + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 /* Render KPI Matrix */
@@ -338,56 +341,151 @@ function getProductPackTagsHTML(productName, codesString) {
     return tags.join('');
 }
 
+let PRODUCTS_PAGE = 1;
+let ACTIVE_PRODUCT_PILL = "top5"; // default is top5 (Top 5)
+
 /* Render Top 50 Products Table */
 function renderProductsTable(products) {
+    if (!products) {
+        if (GLOBAL_DATA && GLOBAL_DATA.top_50_products) {
+            products = GLOBAL_DATA.top_50_products;
+        } else {
+            return;
+        }
+    }
+
     const tbody = document.getElementById("tbody-top50-products");
     if (!tbody) return;
-    if (!products || products.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">No product lines found</td></tr>`;
+
+    // 1. Get search query
+    const searchQuery = (document.getElementById("search-product")?.value || "").toLowerCase();
+
+    // 2. Filter products based on search query
+    const filteredProducts = products.filter(p => {
+        const code = (p.product_code || "").toLowerCase();
+        const name = (p.product_name || "").toLowerCase();
+        return code.includes(searchQuery) || name.includes(searchQuery);
+    });
+
+    // Determine page size (Top 5 = 5, Show All = 50)
+    const pageSize = ACTIVE_PRODUCT_PILL === "top5" ? 5 : 50;
+    
+    const totalRecords = filteredProducts.length;
+    const totalPages = Math.ceil(totalRecords / pageSize) || 1;
+    if (PRODUCTS_PAGE > totalPages) PRODUCTS_PAGE = totalPages;
+
+    const startIdx = (PRODUCTS_PAGE - 1) * pageSize;
+    const paginatedProducts = filteredProducts.slice(startIdx, startIdx + pageSize);
+
+    if (paginatedProducts.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 20px;">No product lines found</td></tr>`;
+        const paginationContainer = document.getElementById("products-pagination");
+        if (paginationContainer) paginationContainer.innerHTML = "";
         return;
     }
 
-    tbody.innerHTML = products.map(p => `
-        <tr data-prod-code="${p.product_code.toLowerCase()}" data-prod-name="${p.product_name.toLowerCase()}" data-rank="${p.rank}">
-            <td><strong class="font-cyber text-amber-400">#${p.rank}</strong></td>
-            <td><span class="code-badge">${p.product_code}</span></td>
-            <td><strong class="text-white text-base font-bold">${p.product_name}</strong> ${getProductPackTagsHTML(p.product_name, p.product_code)}</td>
-            <td class="val-highlight font-cyber text-base">${formatBDT(p.total_sales)}</td>
-            <td class="font-mono text-cyan-200">${Number(p.total_quantity).toLocaleString()}</td>
-            <td><span class="badge-invoice">${Number(p.total_invoices).toLocaleString()} Invoices</span></td>
-            <td><span class="badge-party">${Number(p.total_parties).toLocaleString()} Parties</span></td>
-            <td>
-                <div class="flex items-center gap-2">
-                    <div class="w-16 bg-slate-900 rounded-full h-2 border border-cyan-500/30 overflow-hidden hidden md:block">
-                        <div class="bg-gradient-to-r from-cyan-400 to-purple-500 h-full rounded-full shadow-neon-cyan" style="width: ${Math.min(100, p.contribution_pct * 5)}%"></div>
+    // Dynamic month pills render for Top 50 Products tab
+    renderProductMonthPills();
+
+    tbody.innerHTML = paginatedProducts.map(p => {
+        let displaySales = p.total_sales;
+        let displayQty = p.total_quantity;
+        let displayInvoices = p.total_invoices;
+        let displayParties = p.total_parties;
+        let displayPct = p.contribution_pct;
+
+        if (ACTIVE_PRODUCT_MONTH !== "ALL") {
+            const mData = (p.monthly_breakdown || []).find(m => m.month === ACTIVE_PRODUCT_MONTH);
+            displaySales = mData ? mData.sales : 0;
+            displayQty = mData ? mData.quantity : 0;
+            displayInvoices = mData ? mData.invoices : 0;
+            displayParties = mData ? mData.parties : 0;
+
+            // Recalculate contribution pct based on the selected month's total sales
+            let monthTotalSales = 1;
+            if (GLOBAL_DATA && GLOBAL_DATA.monthly_trends) {
+                const monthTrend = GLOBAL_DATA.monthly_trends.find(t => t.month === ACTIVE_PRODUCT_MONTH);
+                if (monthTrend && monthTrend.sales) monthTotalSales = monthTrend.sales;
+            }
+            displayPct = Math.round((displaySales / monthTotalSales) * 10000) / 100;
+        }
+
+        return `
+            <tr data-prod-code="${p.product_code.toLowerCase()}" data-prod-name="${p.product_name.toLowerCase()}" data-rank="${p.rank}">
+                <td><strong class="font-cyber text-amber-400">#${p.rank}</strong></td>
+                <td><strong class="text-white text-base font-bold">${p.product_name}</strong> ${getProductPackTagsHTML(p.product_name, p.product_code)}</td>
+                <td class="font-mono text-cyan-200">${Number(displayQty).toLocaleString()}</td>
+                <td><span class="badge-invoice">${Number(displayInvoices).toLocaleString()} Invoices</span></td>
+                <td><span class="badge-party">${Number(displayParties).toLocaleString()} Parties</span></td>
+                <td>
+                    <div class="flex items-center gap-2">
+                        <div class="w-16 bg-slate-900 rounded-full h-2 border border-cyan-500/30 overflow-hidden hidden md:block">
+                            <div class="bg-gradient-to-r from-cyan-400 to-purple-500 h-full rounded-full shadow-neon-cyan" style="width: ${Math.min(100, displayPct * 5)}%"></div>
+                        </div>
+                        <strong class="font-cyber text-cyan-300 text-xs">${displayPct}%</strong>
                     </div>
-                    <strong class="font-cyber text-cyan-300 text-xs">${p.contribution_pct}%</strong>
-                </div>
-            </td>
-            <td>
-                <button class="btn-action text-xs py-1 px-3" onclick="openDrillModal('product', '${p.product_code}')">
-                    🔍 MONTHLY BREAKDOWN
-                </button>
-            </td>
-        </tr>
-    `).join('');
+                </td>
+                <td class="val-highlight font-cyber text-base">${formatBDT(displaySales)}</td>
+                <td>
+                    <button class="btn-action text-xs py-1 px-3" onclick="openDrillModal('product', '${p.product_code}')">
+                        🔍 MONTHLY BREAKDOWN
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Generate pagination controls
+    renderProductsPagination(totalPages);
 }
 
-/* Filter Products */
+function renderProductsPagination(totalPages) {
+    const container = document.getElementById("products-pagination");
+    if (!container) return;
+    if (totalPages <= 1) {
+        container.innerHTML = "";
+        return;
+    }
+
+    let buttons = [];
+    
+    // Prev Button
+    buttons.push(`
+        <button class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:border-cyan-500 hover:text-white transition-all disabled:opacity-40" 
+                onclick="changeProductsPage(${PRODUCTS_PAGE - 1})" ${PRODUCTS_PAGE === 1 ? 'disabled' : ''}>
+            ◀
+        </button>
+    `);
+
+    for (let i = 1; i <= totalPages; i++) {
+        const isActive = (i === PRODUCTS_PAGE);
+        buttons.push(`
+            <button class="px-3 py-1 rounded text-xs transition-all font-tech ${isActive ? 'bg-cyan-600 text-white font-bold shadow-neon-cyan' : 'bg-slate-900 border border-slate-800 text-slate-300 hover:border-cyan-500'}" 
+                    onclick="changeProductsPage(${i})">
+                ${i}
+            </button>
+        `);
+    }
+
+    // Next Button
+    buttons.push(`
+        <button class="px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-xs text-slate-300 hover:border-cyan-500 hover:text-white transition-all disabled:opacity-40" 
+                onclick="changeProductsPage(${PRODUCTS_PAGE + 1})" ${PRODUCTS_PAGE === totalPages ? 'disabled' : ''}>
+            ▶
+        </button>
+    `);
+
+    container.innerHTML = buttons.join('');
+}
+
+function changeProductsPage(page) {
+    PRODUCTS_PAGE = page;
+    renderProductsTable();
+}
+
 function filterProducts(query, pill) {
-    const rows = document.querySelectorAll("#tbody-top50-products tr");
-    rows.forEach(row => {
-        const code = row.getAttribute("data-prod-code") || "";
-        const name = row.getAttribute("data-prod-name") || "";
-        const rank = parseInt(row.getAttribute("data-rank") || "100");
-
-        const matchesQuery = code.includes(query) || name.includes(query);
-        let matchesPill = true;
-        if (pill === "top10") matchesPill = rank <= 10;
-        if (pill === "top25") matchesPill = rank <= 25;
-
-        row.style.display = (matchesQuery && matchesPill) ? "" : "none";
-    });
+    // Legacy function replaced by renderProductsTable() flow
+    renderProductsTable();
 }
 
 /* Render Top 50 MPOs Table */
@@ -1722,13 +1820,12 @@ function printProductsTable() {
                 <thead>
                     <tr>
                         <th>RANK</th>
-                        <th>PRODUCT CODES</th>
                         <th>PRODUCT NAME</th>
-                        <th>NET SALES (BDT)</th>
                         <th>QUANTITY SOLD</th>
                         <th>TOTAL INVOICES</th>
                         <th>UNIQUE PARTIES</th>
                         <th>CONTRIBUTION %</th>
+                        <th>SALES VALUE</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1746,13 +1843,12 @@ function printProductsTable() {
                         return `
                             <tr>
                                 <td>#${p.rank}</td>
-                                <td>${p.product_code}</td>
                                 <td><strong>${p.product_name}</strong> ${tagsStr}</td>
-                                <td class="text-right">${formatBDT(p.total_sales)}</td>
                                 <td class="text-right">${Number(p.total_quantity).toLocaleString()}</td>
                                 <td class="text-right">${Number(p.total_invoices).toLocaleString()}</td>
                                 <td class="text-right">${Number(p.total_parties).toLocaleString()}</td>
                                 <td class="text-right">${p.contribution_pct}%</td>
+                                <td class="text-right">${formatBDT(p.total_sales)}</td>
                             </tr>
                         `;
                     }).join('')}
@@ -1768,4 +1864,86 @@ function printProductsTable() {
         </html>
     `);
     printWindow.document.close();
+}
+
+let ACTIVE_PRODUCT_MONTH = "ALL";
+let PRODUCT_COLUMNS_LOCKED = true;
+
+function toggleColumnLockProd() {
+    PRODUCT_COLUMNS_LOCKED = !PRODUCT_COLUMNS_LOCKED;
+    const btn = document.getElementById("btn-lock-columns-prod");
+    if (!btn) return;
+    if (PRODUCT_COLUMNS_LOCKED) {
+        btn.innerHTML = "🔒 Columns Locked";
+        btn.classList.remove("bg-slate-800", "border-slate-700");
+        btn.classList.add("bg-amber-600/80", "border-amber-500/50");
+    } else {
+        btn.innerHTML = "🔓 Columns Unlocked";
+        btn.classList.remove("bg-amber-600/80", "border-amber-500/50");
+        btn.classList.add("bg-slate-800", "border-slate-700");
+    }
+}
+
+function selectProductMonth(monthVal) {
+    ACTIVE_PRODUCT_MONTH = monthVal;
+    
+    // Update active month title
+    const titleEl = document.getElementById("product-active-month-title");
+    if (titleEl) {
+        titleEl.textContent = monthVal === "ALL" ? "ALL MONTHS" : (MONTH_MAP[monthVal] || monthVal).toUpperCase();
+    }
+    
+    // Re-render Top 50 Products table
+    renderProductsTable(GLOBAL_DATA.top_50_products);
+    
+    // Re-apply any active search or top 10/25 filters
+    const searchQuery = (document.getElementById("search-product")?.value || "").toLowerCase();
+    let activePill = "all";
+    const pills = document.querySelectorAll("[data-filter-prod]");
+    pills.forEach(p => {
+        if (p.classList.contains("active")) {
+            activePill = p.getAttribute("data-filter-prod");
+        }
+    });
+    filterProducts(searchQuery, activePill);
+}
+
+function renderProductMonthPills() {
+    const monthPillsEl = document.getElementById("product-month-pills");
+    if (!monthPillsEl || !GLOBAL_DATA || !GLOBAL_DATA.monthly_trends) return;
+    
+    // Avoid re-rendering pills if they are already populated to prevent losing focus/flickering
+    if (monthPillsEl.children.length > 1) {
+        // Just update active state
+        const pills = monthPillsEl.querySelectorAll(".prod-month-pill");
+        pills.forEach(pill => {
+            const m = pill.getAttribute("data-month");
+            if (ACTIVE_PRODUCT_MONTH === m) {
+                pill.classList.add("active", "bg-cyan-600", "text-white", "shadow-neon-cyan", "font-bold");
+                pill.classList.remove("bg-slate-900", "text-slate-300");
+            } else {
+                pill.classList.remove("active", "bg-cyan-600", "text-white", "shadow-neon-cyan", "font-bold");
+                pill.classList.add("bg-slate-900", "text-slate-300");
+            }
+        });
+        return;
+    }
+    
+    const months = GLOBAL_DATA.monthly_trends.map(t => t.month);
+    const sortedMonths = [...months].sort((a, b) => b.localeCompare(a));
+    
+    const minMonth = sortedMonths[sortedMonths.length - 1];
+    const maxMonth = sortedMonths[0];
+    const minLabel = (MONTH_MAP[minMonth] || minMonth).toUpperCase();
+    const maxLabel = (MONTH_MAP[maxMonth] || maxMonth).toUpperCase();
+    
+    monthPillsEl.innerHTML = `
+        <button class="prod-month-pill ${ACTIVE_PRODUCT_MONTH === 'ALL' ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" data-month="ALL" onclick="selectProductMonth('ALL')">ALL MONTHS (${minLabel} - ${maxLabel})</button>
+        ${sortedMonths.map(m => {
+            const monthLabel = MONTH_MAP[m] || m;
+            return `
+                <button class="prod-month-pill ${ACTIVE_PRODUCT_MONTH === m ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" data-month="${m}" onclick="selectProductMonth('${m}')">[ ${monthLabel} ]</button>
+            `;
+        }).join('')}
+    `;
 }

@@ -722,6 +722,8 @@ function renderStrategic6Products() {
     }
 
     const monthPillsEl = document.getElementById("strategic-month-pills");
+    const monthPillsElCopy = document.getElementById("strategic-month-pills-copy");
+    const monthPillsElCopy2 = document.getElementById("strategic-month-pills-copy2");
     if (monthPillsEl && GLOBAL_DATA.monthly_trends) {
         const months = GLOBAL_DATA.monthly_trends.map(t => t.month);
         // Sort months latest first (descending order)
@@ -743,6 +745,12 @@ function renderStrategic6Products() {
             }).join('')}
         `;
         monthPillsEl.innerHTML = pillsHtml;
+        if (monthPillsElCopy) {
+            monthPillsElCopy.innerHTML = pillsHtml;
+        }
+        if (monthPillsElCopy2) {
+            monthPillsElCopy2.innerHTML = pillsHtml;
+        }
     }
 
     renderStrategicMPOTable();

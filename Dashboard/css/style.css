@@ -774,15 +774,27 @@ body.light-theme * {
 /* Force dark text for readability on light backgrounds, excluding badges and action buttons */
 body.light-theme,
 body.light-theme p,
-body.light-theme span:not(.strat-month-pill):not(.prod-month-pill):not(.excel-header-text):not(.active *),
+body.light-theme span:not(.strat-month-pill):not(.prod-month-pill):not(.excel-header-text):not(.active *):not(.absolute),
 body.light-theme td,
 body.light-theme th,
 body.light-theme h1,
 body.light-theme h2,
 body.light-theme h3,
 body.light-theme h4,
-body.light-theme a:not(.tab-link):not(.active *) {
+body.light-theme a:not(.tab-link):not(.active *):not(.absolute) {
     color: #0f172a !important; /* Deep slate */
+}
+
+/* Force dark text inside tables and card buttons where .text-white is used */
+body.light-theme td .text-white,
+body.light-theme .strat-btn .text-white,
+body.light-theme strong.text-white {
+    color: #0f172a !important;
+}
+
+/* Overriding absolute legend badges background which are inline styled with bg-[#02040a] */
+body.light-theme .bg-\[\#02040a\] {
+    background-color: #f8fafc !important;
 }
 
 /* Override the cell-clip class color specifically */

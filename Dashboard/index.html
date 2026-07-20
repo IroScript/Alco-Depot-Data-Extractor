@@ -343,25 +343,6 @@
                         <h3 class="font-cyber font-bold text-xl text-white mt-2">🏆 STRATEGIC PRODUCT GROUPS (MPO RANKING BY UNIT)</h3>
                         <p class="font-tech text-xs text-slate-400 mt-1">Select a product button below to view the Top 50 MPOs ranked strictly by Quantity Sold (UNIT). Market Name and Month-wise breakdown are fully integrated.</p>
                     </div>
-                    <!-- Dynamic Product Group Multi-Select Dropdown -->
-                    <div class="relative min-w-[240px] w-full sm:w-auto" id="prod-group-filter-wrapper">
-                        <button onclick="toggleProdGroupDropdown(event, '')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs font-tech font-bold hover:bg-slate-800 transition-all">
-                            <span id="selected-prod-group-label" class="truncate max-w-[200px]">ALL PRODUCTS SELECTED</span>
-                            <span class="text-cyan-400 text-[10px]">▼</span>
-                        </button>
-                        <div id="prod-group-dropdown-panel" class="hidden absolute right-0 top-full mt-2 w-full sm:w-max min-w-[260px] bg-slate-950 border border-slate-800 rounded-xl p-3 shadow-2xl z-50 text-slate-200 text-xs space-y-2.5">
-                            <div class="flex justify-between items-center text-[10px] text-slate-400 border-b border-slate-800/80 pb-2 gap-4">
-                                <button class="hover:text-white transition-colors font-bold text-cyan-400" onclick="selectAllProdGroups(true, '')">Select All</button>
-                                <button class="hover:text-white transition-colors font-bold text-rose-400" onclick="selectAllProdGroups(false, '')">Clear All</button>
-                            </div>
-                            <div class="space-y-2 max-h-[180px] overflow-y-auto pr-1" style="scrollbar-width: thin; -ms-overflow-style: auto;" id="prod-group-checkboxes">
-                                <!-- Populated dynamically by JS -->
-                            </div>
-                            <div class="flex justify-end pt-2 border-t border-slate-800/80">
-                                <button onclick="applyProdGroupSelection('')" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-4 py-2 rounded-lg text-[10px] uppercase font-cyber tracking-wider transition-all shadow-neon-cyan">OK</button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <div class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;" id="strategic-6-buttons-container">
@@ -371,8 +352,6 @@
 
             <!-- Month Filter & Active Product Banner -->
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-950/90 p-4 rounded-xl border border-cyan-500/40 shadow-neon-cyan">
-
-                
                 <div class="flex flex-wrap items-center gap-3">
                     <!-- Export/Print options (left side) -->
                     <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
@@ -392,6 +371,25 @@
                     <!-- Month Filter Pills -->
                     <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800" id="strategic-month-pills">
                         <button class="strat-month-pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold shadow-neon-cyan" data-month="ALL">ALL MONTHS (JAN - JUN)</button>
+                    </div>
+                </div>
+                <!-- Dynamic Product Group Multi-Select Dropdown -->
+                <div class="relative min-w-[240px] w-full sm:w-auto" id="prod-group-filter-wrapper">
+                    <button onclick="toggleProdGroupDropdown(event, '')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs font-tech font-bold hover:bg-slate-800 transition-all">
+                        <span id="selected-prod-group-label" class="truncate max-w-[200px]">ALL PRODUCTS SELECTED</span>
+                        <span class="text-cyan-400 text-[10px]">▼</span>
+                    </button>
+                    <div id="prod-group-dropdown-panel" class="hidden absolute right-0 top-full mt-2 w-full sm:w-max min-w-[260px] bg-slate-950 border border-slate-800 rounded-xl p-3 shadow-2xl z-50 text-slate-200 text-xs space-y-2.5">
+                        <div class="flex justify-between items-center text-[10px] text-slate-400 border-b border-slate-800/80 pb-2 gap-4">
+                            <button class="hover:text-white transition-colors font-bold text-cyan-400" onclick="selectAllProdGroups(true, '')">Select All</button>
+                            <button class="hover:text-white transition-colors font-bold text-rose-400" onclick="selectAllProdGroups(false, '')">Clear All</button>
+                        </div>
+                        <div class="space-y-2 max-h-[180px] overflow-y-auto pr-1" style="scrollbar-width: thin; -ms-overflow-style: auto;" id="prod-group-checkboxes">
+                            <!-- Populated dynamically by JS -->
+                        </div>
+                        <div class="flex justify-end pt-2 border-t border-slate-800/80">
+                            <button onclick="applyProdGroupSelection('')" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-4 py-2 rounded-lg text-[10px] uppercase font-cyber tracking-wider transition-all shadow-neon-cyan">OK</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -609,25 +607,6 @@
                             <h3 class="font-cyber font-bold text-xl text-white mt-2">🏆 STRATEGIC PRODUCT GROUPS (FIELD MANAGER RANKING BY UNIT)</h3>
                             <p class="font-tech text-xs text-slate-400 mt-1">Select a product button below to view the Top 50 FMs ranked strictly by Quantity Sold (UNIT). FM Market Name and Month-wise breakdown are fully integrated.</p>
                         </div>
-                        <!-- Dynamic Product Group Multi-Select Dropdown (Field Manager) -->
-                        <div class="relative min-w-[240px] w-full sm:w-auto" id="prod-group-filter-wrapper-copy">
-                            <button onclick="toggleProdGroupDropdown(event, '-copy')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs font-tech font-bold hover:bg-slate-800 transition-all">
-                                <span id="selected-prod-group-label-copy" class="truncate max-w-[200px]">ALL PRODUCTS SELECTED</span>
-                                <span class="text-purple-400 text-[10px]">▼</span>
-                            </button>
-                            <div id="prod-group-dropdown-panel-copy" class="hidden absolute right-0 top-full mt-2 w-full sm:w-max min-w-[260px] bg-slate-950 border border-slate-800 rounded-xl p-3 shadow-2xl z-50 text-slate-200 text-xs space-y-2.5">
-                                <div class="flex justify-between items-center text-[10px] text-slate-400 border-b border-slate-800/80 pb-2 gap-4">
-                                    <button class="hover:text-white transition-colors font-bold text-purple-400" onclick="selectAllProdGroups(true, '-copy')">Select All</button>
-                                    <button class="hover:text-white transition-colors font-bold text-rose-400" onclick="selectAllProdGroups(false, '-copy')">Clear All</button>
-                                </div>
-                                <div class="space-y-2 max-h-[180px] overflow-y-auto pr-1" style="scrollbar-width: thin; -ms-overflow-style: auto;" id="prod-group-checkboxes-copy">
-                                    <!-- Populated dynamically by JS -->
-                                </div>
-                                <div class="flex justify-end pt-2 border-t border-slate-800/80">
-                                    <button onclick="applyProdGroupSelection('-copy')" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2 rounded-lg text-[10px] uppercase font-cyber tracking-wider transition-all shadow-neon-purple">OK</button>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;" id="strategic-6-buttons-container-copy">
@@ -637,8 +616,6 @@
 
                 <!-- Month Filter & Active Product Banner (Field Manager) -->
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-950/90 p-4 rounded-xl border border-purple-500/40 shadow-neon-purple mt-6">
-
-                    
                     <div class="flex flex-wrap items-center gap-3">
                         <!-- Export/Print options (left side) -->
                         <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
@@ -658,6 +635,25 @@
                         <!-- Month Filter Pills -->
                         <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800" id="strategic-month-pills-copy">
                             <button class="strat-month-pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold shadow-neon-cyan" data-month="ALL">ALL MONTHS (JAN - JUN)</button>
+                        </div>
+                    </div>
+                    <!-- Dynamic Product Group Multi-Select Dropdown (Field Manager) -->
+                    <div class="relative min-w-[240px] w-full sm:w-auto" id="prod-group-filter-wrapper-copy">
+                        <button onclick="toggleProdGroupDropdown(event, '-copy')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs font-tech font-bold hover:bg-slate-800 transition-all">
+                            <span id="selected-prod-group-label-copy" class="truncate max-w-[200px]">ALL PRODUCTS SELECTED</span>
+                            <span class="text-purple-400 text-[10px]">▼</span>
+                        </button>
+                        <div id="prod-group-dropdown-panel-copy" class="hidden absolute right-0 top-full mt-2 w-full sm:w-max min-w-[260px] bg-slate-950 border border-slate-800 rounded-xl p-3 shadow-2xl z-50 text-slate-200 text-xs space-y-2.5">
+                            <div class="flex justify-between items-center text-[10px] text-slate-400 border-b border-slate-800/80 pb-2 gap-4">
+                                <button class="hover:text-white transition-colors font-bold text-purple-400" onclick="selectAllProdGroups(true, '-copy')">Select All</button>
+                                <button class="hover:text-white transition-colors font-bold text-rose-400" onclick="selectAllProdGroups(false, '-copy')">Clear All</button>
+                            </div>
+                            <div class="space-y-2 max-h-[180px] overflow-y-auto pr-1" style="scrollbar-width: thin; -ms-overflow-style: auto;" id="prod-group-checkboxes-copy">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                            <div class="flex justify-end pt-2 border-t border-slate-800/80">
+                                <button onclick="applyProdGroupSelection('-copy')" class="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2 rounded-lg text-[10px] uppercase font-cyber tracking-wider transition-all shadow-neon-purple">OK</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -921,25 +917,6 @@
                             <h3 class="font-cyber font-bold text-xl text-white mt-2">🏆 STRATEGIC PRODUCT GROUPS (SECTOR HEAD RANKING BY UNIT)</h3>
                             <p class="font-tech text-xs text-slate-400 mt-1">Select a product button below to view the Top 50 FMs/Depots ranked strictly by Quantity Sold (UNIT). Market Name and Month-wise breakdown are fully integrated.</p>
                         </div>
-                        <!-- Dynamic Product Group Multi-Select Dropdown (Sector Head) -->
-                        <div class="relative min-w-[240px] w-full sm:w-auto" id="prod-group-filter-wrapper-copy2">
-                            <button onclick="toggleProdGroupDropdown(event, '-copy2')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs font-tech font-bold hover:bg-slate-800 transition-all">
-                                <span id="selected-prod-group-label-copy2" class="truncate max-w-[200px]">ALL PRODUCTS SELECTED</span>
-                                <span class="text-amber-400 text-[10px]">▼</span>
-                            </button>
-                            <div id="prod-group-dropdown-panel-copy2" class="hidden absolute right-0 top-full mt-2 w-full sm:w-max min-w-[260px] bg-slate-950 border border-slate-800 rounded-xl p-3 shadow-2xl z-50 text-slate-200 text-xs space-y-2.5">
-                                <div class="flex justify-between items-center text-[10px] text-slate-400 border-b border-slate-800/80 pb-2 gap-4">
-                                    <button class="hover:text-white transition-colors font-bold text-amber-400" onclick="selectAllProdGroups(true, '-copy2')">Select All</button>
-                                    <button class="hover:text-white transition-colors font-bold text-rose-400" onclick="selectAllProdGroups(false, '-copy2')">Clear All</button>
-                                </div>
-                                <div class="space-y-2 max-h-[180px] overflow-y-auto pr-1" style="scrollbar-width: thin; -ms-overflow-style: auto;" id="prod-group-checkboxes-copy2">
-                                    <!-- Populated dynamically by JS -->
-                                </div>
-                                <div class="flex justify-end pt-2 border-t border-slate-800/80">
-                                    <button onclick="applyProdGroupSelection('-copy2')" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-4 py-2 rounded-lg text-[10px] uppercase font-cyber tracking-wider transition-all shadow-neon-amber">OK</button>
-                                </div>
-                            </div>
-                        </div>
                     </div>
 
                     <div class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;" id="strategic-6-buttons-container-copy2">
@@ -949,30 +926,47 @@
 
                 <!-- Month Filter & Active Product Banner (Sector Head) -->
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-950/90 p-4 rounded-xl border border-amber-500/40 shadow-neon-amber mt-6">
-
-                
-                <div class="flex flex-wrap items-center gap-3">
-                    <!-- Export/Print options (left side) -->
-                    <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
-                        <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-blue-600/80 border border-blue-500/50 text-white font-tech text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1">
-                            🖨️ Print
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Export/Print options (left side) -->
+                        <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
+                            <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-blue-600/80 border border-blue-500/50 text-white font-tech text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1">
+                                🖨️ Print
+                            </button>
+                            <button onclick="exportStrategicToCSV()" class="px-3 py-1.5 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1">
+                                📊 CSV
+                            </button>
+                            <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-rose-600/80 border border-rose-500/50 text-white font-tech text-xs font-bold hover:bg-rose-700 transition-all flex items-center gap-1">
+                                📄 PDF
+                            </button>
+                        </div>
+                        <button id="btn-lock-columns-copy2" class="px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5" onclick="toggleColumnLockCopy2()">
+                            🔒 Columns Locked
                         </button>
-                        <button onclick="exportStrategicToCSV()" class="px-3 py-1.5 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1">
-                            📊 CSV
-                        </button>
-                        <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-rose-600/80 border border-rose-500/50 text-white font-tech text-xs font-bold hover:bg-rose-700 transition-all flex items-center gap-1">
-                            📄 PDF
-                        </button>
+                        <!-- Month Filter Pills -->
+                        <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800" id="strategic-month-pills-copy2">
+                            <button class="strat-month-pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold shadow-neon-cyan" data-month="ALL">ALL MONTHS (JAN - JUN)</button>
+                        </div>
                     </div>
-                    <button id="btn-lock-columns-copy2" class="px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5" onclick="toggleColumnLockCopy2()">
-                        🔒 Columns Locked
-                    </button>
-                    <!-- Month Filter Pills -->
-                    <div class="flex flex-wrap items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800" id="strategic-month-pills-copy2">
-                        <button class="strat-month-pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold shadow-neon-cyan" data-month="ALL">ALL MONTHS (JAN - JUN)</button>
+                    <!-- Dynamic Product Group Multi-Select Dropdown (Sector Head) -->
+                    <div class="relative min-w-[240px] w-full sm:w-auto" id="prod-group-filter-wrapper-copy2">
+                        <button onclick="toggleProdGroupDropdown(event, '-copy2')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs font-tech font-bold hover:bg-slate-800 transition-all">
+                            <span id="selected-prod-group-label-copy2" class="truncate max-w-[200px]">ALL PRODUCTS SELECTED</span>
+                            <span class="text-amber-400 text-[10px]">▼</span>
+                        </button>
+                        <div id="prod-group-dropdown-panel-copy2" class="hidden absolute right-0 top-full mt-2 w-full sm:w-max min-w-[260px] bg-slate-950 border border-slate-800 rounded-xl p-3 shadow-2xl z-50 text-slate-200 text-xs space-y-2.5">
+                            <div class="flex justify-between items-center text-[10px] text-slate-400 border-b border-slate-800/80 pb-2 gap-4">
+                                <button class="hover:text-white transition-colors font-bold text-amber-400" onclick="selectAllProdGroups(true, '-copy2')">Select All</button>
+                                <button class="hover:text-white transition-colors font-bold text-rose-400" onclick="selectAllProdGroups(false, '-copy2')">Clear All</button>
+                            </div>
+                            <div class="space-y-2 max-h-[180px] overflow-y-auto pr-1" style="scrollbar-width: thin; -ms-overflow-style: auto;" id="prod-group-checkboxes-copy2">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                            <div class="flex justify-end pt-2 border-t border-slate-800/80">
+                                <button onclick="applyProdGroupSelection('-copy2')" class="bg-amber-600 hover:bg-purple-500 text-white font-bold px-4 py-2 rounded-lg text-[10px] uppercase font-cyber tracking-wider transition-all shadow-neon-amber">OK</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
             <!-- Top 50 MPO Table (Copy 2) for Selected Strategic Product & Month -->
             <div class="overflow-visible rounded-xl border border-amber-500/30 bg-slate-950/95 shadow-lg">

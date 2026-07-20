@@ -3213,16 +3213,41 @@ function toggleProdGroupDropdown(event, suffix) {
     if (event) event.stopPropagation();
     const panel = document.getElementById(`prod-group-dropdown-panel${suffix}`);
     if (panel) {
-        panel.classList.toggle("hidden");
+        const isHidden = panel.classList.contains("hidden");
+        if (isHidden) {
+            // Portal: move to body with fixed positioning
+            const triggerBtn = event ? event.currentTarget : null;
+            if (triggerBtn) {
+                if (panel.parentElement !== document.body) {
+                    document.body.appendChild(panel);
+                }
+                panel._triggerBtn = triggerBtn;
+                panel._wrapperSuffix = suffix;
+                const rect = triggerBtn.getBoundingClientRect();
+                panel.style.position = 'fixed';
+                panel.style.top = (rect.bottom + 8) + 'px';
+                // Align right edge of panel with right edge of button
+                panel.style.left = '';
+                panel.style.right = (window.innerWidth - rect.right) + 'px';
+                panel.style.zIndex = '99999';
+                panel.classList.remove('absolute');
+            }
+            panel.classList.remove("hidden");
+        } else {
+            panel.classList.add("hidden");
+        }
     }
 }
 
 // Global click handler to close dropdown when clicking outside
 document.addEventListener("click", function(event) {
     ["", "-copy", "-copy2"].forEach(suffix => {
-        const wrapper = document.getElementById(`prod-group-filter-wrapper${suffix}`);
         const panel = document.getElementById(`prod-group-dropdown-panel${suffix}`);
-        if (wrapper && panel && !wrapper.contains(event.target)) {
+        if (panel && !panel.classList.contains("hidden")) {
+            // Check if click is inside the panel
+            if (panel.contains(event.target)) return;
+            // Check if click is on the trigger button
+            if (panel._triggerBtn && panel._triggerBtn.contains(event.target)) return;
             panel.classList.add("hidden");
         }
     });

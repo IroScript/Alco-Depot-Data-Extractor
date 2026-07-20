@@ -3199,9 +3199,9 @@ function removeResizersCopy2() {
 /* ==========================================================================
    STRATEGIC PRODUCT MULTI-SELECT DROPDOWN FILTER
    ========================================================================== */
-function toggleProdGroupDropdown(event) {
+function toggleProdGroupDropdown(event, suffix) {
     if (event) event.stopPropagation();
-    const panel = document.getElementById("prod-group-dropdown-panel");
+    const panel = document.getElementById(`prod-group-dropdown-panel${suffix}`);
     if (panel) {
         panel.classList.toggle("hidden");
     }
@@ -3209,53 +3209,61 @@ function toggleProdGroupDropdown(event) {
 
 // Global click handler to close dropdown when clicking outside
 document.addEventListener("click", function(event) {
-    const wrapper = document.getElementById("prod-group-filter-wrapper");
-    const panel = document.getElementById("prod-group-dropdown-panel");
-    if (wrapper && panel && !wrapper.contains(event.target)) {
-        panel.classList.add("hidden");
-    }
+    ["", "-copy", "-copy2"].forEach(suffix => {
+        const wrapper = document.getElementById(`prod-group-filter-wrapper${suffix}`);
+        const panel = document.getElementById(`prod-group-dropdown-panel${suffix}`);
+        if (wrapper && panel && !wrapper.contains(event.target)) {
+            panel.classList.add("hidden");
+        }
+    });
 });
 
 function updateProdGroupDropdownUI(keys) {
-    const checkboxesDiv = document.getElementById("prod-group-checkboxes");
-    const labelSpan = document.getElementById("selected-prod-group-label");
-    if (!checkboxesDiv) return;
+    ["", "-copy", "-copy2"].forEach(suffix => {
+        const checkboxesDiv = document.getElementById(`prod-group-checkboxes${suffix}`);
+        const labelSpan = document.getElementById(`selected-prod-group-label${suffix}`);
+        if (!checkboxesDiv) return;
 
-    // Build list of checkboxes
-    checkboxesDiv.innerHTML = keys.map(k => {
-        const isChecked = ACTIVE_STRATEGIC_PRODS.includes(k);
-        return `
-            <label class="flex items-center gap-2 cursor-pointer py-1 hover:bg-slate-900 rounded px-1.5 transition-colors">
-                <input type="checkbox" class="prod-group-chk" value="${k}" ${isChecked ? 'checked' : ''}>
-                <span class="truncate" title="${k}">${k}</span>
-            </label>
-        `;
-    }).join('');
+        // Build list of checkboxes
+        checkboxesDiv.innerHTML = keys.map(k => {
+            const isChecked = ACTIVE_STRATEGIC_PRODS.includes(k);
+            return `
+                <label class="flex items-center gap-2 cursor-pointer py-1 hover:bg-slate-900 rounded px-1.5 transition-colors">
+                    <input type="checkbox" class="prod-group-chk${suffix}" value="${k}" ${isChecked ? 'checked' : ''}>
+                    <span class="truncate" title="${k}">${k}</span>
+                </label>
+            `;
+        }).join('');
 
-    // Update label
-    if (labelSpan) {
-        if (ACTIVE_STRATEGIC_PRODS.length === keys.length) {
-            labelSpan.textContent = "ALL PRODUCTS SELECTED";
-            labelSpan.className = "truncate max-w-[200px] text-cyan-400 font-bold";
-        } else if (ACTIVE_STRATEGIC_PRODS.length === 1) {
-            labelSpan.textContent = ACTIVE_STRATEGIC_PRODS[0];
-            labelSpan.className = "truncate max-w-[200px] text-slate-200";
-        } else {
-            labelSpan.textContent = `${ACTIVE_STRATEGIC_PRODS.length} PRODUCTS SELECTED`;
-            labelSpan.className = "truncate max-w-[200px] text-cyan-400 font-bold";
+        // Update label
+        if (labelSpan) {
+            if (ACTIVE_STRATEGIC_PRODS.length === keys.length) {
+                labelSpan.textContent = "ALL PRODUCTS SELECTED";
+                if (suffix === "") labelSpan.className = "truncate max-w-[200px] text-cyan-400 font-bold";
+                else if (suffix === "-copy") labelSpan.className = "truncate max-w-[200px] text-purple-400 font-bold";
+                else labelSpan.className = "truncate max-w-[200px] text-amber-400 font-bold";
+            } else if (ACTIVE_STRATEGIC_PRODS.length === 1) {
+                labelSpan.textContent = ACTIVE_STRATEGIC_PRODS[0];
+                labelSpan.className = "truncate max-w-[200px] text-slate-200";
+            } else {
+                labelSpan.textContent = `${ACTIVE_STRATEGIC_PRODS.length} PRODUCTS SELECTED`;
+                if (suffix === "") labelSpan.className = "truncate max-w-[200px] text-cyan-400 font-bold";
+                else if (suffix === "-copy") labelSpan.className = "truncate max-w-[200px] text-purple-400 font-bold";
+                else labelSpan.className = "truncate max-w-[200px] text-amber-400 font-bold";
+            }
         }
-    }
+    });
 }
 
-function selectAllProdGroups(status) {
-    const chks = document.querySelectorAll(".prod-group-chk");
+function selectAllProdGroups(status, suffix) {
+    const chks = document.querySelectorAll(`.prod-group-chk${suffix}`);
     chks.forEach(chk => {
         chk.checked = status;
     });
 }
 
-function applyProdGroupSelection() {
-    const chks = document.querySelectorAll(".prod-group-chk");
+function applyProdGroupSelection(suffix) {
+    const chks = document.querySelectorAll(`.prod-group-chk${suffix}`);
     const selected = [];
     chks.forEach(chk => {
         if (chk.checked) selected.push(chk.value);
@@ -3272,7 +3280,7 @@ function applyProdGroupSelection() {
     }
 
     // Hide dropdown panel
-    const panel = document.getElementById("prod-group-dropdown-panel");
+    const panel = document.getElementById(`prod-group-dropdown-panel${suffix}`);
     if (panel) panel.classList.add("hidden");
 
     // Reset pagination

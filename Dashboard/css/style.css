@@ -715,3 +715,27 @@ tr:hover td:first-child {
     color: #06b6d4 !important;
     border-color: #06b6d4 !important;
 }
+
+/* Horizontal scrollable strategic products */
+#strategic-6-buttons-container,
+#strategic-6-buttons-container-copy,
+#strategic-6-buttons-container-copy2 {
+    scrollbar-width: thin;
+    scrollbar-color: #06b6d4 #0f172a;
+}
+#strategic-6-buttons-container::-webkit-scrollbar,
+#strategic-6-buttons-container-copy::-webkit-scrollbar,
+#strategic-6-buttons-container-copy2::-webkit-scrollbar {
+    height: 6px;
+}
+#strategic-6-buttons-container::-webkit-scrollbar-thumb,
+#strategic-6-buttons-container-copy::-webkit-scrollbar-thumb,
+#strategic-6-buttons-container-copy2::-webkit-scrollbar-thumb {
+    background: #06b6d4;
+    border-radius: 3px;
+}
+#strategic-6-buttons-container::-webkit-scrollbar-track,
+#strategic-6-buttons-container-copy::-webkit-scrollbar-track,
+#strategic-6-buttons-container-copy2::-webkit-scrollbar-track {
+    background: #0f172a;
+}

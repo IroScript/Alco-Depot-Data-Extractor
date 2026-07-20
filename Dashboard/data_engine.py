@@ -849,6 +849,147 @@ class DataEngine:
                     "mpo_top50_by_month": mpo_by_month
                 }
 
+            # Process all remaining products
+            strategic_6_names = list(STRATEGIC_6_MAPPING.keys())
+            remaining_products = [grp for grp in grouped_prods.keys() if grp not in strategic_6_names]
+            
+            for prod_name in remaining_products:
+                codes = grouped_prods[prod_name]["codes"]
+                if not codes:
+                    continue
+                placeholders = ",".join(["?"] * len(codes))
+                
+                # Overall stats
+                cur.execute(f"""
+                    SELECT 
+                        SUM(quantity) as tot_units,
+                        SUM(line_amount) as tot_sales,
+                        COUNT(DISTINCT customer_id) as tot_parties,
+                        COUNT(DISTINCT invoice_no) as tot_invoices
+                    FROM sales
+                    WHERE product_code IN ({placeholders}) AND mpo_code IN ({ph_mpos})
+                """, (*codes, *valid_mpos))
+                stat_row = cur.fetchone()
+                
+                # Top 50 MPOs overall sorted by UNIT DESC (Hierarchy by unit)
+                cur.execute(f"""
+                    SELECT 
+                        mpo_code,
+                        zone,
+                        MAX(market) as market,
+                        MAX(depot) as depot,
+                        MAX(fm_am) as fm_name,
+                        SUM(quantity) as units,
+                        COUNT(DISTINCT customer_id) as parties,
+                        COUNT(DISTINCT invoice_no) as invoices,
+                        SUM(line_amount) as sales
+                    FROM sales
+                    WHERE product_code IN ({placeholders}) AND mpo_code IN ({ph_mpos})
+                    GROUP BY mpo_code, zone
+                    ORDER BY SUM(quantity) DESC
+                """, (*codes, *valid_mpos))
+                
+                mpo_list_all = []
+                for idx, mr in enumerate(cur.fetchall(), 1):
+                    m_code = mr["mpo_code"]
+                    m_zone = mr["zone"]
+                    
+                    cur.execute(f"""
+                        SELECT 
+                            month,
+                            SUM(quantity) as m_units,
+                            COUNT(DISTINCT customer_id) as m_parties,
+                            COUNT(DISTINCT invoice_no) as m_invoices,
+                            SUM(line_amount) as m_sales
+                        FROM sales
+                        WHERE product_code IN ({placeholders}) AND mpo_code = ? AND zone = ?
+                        GROUP BY month
+                        ORDER BY month ASC
+                    """, (*codes, m_code, m_zone))
+                    m_break = []
+                    for mb in cur.fetchall():
+                        m_break.append({
+                            "month": mb["month"],
+                            "units": round(float(mb["m_units"] or 0), 2),
+                            "parties": int(mb["m_parties"] or 0),
+                            "invoices": int(mb["m_invoices"] or 0),
+                            "sales": round(float(mb["m_sales"] or 0), 2)
+                        })
+                        
+                    raw_mkt = mr["market"]
+                    if not raw_mkt or str(raw_mkt).strip() in ['', 'None', 'Unknown'] or str(raw_mkt).strip().startswith('DK.'):
+                        raw_mkt = mpo_market_map.get(m_code) or _clean_cell(mr["depot"]) or "Unknown"
+
+                    mpo_list_all.append({
+                        "rank": idx,
+                        "mpo_code": m_code,
+                        "market": raw_mkt,
+                        "zone": mr["zone"] or "Unknown",
+                        "depot": mr["depot"] or "Unknown",
+                        "fm_name": mr["fm_name"] or "Unknown",
+                        "is_vacant": m_code in vacant_mpo_codes,
+                        "units": round(float(mr["units"] or 0), 2),
+                        "parties": int(mr["parties"] or 0),
+                        "invoices": int(mr["invoices"] or 0),
+                        "sales": round(float(mr["sales"] or 0), 2),
+                        "monthly_breakdown": m_break
+                    })
+                    
+                # Month-wise Top 50 MPOs (by unit)
+                mpo_by_month = {}
+                for m_val in distinct_months:
+                    cur.execute(f"""
+                        SELECT 
+                            mpo_code,
+                            zone,
+                            MAX(market) as market,
+                            MAX(depot) as depot,
+                            MAX(fm_am) as fm_name,
+                            SUM(quantity) as units,
+                            COUNT(DISTINCT customer_id) as parties,
+                            COUNT(DISTINCT invoice_no) as invoices,
+                            SUM(line_amount) as sales
+                        FROM sales
+                        WHERE product_code IN ({placeholders}) AND month = ? AND mpo_code IN ({ph_mpos})
+                        GROUP BY mpo_code, zone
+                        ORDER BY SUM(quantity) DESC
+                    """, (*codes, m_val, *valid_mpos))
+                    mpo_list_month = []
+                    for idx, mr in enumerate(cur.fetchall(), 1):
+                        raw_mkt = mr["market"]
+                        if not raw_mkt or str(raw_mkt).strip() in ['', 'None', 'Unknown'] or str(raw_mkt).strip().startswith('DK.'):
+                            raw_mkt = mpo_market_map.get(mr["mpo_code"]) or _clean_cell(mr["depot"]) or "Unknown"
+
+                        mpo_list_month.append({
+                            "rank": idx,
+                            "mpo_code": mr["mpo_code"],
+                            "market": raw_mkt,
+                            "zone": mr["zone"] or "Unknown",
+                            "depot": mr["depot"] or "Unknown",
+                            "fm_name": mr["fm_name"] or "Unknown",
+                            "is_vacant": mr["mpo_code"] in vacant_mpo_codes,
+                            "units": round(float(mr["units"] or 0), 2),
+                            "parties": int(mr["parties"] or 0),
+                            "invoices": int(mr["invoices"] or 0),
+                            "sales": round(float(mr["sales"] or 0), 2)
+                        })
+                    mpo_by_month[m_val] = mpo_list_month
+                    
+                data["strategic_6_products"][prod_name] = {
+                    "product_name": prod_name,
+                    "merged_codes": codes,
+                    "total_units": round(float(stat_row["tot_units"] or 0), 2),
+                    "total_sales": round(float(stat_row["tot_sales"] or 0), 2),
+                    "total_parties": int(stat_row["tot_parties"] or 0),
+                    "total_invoices": int(stat_row["tot_invoices"] or 0),
+                    "mpo_top50_all": mpo_list_all,
+                    "mpo_top50_by_month": mpo_by_month
+                }
+
+            sorted_remaining = sorted(remaining_products)
+            data["_strategic_keys"] = strategic_6_names + sorted_remaining
+
+
         except Exception as e:
             print(f"Error executing SQL calculations: {e}")
             raise

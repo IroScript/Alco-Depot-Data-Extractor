@@ -1713,7 +1713,7 @@ function openZoneDrillModal(zoneName) {
                 labels: monthLabels,
                 datasets: [
                     {
-                        label: "Per MPO Units 📦",
+                        label: "Units 📦",
                         data: unitsData,
                         backgroundColor: "rgba(16, 185, 129, 0.85)",
                         borderColor: "#10b981",
@@ -1722,7 +1722,7 @@ function openZoneDrillModal(zoneName) {
                         yAxisID: 'yCount'
                     },
                     {
-                        label: "Per MPO Invoices 🧾",
+                        label: "Invoices 🧾",
                         data: invoicesData,
                         backgroundColor: "rgba(6, 182, 212, 0.85)",
                         borderColor: "#06b6d4",
@@ -1731,7 +1731,7 @@ function openZoneDrillModal(zoneName) {
                         yAxisID: 'yCount'
                     },
                     {
-                        label: "Per MPO Parties 👥",
+                        label: "Parties 👥",
                         data: partiesData,
                         backgroundColor: "rgba(168, 85, 247, 0.85)",
                         borderColor: "#a855f7",
@@ -1740,15 +1740,12 @@ function openZoneDrillModal(zoneName) {
                         yAxisID: 'yCount'
                     },
                     {
-                        label: "Per MPO Sales (৳)",
+                        label: "Sales (৳)",
                         data: salesData,
-                        backgroundColor: "rgba(251, 191, 36, 0.15)",
+                        backgroundColor: "rgba(251, 191, 36, 0.8)",
                         borderColor: "#fbbf24",
-                        borderWidth: 3,
-                        pointBackgroundColor: "#fbbf24",
-                        pointBorderColor: "#fff",
-                        pointHoverRadius: 6,
-                        type: "line",
+                        borderWidth: 2,
+                        borderRadius: 4,
                         yAxisID: 'ySales'
                     }
                 ]
@@ -1770,7 +1767,11 @@ function openZoneDrillModal(zoneName) {
                         type: 'linear', position: 'left',
                         title: { display: true, text: 'UNITS / INV / PARTIES', color: '#10b981', font: { family: 'Orbitron', size: 11, weight: 'bold' } },
                         grid: { color: "rgba(100, 116, 139, 0.2)" },
-                        ticks: { color: '#10b981', font: { family: 'Rajdhani', size: 11, weight: 'bold' } },
+                        ticks: {
+                            color: '#10b981',
+                            precision: 0,
+                            font: { family: 'Rajdhani', size: 11, weight: 'bold' }
+                        },
                         beginAtZero: true
                     },
                     ySales: {
@@ -1779,6 +1780,7 @@ function openZoneDrillModal(zoneName) {
                         grid: { display: false },
                         ticks: {
                             color: '#fbbf24',
+                            precision: 0,
                             font: { family: 'Rajdhani', size: 11, weight: 'bold' },
                             callback: function(value) {
                                 if (value >= 100000) return (value / 1000).toFixed(0) + 'K';
@@ -1790,7 +1792,37 @@ function openZoneDrillModal(zoneName) {
                     },
                     x: { grid: { display: false }, ticks: { color: '#fff', font: { family: 'Rajdhani', size: 13, weight: 'bold' } } }
                 }
-            }
+            },
+            plugins: [{
+                id: 'inlineBarLabels',
+                afterDatasetsDraw(chart) {
+                    const { ctx } = chart;
+                    ctx.save();
+                    ctx.font = 'bold 11px Rajdhani, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    chart.data.datasets.forEach((dataset, datasetIndex) => {
+                        const meta = chart.getDatasetMeta(datasetIndex);
+                        if (!meta || meta.hidden) return;
+                        const color = dataset.borderColor || '#fff';
+                        meta.data.forEach((bar, index) => {
+                            const value = dataset.data[index];
+                            if (value === 0 || value == null) return;
+                            let label;
+                            if (datasetIndex === 3) {
+                                if (value >= 100000) label = (value / 1000).toFixed(0) + 'K';
+                                else if (value >= 1000) label = (value / 1000).toFixed(1) + 'K';
+                                else label = Math.round(value).toString();
+                            } else {
+                                label = Math.round(value).toString();
+                            }
+                            ctx.fillStyle = color;
+                            ctx.fillText(label, bar.x, bar.y - 4);
+                        });
+                    });
+                    ctx.restore();
+                }
+            }]
         });
     }
 

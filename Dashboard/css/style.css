@@ -599,10 +599,20 @@ tr:hover td:first-child {
 /* Strategic table zero padding override & overflow hidden for collapse */
 #table-strategic-mpos,
 #table-strategic-mpos-copy,
-#table-strategic-mpos-copy2 {
+#table-strategic-mpos-copy2,
+#table-strategic-mpos thead,
+#table-strategic-mpos-copy thead,
+#table-strategic-mpos-copy2 thead,
+#table-strategic-mpos tr,
+#table-strategic-mpos-copy tr,
+#table-strategic-mpos-copy2 tr {
     table-layout: fixed !important;
     border-collapse: separate !important;
     border-spacing: 0 !important;
+    overflow: visible !important;
+}
+.overflow-visible {
+    overflow: visible !important;
 }
 #table-strategic-mpos th,
 #table-strategic-mpos td,

@@ -297,6 +297,47 @@ function renderSpotlight(top5) {
     `).join('');
 }
 
+function getProductPackTagsHTML(productName, codesString) {
+    if (!codesString) return "";
+    const codes = codesString.split(',').map(c => c.trim().toUpperCase());
+    
+    const tagMap = {
+        "ACO1": "Standard", "ACQ1": "Bonus", "ZA03": "100mg",
+        "ALK1": "60's", "ALM1": "Bonus", "ZA04": "12's", "ZA05": "30's",
+        "ALN1": "30's", "ALP1": "Bonus", "AMK3": "Standard", "AMM3": "Bonus",
+        "ZA11": "10's", "DEJ1": "50mg", "DEM1": "150mg", "MON1": "60's", "MOP1": "Bonus",
+        "TOL2": "Standard"
+    };
+
+    let tags = [];
+    codes.forEach(c => {
+        let label = tagMap[c];
+        if (!label) {
+            if (c.endsWith('M') || c.endsWith('Q') || c.endsWith('L') || c.endsWith('U') || c.endsWith('W') || c.endsWith('H') || c.endsWith('R') || c.endsWith('T') || c.endsWith('Y') || c.includes('B')) {
+                label = "Bonus";
+            } else if (c.startsWith('ZA') || c.startsWith('ZB') || c.startsWith('ZC') || c.startsWith('ZD') || c.startsWith('ZE')) {
+                if (c === "ZA11") label = "10's";
+                else if (c === "ZA04") label = "12's";
+                else if (c === "ZA05") label = "30's";
+                else if (c === "ZD06") label = "30's";
+                else label = "Pack Size";
+            }
+        }
+        
+        if (label) {
+            let colorClass = "text-slate-400 bg-slate-800/80 border-slate-700";
+            if (label.toLowerCase().includes("bonus")) {
+                colorClass = "text-amber-300 bg-amber-950/60 border-amber-500/30";
+            } else if (label.toLowerCase().includes("60's") || label.toLowerCase().includes("30's") || label.toLowerCase().includes("12's") || label.toLowerCase().includes("10's")) {
+                colorClass = "text-cyan-300 bg-cyan-950/60 border-cyan-500/30";
+            }
+            tags.push(`<span class="text-[9px] px-1.5 py-0.5 rounded border ${colorClass} font-mono ml-1.5 uppercase">${label}</span>`);
+        }
+    });
+
+    return tags.join('');
+}
+
 /* Render Top 50 Products Table */
 function renderProductsTable(products) {
     const tbody = document.getElementById("tbody-top50-products");
@@ -310,7 +351,7 @@ function renderProductsTable(products) {
         <tr data-prod-code="${p.product_code.toLowerCase()}" data-prod-name="${p.product_name.toLowerCase()}" data-rank="${p.rank}">
             <td><strong class="font-cyber text-amber-400">#${p.rank}</strong></td>
             <td><span class="code-badge">${p.product_code}</span></td>
-            <td><strong class="text-white text-base font-bold">${p.product_name}</strong> <span class="text-[10px] text-cyan-400 font-mono ml-2">[🔒 CODE ANCHOR]</span></td>
+            <td><strong class="text-white text-base font-bold">${p.product_name}</strong> ${getProductPackTagsHTML(p.product_name, p.product_code)}</td>
             <td class="val-highlight font-cyber text-base">${formatBDT(p.total_sales)}</td>
             <td class="font-mono text-cyan-200">${Number(p.total_quantity).toLocaleString()}</td>
             <td><span class="badge-invoice">${Number(p.total_invoices).toLocaleString()} Invoices</span></td>
@@ -1627,4 +1668,104 @@ function exportStrategicToCSV() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+function printProductsTable() {
+    if (!GLOBAL_DATA || !GLOBAL_DATA.top_50_products) return;
+    const products = GLOBAL_DATA.top_50_products;
+    const searchQuery = (document.getElementById("search-product")?.value || "").toLowerCase();
+    
+    let activePill = "all";
+    const pills = document.querySelectorAll("[data-filter-prod]");
+    pills.forEach(p => {
+        if (p.classList.contains("active")) {
+            activePill = p.getAttribute("data-filter-prod");
+        }
+    });
+
+    const filtered = products.filter(p => {
+        const code = (p.product_code || "").toLowerCase();
+        const name = (p.product_name || "").toLowerCase();
+        const matchesQuery = code.includes(searchQuery) || name.includes(searchQuery);
+        
+        let matchesPill = true;
+        if (activePill === "top10") matchesPill = p.rank <= 10;
+        if (activePill === "top25") matchesPill = p.rank <= 25;
+        
+        return matchesQuery && matchesPill;
+    });
+
+    let printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Top Products Performance Report</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #1e293b; background-color: #ffffff; }
+                h1 { margin-bottom: 5px; font-size: 24px; color: #0f172a; }
+                h2 { margin-top: 0; font-size: 14px; color: #64748b; font-weight: normal; margin-bottom: 25px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th, td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; font-size: 11px; }
+                th { background-color: #f8fafc; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }
+                tr:nth-child(even) { background-color: #f8fafc; }
+                .text-right { text-align: right; }
+                .badge { font-family: monospace; font-size: 9px; padding: 2px 4px; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; margin-left: 5px; text-transform: uppercase; }
+                @media print {
+                    button { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>🏆 Top Products Performance Report</h1>
+            <h2>Total Unique Products: ${filtered.length} | Generated: ${new Date().toLocaleDateString()}</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>RANK</th>
+                        <th>PRODUCT CODES</th>
+                        <th>PRODUCT NAME</th>
+                        <th>NET SALES (BDT)</th>
+                        <th>QUANTITY SOLD</th>
+                        <th>TOTAL INVOICES</th>
+                        <th>UNIQUE PARTIES</th>
+                        <th>CONTRIBUTION %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filtered.map(p => {
+                        const codes = p.product_code.split(',').map(c => c.trim().toUpperCase());
+                        const tagMap = {
+                            "ACO1": "Standard", "ACQ1": "Bonus", "ZA03": "100mg",
+                            "ALK1": "60's", "ALM1": "Bonus", "ZA04": "12's", "ZA05": "30's",
+                            "ALN1": "30's", "ALP1": "Bonus", "AMK3": "Standard", "AMM3": "Bonus",
+                            "ZA11": "10's", "DEJ1": "50mg", "DEM1": "150mg", "MON1": "60's", "MOP1": "Bonus"
+                        };
+                        const tags = codes.map(c => tagMap[c] || (c.includes('B') ? 'Bonus' : '')).filter(Boolean);
+                        const tagsStr = tags.length ? tags.map(t => `<span class="badge">${t}</span>`).join('') : '';
+
+                        return `
+                            <tr>
+                                <td>#${p.rank}</td>
+                                <td>${p.product_code}</td>
+                                <td><strong>${p.product_name}</strong> ${tagsStr}</td>
+                                <td class="text-right">${formatBDT(p.total_sales)}</td>
+                                <td class="text-right">${Number(p.total_quantity).toLocaleString()}</td>
+                                <td class="text-right">${Number(p.total_invoices).toLocaleString()}</td>
+                                <td class="text-right">${Number(p.total_parties).toLocaleString()}</td>
+                                <td class="text-right">${p.contribution_pct}%</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 500);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 }

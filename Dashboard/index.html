@@ -594,9 +594,18 @@
                     <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-prod="top10">TOP 10 ONLY</button>
                     <button class="pill px-3 py-1.5 rounded bg-slate-900 text-slate-300 font-tech text-xs font-bold hover:bg-slate-800" data-filter-prod="top25">TOP 25 ONLY</button>
                 </div>
-                <button class="px-4 py-2 rounded bg-purple-900/60 border border-purple-500/50 text-purple-200 font-tech font-bold text-xs hover:bg-purple-800 transition-all" onclick="exportTableToCSV('table-top50-products', 'Top_50_Products_Analytics.csv')">
-                    📥 EXPORT CSV
-                </button>
+                <!-- Export/Print options (top 50 products) -->
+                <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
+                    <button onclick="printProductsTable()" class="px-3 py-1.5 rounded bg-blue-600/80 border border-blue-500/50 text-white font-tech text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1">
+                        🖨️ Print
+                    </button>
+                    <button onclick="exportTableToCSV('table-top50-products', 'Top_50_Products_Analytics.csv')" class="px-3 py-1.5 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1">
+                        📊 CSV
+                    </button>
+                    <button onclick="printProductsTable()" class="px-3 py-1.5 rounded bg-rose-600/80 border border-rose-500/50 text-white font-tech text-xs font-bold hover:bg-rose-700 transition-all flex items-center gap-1">
+                        📄 PDF
+                    </button>
+                </div>
             </div>
 
             <div class="overflow-x-auto rounded-xl border border-slate-800/80 backdrop-blur-xl bg-slate-950/70">

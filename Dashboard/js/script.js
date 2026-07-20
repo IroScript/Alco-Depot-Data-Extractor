@@ -701,11 +701,9 @@ function renderStrategic6Products() {
 
         return `
             <button class="strat-btn p-3 rounded-xl border text-left transition-all ${isActive ? 'bg-gradient-to-tr from-cyan-600/40 via-indigo-600/40 to-purple-600/40 border-cyan-400 shadow-neon-cyan transform scale-105' : 'bg-slate-900/80 border-slate-800 hover:border-cyan-500/50'}" onclick="selectStrategicProduct('${prodName.replace(/'/g, "\\'")}')">
-                <div class="flex justify-between items-center mb-1">
-                    <span class="font-mono text-[10px] text-emerald-400">📦 ${Number(displayUnits).toLocaleString()} U</span>
-                </div>
-                <div class="font-cyber font-bold text-sm text-white truncate my-1" title="${prodName}">${getProductIcon(prodName)} ${prodName}</div>
-                <div class="flex justify-between items-center text-[11px] font-tech text-slate-400 border-t border-slate-800/80 pt-1 mt-1">
+                <div class="font-cyber font-bold text-sm text-white truncate mb-2" title="${prodName}">${getProductIcon(prodName)} ${prodName}</div>
+                <div class="flex items-center justify-between text-[10px] font-tech text-slate-400 border-t border-slate-800/80 pt-1.5 mt-1.5 gap-1.5">
+                    <span class="text-emerald-400 font-mono font-bold">📦 ${Number(displayUnits).toLocaleString()} U</span>
                     <span>👥 ${Number(displayParties).toLocaleString()} Parties</span>
                     <span>🧾 ${Number(displayInvoices).toLocaleString()} Inv</span>
                 </div>

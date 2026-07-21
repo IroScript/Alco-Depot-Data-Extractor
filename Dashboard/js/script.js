@@ -159,22 +159,16 @@ function initEventListeners() {
     const collapsibleSection = document.getElementById("collapsible-top-section");
     const toggleIcon = document.getElementById("toggle-icon");
     if (toggleBtn && collapsibleSection && toggleIcon) {
-        toggleBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const isHidden = collapsibleSection.classList.contains("hidden") || collapsibleSection.style.display === "none";
-            if (isHidden) {
-                collapsibleSection.classList.remove("hidden");
-                collapsibleSection.style.display = "block";
+        toggleBtn.addEventListener("click", () => {
+            const isNowHidden = collapsibleSection.classList.toggle("hidden");
+            if (isNowHidden) {
+                toggleIcon.textContent = "+";
+            } else {
                 toggleIcon.textContent = "−";
                 if (typeof renderCharts === "function") {
                     renderCharts();
                 }
                 window.dispatchEvent(new Event('resize'));
-            } else {
-                collapsibleSection.classList.add("hidden");
-                collapsibleSection.style.display = "none";
-                toggleIcon.textContent = "+";
             }
         });
     }
@@ -184,19 +178,13 @@ function initEventListeners() {
     const collapsibleMpoSection = document.getElementById("collapsible-mpo-section");
     const toggleMpoIcon = document.getElementById("toggle-mpo-icon");
     if (toggleMpoBtn && collapsibleMpoSection && toggleMpoIcon) {
-        toggleMpoBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const isHidden = collapsibleMpoSection.classList.contains("hidden") || collapsibleMpoSection.style.display === "none";
-            if (isHidden) {
-                collapsibleMpoSection.classList.remove("hidden");
-                collapsibleMpoSection.style.display = "block";
+        toggleMpoBtn.addEventListener("click", () => {
+            const isNowHidden = collapsibleMpoSection.classList.toggle("hidden");
+            if (isNowHidden) {
+                toggleMpoIcon.textContent = "+";
+            } else {
                 toggleMpoIcon.textContent = "−";
                 window.dispatchEvent(new Event('resize'));
-            } else {
-                collapsibleMpoSection.classList.add("hidden");
-                collapsibleMpoSection.style.display = "none";
-                toggleMpoIcon.textContent = "+";
             }
         });
     }

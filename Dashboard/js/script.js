@@ -1056,10 +1056,34 @@ function renderStrategicMPOTable() {
     
     if (titleEl) titleEl.textContent = titleText;
     if (subEl) subEl.textContent = subtitleText;
-    if (titleElCopy) titleElCopy.textContent = `${titleText} (Field Manager)`;
-    if (subElCopy) subElCopy.textContent = subtitleText;
-    if (titleElCopy2) titleElCopy2.textContent = `${titleText} (Sector Head)`;
-    if (subElCopy2) subElCopy2.textContent = subtitleText;
+
+    if (IS_FM_SYNCED) {
+        if (titleElCopy) titleElCopy.textContent = `${titleText} (Field Manager)`;
+        if (subElCopy) subElCopy.textContent = subtitleText;
+    } else {
+        const prodItemFM = stratData[ACTIVE_STRATEGIC_PROD_FM];
+        if (prodItemFM) {
+            const displayMonthFM = ACTIVE_STRATEGIC_MONTH_FM === "ALL" ? "ALL" : (MONTH_MAP[ACTIVE_STRATEGIC_MONTH_FM] || ACTIVE_STRATEGIC_MONTH_FM);
+            const titleTextFM = `${getProductIcon(prodItemFM.product_name)} ${prodItemFM.product_name} [ MONTH: ${displayMonthFM} ]`;
+            const subtitleTextFM = `Merged Product Codes: ${(prodItemFM.merged_codes || []).join(', ')} // Total Units Sold: ${Number(prodItemFM.total_units).toLocaleString()} Units`;
+            if (titleElCopy) titleElCopy.textContent = `${titleTextFM} (Field Manager)`;
+            if (subElCopy) subElCopy.textContent = subtitleTextFM;
+        }
+    }
+
+    if (IS_SH_SYNCED) {
+        if (titleElCopy2) titleElCopy2.textContent = `${titleText} (Sector Head)`;
+        if (subElCopy2) subElCopy2.textContent = subtitleText;
+    } else {
+        const prodItemSH = stratData[ACTIVE_STRATEGIC_PROD_SH];
+        if (prodItemSH) {
+            const displayMonthSH = ACTIVE_STRATEGIC_MONTH_SH === "ALL" ? "ALL" : (MONTH_MAP[ACTIVE_STRATEGIC_MONTH_SH] || ACTIVE_STRATEGIC_MONTH_SH);
+            const titleTextSH = `${getProductIcon(prodItemSH.product_name)} ${prodItemSH.product_name} [ MONTH: ${displayMonthSH} ]`;
+            const subtitleTextSH = `Merged Product Codes: ${(prodItemSH.merged_codes || []).join(', ')} // Total Units Sold: ${Number(prodItemSH.total_units).toLocaleString()} Units`;
+            if (titleElCopy2) titleElCopy2.textContent = `${titleTextSH} (Sector Head)`;
+            if (subElCopy2) subElCopy2.textContent = subtitleTextSH;
+        }
+    }
 
     // Aggregate MPOs across all active products (multi-select)
     if (!ACTIVE_STRATEGIC_PRODS || ACTIVE_STRATEGIC_PRODS.length === 0) {

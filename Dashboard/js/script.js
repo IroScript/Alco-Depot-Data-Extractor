@@ -96,6 +96,25 @@ function initTabs() {
             const targetEl = document.getElementById(targetId);
             if (targetEl) targetEl.classList.add("active");
 
+            // Auto-expand collapsible sections when their tabs are clicked
+            const collapsibleMpo = document.getElementById("collapsible-mpo-section");
+            const toggleMpoIcon = document.getElementById("toggle-mpo-icon");
+            const collapsibleTop = document.getElementById("collapsible-top-section");
+            const toggleTopIcon = document.getElementById("toggle-icon");
+
+            if (["tab-top50-mpos", "tab-top20-fms", "tab-monthly-trends"].includes(targetId)) {
+                if (collapsibleMpo && collapsibleMpo.classList.contains("hidden")) {
+                    collapsibleMpo.classList.remove("hidden");
+                    if (toggleMpoIcon) toggleMpoIcon.textContent = "−";
+                }
+            } else if (["tab-overview"].includes(targetId)) {
+                if (collapsibleTop && collapsibleTop.classList.contains("hidden")) {
+                    collapsibleTop.classList.remove("hidden");
+                    if (toggleTopIcon) toggleTopIcon.textContent = "−";
+                    if (typeof renderCharts === "function") renderCharts();
+                }
+            }
+
             // Trigger chart resize & Three.js canvas update
             window.dispatchEvent(new Event('resize'));
         });

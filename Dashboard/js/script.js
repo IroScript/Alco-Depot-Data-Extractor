@@ -682,6 +682,7 @@ let ACTIVE_STRATEGIC_MONTH_SH = "ALL";
 
 let CURRENT_FILTERED_FMS = [];
 let CURRENT_FILTERED_ZONES = [];
+let CURRENT_FILTERED_MPOS = [];
 
 function toggleSyncFM() {
     IS_FM_SYNCED = !IS_FM_SYNCED;
@@ -1162,6 +1163,8 @@ function renderStrategicMPOTable() {
         }
         return true;
     });
+
+    CURRENT_FILTERED_MPOS = filteredMpos;
 
     const totalRecords = filteredMpos.length;
     const totalPages = Math.ceil(totalRecords / STRATEGIC_PER_PAGE) || 1;
@@ -2634,44 +2637,16 @@ function removeResizers() {
 }
 
 function printFullStrategicTable() {
-    if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
-    const stratData = GLOBAL_DATA.strategic_6_products;
-    const prodItem = stratData[ACTIVE_STRATEGIC_PROD];
-    if (!prodItem) return;
-
-    let mpos = [];
-    if (ACTIVE_STRATEGIC_MONTH === "ALL") {
-        mpos = prodItem.mpo_top50_all || [];
-    } else {
-        mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
-    }
-
-    const filteredMpos = mpos.filter(m => {
-        if (STRATEGIC_FILTERS_SELECTIONS.rank && !STRATEGIC_FILTERS_SELECTIONS.rank.includes(String(m.rank))) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.zone && !STRATEGIC_FILTERS_SELECTIONS.zone.includes(m.zone)) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.fm && !STRATEGIC_FILTERS_SELECTIONS.fm.includes(m.fm_name || 'Unknown')) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.code && !STRATEGIC_FILTERS_SELECTIONS.code.includes(m.mpo_code)) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.market && !STRATEGIC_FILTERS_SELECTIONS.market.includes(m.market)) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.units) {
-            const unitsLabel = `${m.units} U`;
-            if (!STRATEGIC_FILTERS_SELECTIONS.units.includes(unitsLabel)) return false;
-        }
-        if (STRATEGIC_FILTERS_SELECTIONS.parties && !STRATEGIC_FILTERS_SELECTIONS.parties.includes(String(m.parties))) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.invoices && !STRATEGIC_FILTERS_SELECTIONS.invoices.includes(String(m.invoices))) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.sales) {
-            const salesLabel = formatBDT(m.sales);
-            if (!STRATEGIC_FILTERS_SELECTIONS.sales.includes(salesLabel)) return false;
-        }
-        return true;
-    });
-
+    const list = CURRENT_FILTERED_MPOS || [];
+    if (list.length === 0) return;
+    const prodName = ACTIVE_STRATEGIC_PROD;
     const displayMonth = ACTIVE_STRATEGIC_MONTH === "ALL" ? "ALL" : (MONTH_MAP[ACTIVE_STRATEGIC_MONTH] || ACTIVE_STRATEGIC_MONTH);
 
     let printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <html>
         <head>
-            <title>Strategic Product Performance: ${prodItem.product_name} - ${displayMonth}</title>
+            <title>Strategic Product Performance: ${prodName} - ${displayMonth}</title>
             <style>
                 body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #1e293b; background-color: #ffffff; }
                 h1 { margin-bottom: 5px; font-size: 20px; color: #0f172a; }
@@ -2690,8 +2665,8 @@ function printFullStrategicTable() {
             </style>
         </head>
         <body>
-            <h1>🏆 Strategic Product Performance: ${prodItem.product_name}</h1>
-            <h2>Month: ${displayMonth} | Merged Codes: ${(prodItem.merged_codes || []).join(', ')} | Total Records: ${filteredMpos.length}</h2>
+            <h1>🏆 Strategic Product Performance: ${prodName}</h1>
+            <h2>Month: ${displayMonth} | Total Records: ${list.length}</h2>
             <table>
                 <thead>
                     <tr>
@@ -2706,7 +2681,7 @@ function printFullStrategicTable() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${filteredMpos.map(m => `
+                    ${list.map(m => `
                         <tr>
                             <td>${m.rank}</td>
                             <td>${m.zone}</td>
@@ -2733,43 +2708,15 @@ function printFullStrategicTable() {
 }
 
 function exportStrategicToCSV() {
-    if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
-    const stratData = GLOBAL_DATA.strategic_6_products;
-    const prodItem = stratData[ACTIVE_STRATEGIC_PROD];
-    if (!prodItem) return;
-
-    let mpos = [];
-    if (ACTIVE_STRATEGIC_MONTH === "ALL") {
-        mpos = prodItem.mpo_top50_all || [];
-    } else {
-        mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
-    }
-
-    const filteredMpos = mpos.filter(m => {
-        if (STRATEGIC_FILTERS_SELECTIONS.rank && !STRATEGIC_FILTERS_SELECTIONS.rank.includes(String(m.rank))) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.zone && !STRATEGIC_FILTERS_SELECTIONS.zone.includes(m.zone)) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.fm && !STRATEGIC_FILTERS_SELECTIONS.fm.includes(m.fm_name || 'Unknown')) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.code && !STRATEGIC_FILTERS_SELECTIONS.code.includes(m.mpo_code)) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.market && !STRATEGIC_FILTERS_SELECTIONS.market.includes(m.market)) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.units) {
-            const unitsLabel = `${m.units} U`;
-            if (!STRATEGIC_FILTERS_SELECTIONS.units.includes(unitsLabel)) return false;
-        }
-        if (STRATEGIC_FILTERS_SELECTIONS.parties && !STRATEGIC_FILTERS_SELECTIONS.parties.includes(String(m.parties))) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.invoices && !STRATEGIC_FILTERS_SELECTIONS.invoices.includes(String(m.invoices))) return false;
-        if (STRATEGIC_FILTERS_SELECTIONS.sales) {
-            const salesLabel = formatBDT(m.sales);
-            if (!STRATEGIC_FILTERS_SELECTIONS.sales.includes(salesLabel)) return false;
-        }
-        return true;
-    });
-
+    const list = CURRENT_FILTERED_MPOS || [];
+    if (list.length === 0) return;
+    const prodName = ACTIVE_STRATEGIC_PROD;
     const displayMonth = ACTIVE_STRATEGIC_MONTH === "ALL" ? "ALL" : (MONTH_MAP[ACTIVE_STRATEGIC_MONTH] || ACTIVE_STRATEGIC_MONTH);
 
     let csvContent = "\uFEFF"; // Add BOM for Excel UTF-8 support
     csvContent += "Rank,Zone,Field Manager,MPO Code,MPO Market Name,Depot,Quantity (Unit),Parties,Invoices,Net Sales (BDT)\n";
 
-    filteredMpos.forEach(m => {
+    list.forEach(m => {
         const row = [
             m.rank,
             `"${m.zone.replace(/'/g, "''").replace(/"/g, '""')}"`,
@@ -2789,7 +2736,7 @@ function exportStrategicToCSV() {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `Strategic_Product_${prodItem.product_name.replace(/\s+/g, '_')}_${displayMonth}.csv`);
+    link.setAttribute("download", `Strategic_Product_${prodName.replace(/\s+/g, '_')}_${displayMonth}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

@@ -3235,9 +3235,14 @@ function toggleProdGroupDropdown(event, suffix) {
                 const rect = triggerBtn.getBoundingClientRect();
                 panel.style.position = 'fixed';
                 panel.style.top = (rect.bottom + 8) + 'px';
-                // Align right edge of panel with right edge of button
+                panel.style.maxWidth = '280px';
+                panel.style.width = '280px';
+                
+                // Keep dropdown within viewport bounds on small mobile screens
+                let rightPos = (window.innerWidth - rect.right);
+                if (rightPos < 10) rightPos = 10;
                 panel.style.left = '';
-                panel.style.right = (window.innerWidth - rect.right) + 'px';
+                panel.style.right = rightPos + 'px';
                 panel.style.zIndex = '99999';
                 panel.classList.remove('absolute');
             }

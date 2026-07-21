@@ -177,6 +177,24 @@ function initEventListeners() {
         });
     }
 
+    // Toggle Bottom MPO Collapsible Section
+    const toggleMpoBtn = document.getElementById("toggle-mpo-section-btn");
+    const collapsibleMpoSection = document.getElementById("collapsible-mpo-section");
+    const toggleMpoIcon = document.getElementById("toggle-mpo-icon");
+    if (toggleMpoBtn && collapsibleMpoSection && toggleMpoIcon) {
+        toggleMpoBtn.addEventListener("click", () => {
+            const isHidden = collapsibleMpoSection.classList.contains("hidden");
+            if (isHidden) {
+                collapsibleMpoSection.classList.remove("hidden");
+                toggleMpoIcon.textContent = "−";
+                window.dispatchEvent(new Event('resize'));
+            } else {
+                collapsibleMpoSection.classList.add("hidden");
+                toggleMpoIcon.textContent = "+";
+            }
+        });
+    }
+
     // Strategic MPO Column Filters popover click outside listener
     document.addEventListener("click", (e) => {
         const popovers = document.querySelectorAll('[id^="popover-"]');

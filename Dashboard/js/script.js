@@ -680,6 +680,9 @@ let ACTIVE_STRATEGIC_PROD_SH = "MOKAST 10 TAB";
 let ACTIVE_STRATEGIC_PRODS_SH = [];
 let ACTIVE_STRATEGIC_MONTH_SH = "ALL";
 
+let CURRENT_FILTERED_FMS = [];
+let CURRENT_FILTERED_ZONES = [];
+
 function toggleSyncFM() {
     IS_FM_SYNCED = !IS_FM_SYNCED;
     const btn = document.getElementById("btn-sync-fm");
@@ -1257,7 +1260,6 @@ function renderStrategicMPOTable() {
         f.rank = idx + 1;
     });
 
-    // Apply column filters for Copy 1 table
     const filteredFMs = fmsList.filter(f => {
         if (STRATEGIC_FILTERS_SELECTIONS_COPY.rank && !STRATEGIC_FILTERS_SELECTIONS_COPY.rank.includes(String(f.rank))) return false;
         if (STRATEGIC_FILTERS_SELECTIONS_COPY.zone && !STRATEGIC_FILTERS_SELECTIONS_COPY.zone.includes(f.zone)) return false;
@@ -1277,6 +1279,8 @@ function renderStrategicMPOTable() {
         }
         return true;
     });
+
+    CURRENT_FILTERED_FMS = filteredFMs;
 
     const totalRecordsCopy = filteredFMs.length;
     const totalPagesCopy = Math.ceil(totalRecordsCopy / STRATEGIC_PER_PAGE_FM) || 1;
@@ -1379,7 +1383,6 @@ function renderStrategicMPOTable() {
         z.rank = idx + 1;
     });
 
-    // Apply column filters for Copy 2 table
     const filteredZones = zonesList.filter(z => {
         if (STRATEGIC_FILTERS_SELECTIONS_COPY2.rank && !STRATEGIC_FILTERS_SELECTIONS_COPY2.rank.includes(String(z.rank))) return false;
         if (STRATEGIC_FILTERS_SELECTIONS_COPY2.zone && !STRATEGIC_FILTERS_SELECTIONS_COPY2.zone.includes(z.zone)) return false;
@@ -1398,6 +1401,8 @@ function renderStrategicMPOTable() {
         }
         return true;
     });
+
+    CURRENT_FILTERED_ZONES = filteredZones;
 
     const totalRecordsCopy2 = filteredZones.length;
     const totalPagesCopy2 = Math.ceil(totalRecordsCopy2 / STRATEGIC_PER_PAGE_SH) || 1;
@@ -2791,8 +2796,8 @@ function exportStrategicToCSV() {
 }
 
 function printFMStrategicTable() {
-    const tbody = document.getElementById("tbody-strategic-mpos-copy");
-    if (!tbody) return;
+    const list = CURRENT_FILTERED_FMS || [];
+    if (list.length === 0) return;
     const activeProd = IS_FM_SYNCED ? ACTIVE_STRATEGIC_PROD : ACTIVE_STRATEGIC_PROD_FM;
     const activeMonth = IS_FM_SYNCED ? ACTIVE_STRATEGIC_MONTH : ACTIVE_STRATEGIC_MONTH_FM;
     const displayMonth = activeMonth === "ALL" ? "ALL" : (MONTH_MAP[activeMonth] || activeMonth);
@@ -2807,7 +2812,7 @@ function printFMStrategicTable() {
                 h1 { margin-bottom: 5px; font-size: 20px; color: #0f172a; }
                 h2 { margin-top: 0; font-size: 13px; color: #64748b; font-weight: normal; margin-bottom: 15px; }
                 table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                th, td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; font-size: 10px; white-space: nowrap; height: 20px; }
+                th, td { border: 1px solid #cbd5e1; padding: 4px 6px; text-align: left; font-size: 9.5px; white-space: nowrap; height: 18px; line-height: 1.2; }
                 th { background-color: #f3e8ff; color: #581c87; font-weight: 600; text-transform: uppercase; }
                 tr:nth-child(even) { background-color: #faf5ff; }
                 .text-right { text-align: right; }
@@ -2820,7 +2825,7 @@ function printFMStrategicTable() {
         </head>
         <body>
             <h1>👔 Field Manager Performance Report: ${activeProd}</h1>
-            <h2>Month: ${displayMonth}</h2>
+            <h2>Month: ${displayMonth} | Total FMs: ${list.length}</h2>
             <table>
                 <thead>
                     <tr>
@@ -2841,11 +2846,24 @@ function printFMStrategicTable() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${Array.from(tbody.querySelectorAll('tr')).map(tr => {
-                        const tds = Array.from(tr.querySelectorAll('td')).slice(0, 14);
-                        if (tds.length < 14) return '';
-                        return `<tr>${tds.map((td, i) => `<td class="${i >= 6 ? 'text-right' : ''}">${td.innerText.trim()}</td>`).join('')}</tr>`;
-                    }).join('')}
+                    ${list.map(f => `
+                        <tr>
+                            <td>${f.rank}</td>
+                            <td>${f.zone}</td>
+                            <td>${f.fm_name}</td>
+                            <td>${f.total_mpos}</td>
+                            <td>${f.vacant_count}</td>
+                            <td>${f.actual_market}</td>
+                            <td class="text-right">${Math.round(f.units).toLocaleString()} U</td>
+                            <td class="text-right">${Math.round(f.per_mpo_units).toLocaleString()} U</td>
+                            <td class="text-right">${Number(f.parties).toLocaleString()}</td>
+                            <td class="text-right">${Math.round(f.per_mpo_parties).toLocaleString()}</td>
+                            <td class="text-right">${Number(f.invoices).toLocaleString()}</td>
+                            <td class="text-right">${Math.round(f.per_mpo_invoices).toLocaleString()}</td>
+                            <td class="text-right">${formatBDTRound(f.sales)}</td>
+                            <td class="text-right">${formatBDTRound(f.per_mpo_sales)}</td>
+                        </tr>
+                    `).join('')}
                 </tbody>
             </table>
             <script>
@@ -2861,8 +2879,8 @@ function printFMStrategicTable() {
 }
 
 function exportFMStrategicToCSV() {
-    const tbody = document.getElementById("tbody-strategic-mpos-copy");
-    if (!tbody) return;
+    const list = CURRENT_FILTERED_FMS || [];
+    if (list.length === 0) return;
     const activeProd = IS_FM_SYNCED ? ACTIVE_STRATEGIC_PROD : ACTIVE_STRATEGIC_PROD_FM;
     const activeMonth = IS_FM_SYNCED ? ACTIVE_STRATEGIC_MONTH : ACTIVE_STRATEGIC_MONTH_FM;
     const displayMonth = activeMonth === "ALL" ? "ALL" : (MONTH_MAP[activeMonth] || activeMonth);
@@ -2870,10 +2888,23 @@ function exportFMStrategicToCSV() {
     let csvContent = "\uFEFF";
     csvContent += "Rank,Zone,Field Manager,Total MPOs,Vacant,Actual MPOs,Total Units,Per MPO Units,Total Parties,Per MPO Parties,Total Invoices,Per MPO Invoices,Total Value (Tk),Per MPO Value (Tk)\n";
 
-    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
-        const tds = Array.from(tr.querySelectorAll('td')).slice(0, 14);
-        if (tds.length < 14) return;
-        const row = tds.map(td => `"${td.innerText.replace(/"/g, '""').replace(/৳/g, '').trim()}"`).join(',');
+    list.forEach(f => {
+        const row = [
+            f.rank,
+            `"${f.zone.replace(/"/g, '""')}"`,
+            `"${f.fm_name.replace(/"/g, '""')}"`,
+            f.total_mpos,
+            f.vacant_count,
+            f.actual_market,
+            f.units,
+            Math.round(f.per_mpo_units),
+            f.parties,
+            Math.round(f.per_mpo_parties),
+            f.invoices,
+            Math.round(f.per_mpo_invoices),
+            f.sales,
+            Math.round(f.per_mpo_sales)
+        ].join(',');
         csvContent += row + "\n";
     });
 
@@ -2887,8 +2918,8 @@ function exportFMStrategicToCSV() {
 }
 
 function printSHStrategicTable() {
-    const tbody = document.getElementById("tbody-strategic-mpos-copy2");
-    if (!tbody) return;
+    const list = CURRENT_FILTERED_ZONES || [];
+    if (list.length === 0) return;
     const activeProd = IS_SH_SYNCED ? ACTIVE_STRATEGIC_PROD : ACTIVE_STRATEGIC_PROD_SH;
     const activeMonth = IS_SH_SYNCED ? ACTIVE_STRATEGIC_MONTH : ACTIVE_STRATEGIC_MONTH_SH;
     const displayMonth = activeMonth === "ALL" ? "ALL" : (MONTH_MAP[activeMonth] || activeMonth);
@@ -2903,7 +2934,7 @@ function printSHStrategicTable() {
                 h1 { margin-bottom: 5px; font-size: 20px; color: #0f172a; }
                 h2 { margin-top: 0; font-size: 13px; color: #64748b; font-weight: normal; margin-bottom: 15px; }
                 table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                th, td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; font-size: 10px; white-space: nowrap; height: 20px; }
+                th, td { border: 1px solid #cbd5e1; padding: 4px 6px; text-align: left; font-size: 9.5px; white-space: nowrap; height: 18px; line-height: 1.2; }
                 th { background-color: #fef3c7; color: #78350f; font-weight: 600; text-transform: uppercase; }
                 tr:nth-child(even) { background-color: #fffbeb; }
                 .text-right { text-align: right; }
@@ -2916,7 +2947,7 @@ function printSHStrategicTable() {
         </head>
         <body>
             <h1>🏆 Sector Head Performance Report: ${activeProd}</h1>
-            <h2>Month: ${displayMonth}</h2>
+            <h2>Month: ${displayMonth} | Total Sectors/Zones: ${list.length}</h2>
             <table>
                 <thead>
                     <tr>
@@ -2936,11 +2967,23 @@ function printSHStrategicTable() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${Array.from(tbody.querySelectorAll('tr')).map(tr => {
-                        const tds = Array.from(tr.querySelectorAll('td')).slice(0, 13);
-                        if (tds.length < 13) return '';
-                        return `<tr>${tds.map((td, i) => `<td class="${i >= 5 ? 'text-right' : ''}">${td.innerText.trim()}</td>`).join('')}</tr>`;
-                    }).join('')}
+                    ${list.map(z => `
+                        <tr>
+                            <td>${z.rank}</td>
+                            <td>${z.zone}</td>
+                            <td>${z.total_mpos}</td>
+                            <td>${z.vacant_count}</td>
+                            <td>${z.actual_market}</td>
+                            <td class="text-right">${Math.round(z.units).toLocaleString()} U</td>
+                            <td class="text-right">${Math.round(z.per_mpo_units).toLocaleString()} U</td>
+                            <td class="text-right">${Number(z.parties).toLocaleString()}</td>
+                            <td class="text-right">${Math.round(z.per_mpo_parties).toLocaleString()}</td>
+                            <td class="text-right">${Number(z.invoices).toLocaleString()}</td>
+                            <td class="text-right">${Math.round(z.per_mpo_invoices).toLocaleString()}</td>
+                            <td class="text-right">${formatBDTRound(z.sales)}</td>
+                            <td class="text-right">${formatBDTRound(z.per_mpo_sales)}</td>
+                        </tr>
+                    `).join('')}
                 </tbody>
             </table>
             <script>
@@ -2956,8 +2999,8 @@ function printSHStrategicTable() {
 }
 
 function exportSHStrategicToCSV() {
-    const tbody = document.getElementById("tbody-strategic-mpos-copy2");
-    if (!tbody) return;
+    const list = CURRENT_FILTERED_ZONES || [];
+    if (list.length === 0) return;
     const activeProd = IS_SH_SYNCED ? ACTIVE_STRATEGIC_PROD : ACTIVE_STRATEGIC_PROD_SH;
     const activeMonth = IS_SH_SYNCED ? ACTIVE_STRATEGIC_MONTH : ACTIVE_STRATEGIC_MONTH_SH;
     const displayMonth = activeMonth === "ALL" ? "ALL" : (MONTH_MAP[activeMonth] || activeMonth);
@@ -2965,10 +3008,22 @@ function exportSHStrategicToCSV() {
     let csvContent = "\uFEFF";
     csvContent += "Rank,Zone / Sector,Total MPOs,Vacant,Actual MPOs,Total Units,Per MPO Units,Total Parties,Per MPO Parties,Total Invoices,Per MPO Invoices,Total Value (Tk),Per MPO Value (Tk)\n";
 
-    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
-        const tds = Array.from(tr.querySelectorAll('td')).slice(0, 13);
-        if (tds.length < 13) return;
-        const row = tds.map(td => `"${td.innerText.replace(/"/g, '""').replace(/৳/g, '').trim()}"`).join(',');
+    list.forEach(z => {
+        const row = [
+            z.rank,
+            `"${z.zone.replace(/"/g, '""')}"`,
+            z.total_mpos,
+            z.vacant_count,
+            z.actual_market,
+            z.units,
+            Math.round(z.per_mpo_units),
+            z.parties,
+            Math.round(z.per_mpo_parties),
+            z.invoices,
+            Math.round(z.per_mpo_invoices),
+            z.sales,
+            Math.round(z.per_mpo_sales)
+        ].join(',');
         csvContent += row + "\n";
     });
 

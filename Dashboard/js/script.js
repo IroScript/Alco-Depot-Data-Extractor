@@ -668,6 +668,72 @@ let ACTIVE_STRATEGIC_PRODS = [];
 let CURRENT_AGGREGATED_MPOS = [];
 let ACTIVE_STRATEGIC_MONTH = "ALL";
 
+// Independent states for FM and SH
+let IS_FM_SYNCED = false;
+let IS_SH_SYNCED = false;
+
+let ACTIVE_STRATEGIC_PROD_FM = "MOKAST 10 TAB";
+let ACTIVE_STRATEGIC_PRODS_FM = [];
+let ACTIVE_STRATEGIC_MONTH_FM = "ALL";
+
+let ACTIVE_STRATEGIC_PROD_SH = "MOKAST 10 TAB";
+let ACTIVE_STRATEGIC_PRODS_SH = [];
+let ACTIVE_STRATEGIC_MONTH_SH = "ALL";
+
+function toggleSyncFM() {
+    IS_FM_SYNCED = !IS_FM_SYNCED;
+    const btn = document.getElementById("btn-sync-fm");
+    const cardsWrapper = document.getElementById("fm-cards-container-wrapper");
+    const bannerWrapper = document.getElementById("fm-banner-container-wrapper");
+    const standaloneBadge = document.getElementById("fm-standalone-badge");
+
+    if (IS_FM_SYNCED) {
+        if (btn) {
+            btn.className = "px-2.5 py-0.5 rounded border border-purple-400 bg-purple-600 text-white font-bold cursor-pointer shadow-neon-purple";
+            btn.innerHTML = "✓ FM Synced";
+        }
+        if (cardsWrapper) cardsWrapper.classList.add("hidden");
+        if (bannerWrapper) bannerWrapper.classList.add("hidden");
+        if (standaloneBadge) standaloneBadge.classList.remove("hidden");
+    } else {
+        if (btn) {
+            btn.className = "px-2 py-0.5 rounded border border-purple-500/40 bg-purple-950/40 text-purple-300 hover:bg-purple-900/60 transition-all font-bold cursor-pointer";
+            btn.innerHTML = "FM";
+        }
+        if (cardsWrapper) cardsWrapper.classList.remove("hidden");
+        if (bannerWrapper) bannerWrapper.classList.remove("hidden");
+        if (standaloneBadge) standaloneBadge.classList.add("hidden");
+    }
+    renderStrategic6Products();
+}
+
+function toggleSyncSH() {
+    IS_SH_SYNCED = !IS_SH_SYNCED;
+    const btn = document.getElementById("btn-sync-sh");
+    const cardsWrapper = document.getElementById("sh-cards-container-wrapper");
+    const bannerWrapper = document.getElementById("sh-banner-container-wrapper");
+    const standaloneBadge = document.getElementById("sh-standalone-badge");
+
+    if (IS_SH_SYNCED) {
+        if (btn) {
+            btn.className = "px-2.5 py-0.5 rounded border border-amber-400 bg-amber-600 text-white font-bold cursor-pointer shadow-neon-amber";
+            btn.innerHTML = "✓ SH Synced";
+        }
+        if (cardsWrapper) cardsWrapper.classList.add("hidden");
+        if (bannerWrapper) bannerWrapper.classList.add("hidden");
+        if (standaloneBadge) standaloneBadge.classList.remove("hidden");
+    } else {
+        if (btn) {
+            btn.className = "px-2 py-0.5 rounded border border-amber-500/40 bg-amber-950/40 text-amber-300 hover:bg-amber-900/60 transition-all font-bold cursor-pointer";
+            btn.innerHTML = "SH";
+        }
+        if (cardsWrapper) cardsWrapper.classList.remove("hidden");
+        if (bannerWrapper) bannerWrapper.classList.remove("hidden");
+        if (standaloneBadge) standaloneBadge.classList.add("hidden");
+    }
+    renderStrategic6Products();
+}
+
 function renderStrategic6Products() {
     if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
     const stratData = GLOBAL_DATA.strategic_6_products;
@@ -687,6 +753,12 @@ function renderStrategic6Products() {
     if (ACTIVE_STRATEGIC_PRODS.length === 0 && keys.length > 0) {
         ACTIVE_STRATEGIC_PRODS = [ACTIVE_STRATEGIC_PROD];
     }
+    if (ACTIVE_STRATEGIC_PRODS_FM.length === 0 && keys.length > 0) {
+        ACTIVE_STRATEGIC_PRODS_FM = [ACTIVE_STRATEGIC_PROD_FM];
+    }
+    if (ACTIVE_STRATEGIC_PRODS_SH.length === 0 && keys.length > 0) {
+        ACTIVE_STRATEGIC_PRODS_SH = [ACTIVE_STRATEGIC_PROD_SH];
+    }
 
     if (!stratData[ACTIVE_STRATEGIC_PROD] && keys.length > 0) {
         ACTIVE_STRATEGIC_PROD = keys[0];
@@ -695,12 +767,12 @@ function renderStrategic6Products() {
     // Update the dropdown checkboxes selection UI
     updateProdGroupDropdownUI(keys);
 
-    // Sort keys so selected products come first in the exact selection order, followed by unselected ones
+    // MPO Card Content
     let selectedKeys = ACTIVE_STRATEGIC_PRODS.filter(k => keys.includes(k));
     let unselectedKeys = keys.filter(k => !ACTIVE_STRATEGIC_PRODS.includes(k));
     const orderedKeys = [...selectedKeys, ...unselectedKeys];
 
-    const htmlContent = orderedKeys.map(prodName => {
+    const htmlContentMPO = orderedKeys.map(prodName => {
         const item = stratData[prodName];
         const isActive = ACTIVE_STRATEGIC_PRODS.includes(prodName);
         const selectedIdx = ACTIVE_STRATEGIC_PRODS.indexOf(prodName);
@@ -731,12 +803,82 @@ function renderStrategic6Products() {
         `;
     }).join('');
 
-    container.innerHTML = htmlContent;
-    if (containerCopy) {
-        containerCopy.innerHTML = htmlContent;
+    container.innerHTML = htmlContentMPO;
+
+    // FM Card Content (if not synced)
+    if (containerCopy && !IS_FM_SYNCED) {
+        let selectedKeysFM = ACTIVE_STRATEGIC_PRODS_FM.filter(k => keys.includes(k));
+        let unselectedKeysFM = keys.filter(k => !ACTIVE_STRATEGIC_PRODS_FM.includes(k));
+        const orderedKeysFM = [...selectedKeysFM, ...unselectedKeysFM];
+
+        containerCopy.innerHTML = orderedKeysFM.map(prodName => {
+            const item = stratData[prodName];
+            const isActive = ACTIVE_STRATEGIC_PRODS_FM.includes(prodName);
+            const selectedIdx = ACTIVE_STRATEGIC_PRODS_FM.indexOf(prodName);
+            const orderBadge = (isActive && ACTIVE_STRATEGIC_PRODS_FM.length > 1) ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-purple-500 text-black font-extrabold ml-1.5">#${selectedIdx + 1}</span>` : '';
+            
+            let displayUnits = item.total_units;
+            let displayParties = item.total_parties;
+            let displayInvoices = item.total_invoices;
+            
+            if (ACTIVE_STRATEGIC_MONTH_FM !== "ALL") {
+                const monthMpos = (item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_FM]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_FM] : [];
+                displayUnits = monthMpos.reduce((sum, m) => sum + (m.units || 0), 0);
+                displayParties = monthMpos.reduce((sum, m) => sum + (m.parties || 0), 0);
+                displayInvoices = monthMpos.reduce((sum, m) => sum + (m.invoices || 0), 0);
+            }
+
+            return `
+                <button class="strat-btn p-3 rounded-xl border text-left transition-all duration-300 min-w-[200px] max-w-[220px] flex-shrink-0 snap-start ${isActive ? 'active shadow-neon-purple' : 'bg-slate-900/80 border-slate-800 hover:border-purple-500/50'}" onclick="selectStrategicProductFM('${prodName.replace(/'/g, "\\'")}')">
+                    <div class="font-cyber font-bold text-sm text-white truncate mb-2 flex items-center justify-between" title="${prodName}">
+                        <span class="truncate">${getProductIcon(prodName)} ${prodName}</span>${orderBadge}
+                    </div>
+                    <div class="flex items-center justify-between text-[10px] font-tech text-slate-400 border-t border-slate-800/80 pt-1.5 mt-1.5 gap-1.5">
+                        <span class="text-emerald-400 font-mono font-bold">📦 ${Number(displayUnits).toLocaleString()} U</span>
+                        <span>👥 ${Number(displayParties).toLocaleString()} Parties</span>
+                        <span>🧾 ${Number(displayInvoices).toLocaleString()} Inv</span>
+                    </div>
+                </button>
+            `;
+        }).join('');
     }
-    if (containerCopy2) {
-        containerCopy2.innerHTML = htmlContent;
+
+    // SH Card Content (if not synced)
+    if (containerCopy2 && !IS_SH_SYNCED) {
+        let selectedKeysSH = ACTIVE_STRATEGIC_PRODS_SH.filter(k => keys.includes(k));
+        let unselectedKeysSH = keys.filter(k => !ACTIVE_STRATEGIC_PRODS_SH.includes(k));
+        const orderedKeysSH = [...selectedKeysSH, ...unselectedKeysSH];
+
+        containerCopy2.innerHTML = orderedKeysSH.map(prodName => {
+            const item = stratData[prodName];
+            const isActive = ACTIVE_STRATEGIC_PRODS_SH.includes(prodName);
+            const selectedIdx = ACTIVE_STRATEGIC_PRODS_SH.indexOf(prodName);
+            const orderBadge = (isActive && ACTIVE_STRATEGIC_PRODS_SH.length > 1) ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-500 text-black font-extrabold ml-1.5">#${selectedIdx + 1}</span>` : '';
+            
+            let displayUnits = item.total_units;
+            let displayParties = item.total_parties;
+            let displayInvoices = item.total_invoices;
+            
+            if (ACTIVE_STRATEGIC_MONTH_SH !== "ALL") {
+                const monthMpos = (item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_SH]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_SH] : [];
+                displayUnits = monthMpos.reduce((sum, m) => sum + (m.units || 0), 0);
+                displayParties = monthMpos.reduce((sum, m) => sum + (m.parties || 0), 0);
+                displayInvoices = monthMpos.reduce((sum, m) => sum + (m.invoices || 0), 0);
+            }
+
+            return `
+                <button class="strat-btn p-3 rounded-xl border text-left transition-all duration-300 min-w-[200px] max-w-[220px] flex-shrink-0 snap-start ${isActive ? 'active shadow-neon-amber' : 'bg-slate-900/80 border-slate-800 hover:border-amber-500/50'}" onclick="selectStrategicProductSH('${prodName.replace(/'/g, "\\'")}')">
+                    <div class="font-cyber font-bold text-sm text-white truncate mb-2 flex items-center justify-between" title="${prodName}">
+                        <span class="truncate">${getProductIcon(prodName)} ${prodName}</span>${orderBadge}
+                    </div>
+                    <div class="flex items-center justify-between text-[10px] font-tech text-slate-400 border-t border-slate-800/80 pt-1.5 mt-1.5 gap-1.5">
+                        <span class="text-emerald-400 font-mono font-bold">📦 ${Number(displayUnits).toLocaleString()} U</span>
+                        <span>👥 ${Number(displayParties).toLocaleString()} Parties</span>
+                        <span>🧾 ${Number(displayInvoices).toLocaleString()} Inv</span>
+                    </div>
+                </button>
+            `;
+        }).join('');
     }
 
     const monthPillsEl = document.getElementById("strategic-month-pills");
@@ -744,16 +886,15 @@ function renderStrategic6Products() {
     const monthPillsElCopy2 = document.getElementById("strategic-month-pills-copy2");
     if (monthPillsEl && GLOBAL_DATA.monthly_trends) {
         const months = GLOBAL_DATA.monthly_trends.map(t => t.month);
-        // Sort months latest first (descending order)
         const sortedMonths = [...months].sort((a, b) => b.localeCompare(a));
         
-        // Find dynamic min and max month labels
         const minMonth = sortedMonths[sortedMonths.length - 1];
         const maxMonth = sortedMonths[0];
         const minLabel = (MONTH_MAP[minMonth] || minMonth).toUpperCase();
         const maxLabel = (MONTH_MAP[maxMonth] || maxMonth).toUpperCase();
 
-        const pillsHtml = `
+        // MPO Month Pills
+        monthPillsEl.innerHTML = `
             <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH === 'ALL' ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonth('ALL')">ALL MONTHS (${minLabel} - ${maxLabel})</button>
             ${sortedMonths.map(m => {
                 const monthLabel = MONTH_MAP[m] || m;
@@ -762,12 +903,31 @@ function renderStrategic6Products() {
                 `;
             }).join('')}
         `;
-        monthPillsEl.innerHTML = pillsHtml;
-        if (monthPillsElCopy) {
-            monthPillsElCopy.innerHTML = pillsHtml;
+
+        // FM Month Pills
+        if (monthPillsElCopy && !IS_FM_SYNCED) {
+            monthPillsElCopy.innerHTML = `
+                <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH_FM === 'ALL' ? 'active bg-purple-600 text-white shadow-neon-purple font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonthFM('ALL')">ALL MONTHS (${minLabel} - ${maxLabel})</button>
+                ${sortedMonths.map(m => {
+                    const monthLabel = MONTH_MAP[m] || m;
+                    return `
+                        <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH_FM === m ? 'active bg-purple-600 text-white shadow-neon-purple font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonthFM('${m}')">[ ${monthLabel} ]</button>
+                    `;
+                }).join('')}
+            `;
         }
-        if (monthPillsElCopy2) {
-            monthPillsElCopy2.innerHTML = pillsHtml;
+
+        // SH Month Pills
+        if (monthPillsElCopy2 && !IS_SH_SYNCED) {
+            monthPillsElCopy2.innerHTML = `
+                <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH_SH === 'ALL' ? 'active bg-amber-600 text-white shadow-neon-amber font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonthSH('ALL')">ALL MONTHS (${minLabel} - ${maxLabel})</button>
+                ${sortedMonths.map(m => {
+                    const monthLabel = MONTH_MAP[m] || m;
+                    return `
+                        <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH_SH === m ? 'active bg-amber-600 text-white shadow-neon-amber font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonthSH('${m}')">[ ${monthLabel} ]</button>
+                    `;
+                }).join('')}
+            `;
         }
     }
 
@@ -778,13 +938,25 @@ function selectStrategicProduct(prodName) {
     ACTIVE_STRATEGIC_PROD = prodName;
     ACTIVE_STRATEGIC_PRODS = [prodName];
     STRATEGIC_PAGE = 1;
-    STRATEGIC_PAGE_COPY = 1;
-    STRATEGIC_PAGE_COPY2 = 1;
     STRATEGIC_FILTERS_SELECTIONS = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    STRATEGIC_FILTERS_SELECTIONS_COPY = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    STRATEGIC_FILTERS_SELECTIONS_COPY2 = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
     TEMP_FILTERS_SELECTIONS = {};
+    renderStrategic6Products();
+}
+
+function selectStrategicProductFM(prodName) {
+    ACTIVE_STRATEGIC_PROD_FM = prodName;
+    ACTIVE_STRATEGIC_PRODS_FM = [prodName];
+    STRATEGIC_PAGE_COPY = 1;
+    STRATEGIC_FILTERS_SELECTIONS_COPY = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
     TEMP_FILTERS_SELECTIONS_COPY = {};
+    renderStrategic6Products();
+}
+
+function selectStrategicProductSH(prodName) {
+    ACTIVE_STRATEGIC_PROD_SH = prodName;
+    ACTIVE_STRATEGIC_PRODS_SH = [prodName];
+    STRATEGIC_PAGE_COPY2 = 1;
+    STRATEGIC_FILTERS_SELECTIONS_COPY2 = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
     TEMP_FILTERS_SELECTIONS_COPY2 = {};
     renderStrategic6Products();
 }
@@ -792,13 +964,23 @@ function selectStrategicProduct(prodName) {
 function selectStrategicMonth(monthVal) {
     ACTIVE_STRATEGIC_MONTH = monthVal;
     STRATEGIC_PAGE = 1;
-    STRATEGIC_PAGE_COPY = 1;
-    STRATEGIC_PAGE_COPY2 = 1;
     STRATEGIC_FILTERS_SELECTIONS = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    STRATEGIC_FILTERS_SELECTIONS_COPY = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    STRATEGIC_FILTERS_SELECTIONS_COPY2 = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
     TEMP_FILTERS_SELECTIONS = {};
+    renderStrategic6Products();
+}
+
+function selectStrategicMonthFM(monthVal) {
+    ACTIVE_STRATEGIC_MONTH_FM = monthVal;
+    STRATEGIC_PAGE_COPY = 1;
+    STRATEGIC_FILTERS_SELECTIONS_COPY = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
     TEMP_FILTERS_SELECTIONS_COPY = {};
+    renderStrategic6Products();
+}
+
+function selectStrategicMonthSH(monthVal) {
+    ACTIVE_STRATEGIC_MONTH_SH = monthVal;
+    STRATEGIC_PAGE_COPY2 = 1;
+    STRATEGIC_FILTERS_SELECTIONS_COPY2 = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
     TEMP_FILTERS_SELECTIONS_COPY2 = {};
     renderStrategic6Products();
 }
@@ -847,6 +1029,7 @@ function renderStrategicMPOTable() {
         ACTIVE_STRATEGIC_PRODS = [ACTIVE_STRATEGIC_PROD];
     }
     
+    // 1. Aggregate MPOs for MPO Table
     const mpoMap = {};
     ACTIVE_STRATEGIC_PRODS.forEach(prodName => {
         const item = stratData[prodName];
@@ -908,6 +1091,54 @@ function renderStrategicMPOTable() {
     });
 
     CURRENT_AGGREGATED_MPOS = mpos;
+
+    // 2. Aggregate MPOs for FM Table (either synced with MPO or independent FM selections)
+    let mposFM = mpos;
+    if (!IS_FM_SYNCED) {
+        const activeProdsFM = (ACTIVE_STRATEGIC_PRODS_FM && ACTIVE_STRATEGIC_PRODS_FM.length > 0) ? ACTIVE_STRATEGIC_PRODS_FM : [ACTIVE_STRATEGIC_PROD_FM];
+        const mpoMapFM = {};
+        activeProdsFM.forEach(prodName => {
+            const item = stratData[prodName];
+            if (!item) return;
+            let list = ACTIVE_STRATEGIC_MONTH_FM === "ALL" ? (item.mpo_top50_all || []) : ((item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_FM]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_FM] : []);
+            list.forEach(m => {
+                const code = m.mpo_code;
+                if (!mpoMapFM[code]) {
+                    mpoMapFM[code] = { mpo_code: code, fm_name: m.fm_name || 'Unknown', zone: m.zone || 'Unknown', market: m.market || 'Unknown', units: 0, parties: 0, invoices: 0, sales: 0, is_vacant: m.is_vacant };
+                }
+                mpoMapFM[code].units += m.units || 0;
+                mpoMapFM[code].parties += m.parties || 0;
+                mpoMapFM[code].invoices += m.invoices || 0;
+                mpoMapFM[code].sales += m.sales || 0;
+                if (!m.is_vacant) mpoMapFM[code].is_vacant = false;
+            });
+        });
+        mposFM = Object.values(mpoMapFM);
+    }
+
+    // 3. Aggregate MPOs for SH Table (either synced with MPO or independent SH selections)
+    let mposSH = mpos;
+    if (!IS_SH_SYNCED) {
+        const activeProdsSH = (ACTIVE_STRATEGIC_PRODS_SH && ACTIVE_STRATEGIC_PRODS_SH.length > 0) ? ACTIVE_STRATEGIC_PRODS_SH : [ACTIVE_STRATEGIC_PROD_SH];
+        const mpoMapSH = {};
+        activeProdsSH.forEach(prodName => {
+            const item = stratData[prodName];
+            if (!item) return;
+            let list = ACTIVE_STRATEGIC_MONTH_SH === "ALL" ? (item.mpo_top50_all || []) : ((item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_SH]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_SH] : []);
+            list.forEach(m => {
+                const code = m.mpo_code;
+                if (!mpoMapSH[code]) {
+                    mpoMapSH[code] = { mpo_code: code, fm_name: m.fm_name || 'Unknown', zone: m.zone || 'Unknown', market: m.market || 'Unknown', units: 0, parties: 0, invoices: 0, sales: 0, is_vacant: m.is_vacant };
+                }
+                mpoMapSH[code].units += m.units || 0;
+                mpoMapSH[code].parties += m.parties || 0;
+                mpoMapSH[code].invoices += m.invoices || 0;
+                mpoMapSH[code].sales += m.sales || 0;
+                if (!m.is_vacant) mpoMapSH[code].is_vacant = false;
+            });
+        });
+        mposSH = Object.values(mpoMapSH);
+    }
 
     // Apply Excel-like column filters for original table
     const filteredMpos = mpos.filter(m => {
@@ -982,7 +1213,7 @@ function renderStrategicMPOTable() {
 
     // Apply Grouping by Field Manager for copy table (Copy 1)
     const fmsMap = {};
-    mpos.forEach(m => {
+    mposFM.forEach(m => {
         const f = m.fm_name || 'Unknown';
         if (!fmsMap[f]) {
             fmsMap[f] = {
@@ -1105,7 +1336,7 @@ function renderStrategicMPOTable() {
 
     // Apply Grouping by Zone/Sector Head for copy 2 table
     const zonesMap = {};
-    mpos.forEach(m => {
+    mposSH.forEach(m => {
         const z = m.zone || 'Unknown';
         if (!zonesMap[z]) {
             zonesMap[z] = {
@@ -2554,6 +2785,197 @@ function exportStrategicToCSV() {
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
     link.setAttribute("download", `Strategic_Product_${prodItem.product_name.replace(/\s+/g, '_')}_${displayMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function printFMStrategicTable() {
+    const tbody = document.getElementById("tbody-strategic-mpos-copy");
+    if (!tbody) return;
+    const activeProd = IS_FM_SYNCED ? ACTIVE_STRATEGIC_PROD : ACTIVE_STRATEGIC_PROD_FM;
+    const activeMonth = IS_FM_SYNCED ? ACTIVE_STRATEGIC_MONTH : ACTIVE_STRATEGIC_MONTH_FM;
+    const displayMonth = activeMonth === "ALL" ? "ALL" : (MONTH_MAP[activeMonth] || activeMonth);
+
+    let printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Field Manager Performance Report: ${activeProd} - ${displayMonth}</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #1e293b; background-color: #ffffff; }
+                h1 { margin-bottom: 5px; font-size: 20px; color: #0f172a; }
+                h2 { margin-top: 0; font-size: 13px; color: #64748b; font-weight: normal; margin-bottom: 15px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th, td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; font-size: 10px; white-space: nowrap; height: 20px; }
+                th { background-color: #f3e8ff; color: #581c87; font-weight: 600; text-transform: uppercase; }
+                tr:nth-child(even) { background-color: #faf5ff; }
+                .text-right { text-align: right; }
+                @media print {
+                    button { display: none; }
+                    body { padding: 0; }
+                    @page { margin: 1cm; }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>👔 Field Manager Performance Report: ${activeProd}</h1>
+            <h2>Month: ${displayMonth}</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>RANK</th>
+                        <th>ZONE</th>
+                        <th>FIELD MANAGER</th>
+                        <th>TOTAL MPOS</th>
+                        <th>VACANT</th>
+                        <th>ACTUAL MPOS</th>
+                        <th class="text-right">TOTAL UNITS</th>
+                        <th class="text-right">PER MPO UNITS</th>
+                        <th class="text-right">TOTAL PARTIES</th>
+                        <th class="text-right">PER MPO PARTIES</th>
+                        <th class="text-right">TOTAL INVOICES</th>
+                        <th class="text-right">PER MPO INVOICES</th>
+                        <th class="text-right">TOTAL VALUE (TK)</th>
+                        <th class="text-right">PER MPO VALUE (TK)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${Array.from(tbody.querySelectorAll('tr')).map(tr => {
+                        const tds = Array.from(tr.querySelectorAll('td')).slice(0, 14);
+                        if (tds.length < 14) return '';
+                        return `<tr>${tds.map((td, i) => `<td class="${i >= 6 ? 'text-right' : ''}">${td.innerText.trim()}</td>`).join('')}</tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 500);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+function exportFMStrategicToCSV() {
+    const tbody = document.getElementById("tbody-strategic-mpos-copy");
+    if (!tbody) return;
+    const activeProd = IS_FM_SYNCED ? ACTIVE_STRATEGIC_PROD : ACTIVE_STRATEGIC_PROD_FM;
+    const activeMonth = IS_FM_SYNCED ? ACTIVE_STRATEGIC_MONTH : ACTIVE_STRATEGIC_MONTH_FM;
+    const displayMonth = activeMonth === "ALL" ? "ALL" : (MONTH_MAP[activeMonth] || activeMonth);
+
+    let csvContent = "\uFEFF";
+    csvContent += "Rank,Zone,Field Manager,Total MPOs,Vacant,Actual MPOs,Total Units,Per MPO Units,Total Parties,Per MPO Parties,Total Invoices,Per MPO Invoices,Total Value (Tk),Per MPO Value (Tk)\n";
+
+    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+        const tds = Array.from(tr.querySelectorAll('td')).slice(0, 14);
+        if (tds.length < 14) return;
+        const row = tds.map(td => `"${td.innerText.replace(/"/g, '""').replace(/৳/g, '').trim()}"`).join(',');
+        csvContent += row + "\n";
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Field_Manager_Report_${activeProd.replace(/\s+/g, '_')}_${displayMonth}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function printSHStrategicTable() {
+    const tbody = document.getElementById("tbody-strategic-mpos-copy2");
+    if (!tbody) return;
+    const activeProd = IS_SH_SYNCED ? ACTIVE_STRATEGIC_PROD : ACTIVE_STRATEGIC_PROD_SH;
+    const activeMonth = IS_SH_SYNCED ? ACTIVE_STRATEGIC_MONTH : ACTIVE_STRATEGIC_MONTH_SH;
+    const displayMonth = activeMonth === "ALL" ? "ALL" : (MONTH_MAP[activeMonth] || activeMonth);
+
+    let printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Sector Head Performance Report: ${activeProd} - ${displayMonth}</title>
+            <style>
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #1e293b; background-color: #ffffff; }
+                h1 { margin-bottom: 5px; font-size: 20px; color: #0f172a; }
+                h2 { margin-top: 0; font-size: 13px; color: #64748b; font-weight: normal; margin-bottom: 15px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th, td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; font-size: 10px; white-space: nowrap; height: 20px; }
+                th { background-color: #fef3c7; color: #78350f; font-weight: 600; text-transform: uppercase; }
+                tr:nth-child(even) { background-color: #fffbeb; }
+                .text-right { text-align: right; }
+                @media print {
+                    button { display: none; }
+                    body { padding: 0; }
+                    @page { margin: 1cm; }
+                }
+            </style>
+        </head>
+        <body>
+            <h1>🏆 Sector Head Performance Report: ${activeProd}</h1>
+            <h2>Month: ${displayMonth}</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>RANK</th>
+                        <th>ZONE / SECTOR</th>
+                        <th>TOTAL MPOS</th>
+                        <th>VACANT</th>
+                        <th>ACTUAL MPOS</th>
+                        <th class="text-right">TOTAL UNITS</th>
+                        <th class="text-right">PER MPO UNITS</th>
+                        <th class="text-right">TOTAL PARTIES</th>
+                        <th class="text-right">PER MPO PARTIES</th>
+                        <th class="text-right">TOTAL INVOICES</th>
+                        <th class="text-right">PER MPO INVOICES</th>
+                        <th class="text-right">TOTAL VALUE (TK)</th>
+                        <th class="text-right">PER MPO VALUE (TK)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${Array.from(tbody.querySelectorAll('tr')).map(tr => {
+                        const tds = Array.from(tr.querySelectorAll('td')).slice(0, 13);
+                        if (tds.length < 13) return '';
+                        return `<tr>${tds.map((td, i) => `<td class="${i >= 5 ? 'text-right' : ''}">${td.innerText.trim()}</td>`).join('')}</tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 500);
+                };
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+function exportSHStrategicToCSV() {
+    const tbody = document.getElementById("tbody-strategic-mpos-copy2");
+    if (!tbody) return;
+    const activeProd = IS_SH_SYNCED ? ACTIVE_STRATEGIC_PROD : ACTIVE_STRATEGIC_PROD_SH;
+    const activeMonth = IS_SH_SYNCED ? ACTIVE_STRATEGIC_MONTH : ACTIVE_STRATEGIC_MONTH_SH;
+    const displayMonth = activeMonth === "ALL" ? "ALL" : (MONTH_MAP[activeMonth] || activeMonth);
+
+    let csvContent = "\uFEFF";
+    csvContent += "Rank,Zone / Sector,Total MPOs,Vacant,Actual MPOs,Total Units,Per MPO Units,Total Parties,Per MPO Parties,Total Invoices,Per MPO Invoices,Total Value (Tk),Per MPO Value (Tk)\n";
+
+    Array.from(tbody.querySelectorAll('tr')).forEach(tr => {
+        const tds = Array.from(tr.querySelectorAll('td')).slice(0, 13);
+        if (tds.length < 13) return;
+        const row = tds.map(td => `"${td.innerText.replace(/"/g, '""').replace(/৳/g, '').trim()}"`).join(',');
+        csvContent += row + "\n";
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Sector_Head_Report_${activeProd.replace(/\s+/g, '_')}_${displayMonth}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

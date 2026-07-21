@@ -337,7 +337,14 @@
             <div class="p-6 rounded-2xl border border-cyan-500/20 bg-slate-950/30 space-y-6">
                 <!-- Strategic 6 Product Selector Cards/Buttons -->
                 <div class="backdrop-blur-xl bg-slate-950/80 cyber-border pt-7 pb-4 px-6 rounded-2xl relative overflow-visible">
-                    <span class="absolute -top-4 left-6 text-[14px] font-cyber tracking-[0.4em] text-cyan-400 uppercase bg-[#02040a] px-2.5 py-1 rounded border border-cyan-500/30">MPO Report</span>
+                    <div class="absolute -top-4 left-6 flex items-center gap-2 z-20">
+                        <span class="text-[14px] font-cyber tracking-[0.2em] text-cyan-400 uppercase bg-[#02040a] px-3 py-1 rounded-l border border-cyan-500/30 font-bold shadow-neon-cyan">MPO Report</span>
+                        <div class="flex items-center bg-[#02040a] border border-cyan-500/30 border-l-0 rounded-r px-2 py-1 gap-1.5 text-xs font-cyber">
+                            <span class="text-slate-400 text-[11px]">Sync:</span>
+                            <button id="btn-sync-fm" onclick="toggleSyncFM()" class="px-2 py-0.5 rounded border border-purple-500/40 bg-purple-950/40 text-purple-300 hover:bg-purple-900/60 transition-all font-bold cursor-pointer" title="Click to sync and hide FM product/month filters">FM</button>
+                            <button id="btn-sync-sh" onclick="toggleSyncSH()" class="px-2 py-0.5 rounded border border-amber-500/40 bg-amber-950/40 text-amber-300 hover:bg-amber-900/60 transition-all font-bold cursor-pointer" title="Click to sync and hide SH product/month filters">SH</button>
+                        </div>
+                    </div>
 
                 <div class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;" id="strategic-6-buttons-container">
                     <div class="col-span-full text-center py-6 text-cyan-400 font-cyber animate-pulse">LOADING STRATEGIC PRODUCTS...</div>
@@ -592,9 +599,14 @@
             <!-- ==========================================
                  SECTION 2: FIELD MANAGER PERFORMANCE
                  ========================================== -->
-            <div class="p-6 rounded-2xl border border-purple-500/20 bg-slate-950/30 space-y-6 mt-8">
+            <div class="p-6 rounded-2xl border border-purple-500/20 bg-slate-950/30 space-y-6 mt-8 relative">
+                <!-- Standalone FM Report Badge when synced/hidden -->
+                <div id="fm-standalone-badge" class="hidden absolute -top-4 left-6 z-20">
+                    <span class="text-[14px] font-cyber tracking-[0.4em] text-purple-400 uppercase bg-[#02040a] px-3 py-1 rounded border border-purple-500/40 font-bold shadow-neon-purple">FM Report</span>
+                </div>
+
                 <!-- Strategic 6 Product Selector Cards/Buttons (Field Manager) -->
-                <div class="backdrop-blur-xl bg-slate-950/80 cyber-border pt-7 pb-4 px-6 rounded-2xl relative overflow-visible">
+                <div id="fm-cards-container-wrapper" class="backdrop-blur-xl bg-slate-950/80 cyber-border pt-7 pb-4 px-6 rounded-2xl relative overflow-visible transition-all duration-300">
                     <span class="absolute -top-4 left-6 text-[14px] font-cyber tracking-[0.4em] text-purple-400 uppercase bg-[#02040a] px-2.5 py-1 rounded border border-purple-500/30">Field Manager Report</span>
 
                     <div class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;" id="strategic-6-buttons-container-copy">
@@ -603,17 +615,17 @@
                 </div>
 
                 <!-- Month Filter & Active Product Banner (Field Manager) -->
-                <div class="flex flex-wrap justify-between items-center gap-3 bg-slate-950/90 p-4 rounded-xl border border-purple-500/40 shadow-neon-purple mt-6">
+                <div id="fm-banner-container-wrapper" class="flex flex-wrap justify-between items-center gap-3 bg-slate-950/90 p-4 rounded-xl border border-purple-500/40 shadow-neon-purple mt-6 transition-all duration-300">
                     <div class="flex flex-wrap items-center gap-3">
                         <!-- Export/Print options (left side) -->
                         <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
-                            <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-blue-600/80 border border-blue-500/50 text-white font-tech text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1">
+                            <button onclick="printFMStrategicTable()" class="px-3 py-1.5 rounded bg-blue-600/80 border border-blue-500/50 text-white font-tech text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1">
                                 🖨️ Print
                             </button>
-                            <button onclick="exportStrategicToCSV()" class="px-3 py-1.5 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1">
+                            <button onclick="exportFMStrategicToCSV()" class="px-3 py-1.5 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1">
                                 📊 CSV
                             </button>
-                            <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-rose-600/80 border border-rose-500/50 text-white font-tech text-xs font-bold hover:bg-rose-700 transition-all flex items-center gap-1">
+                            <button onclick="printFMStrategicTable()" class="px-3 py-1.5 rounded bg-rose-600/80 border border-rose-500/50 text-white font-tech text-xs font-bold hover:bg-rose-700 transition-all flex items-center gap-1">
                                 📄 PDF
                             </button>
                         </div>
@@ -896,9 +908,14 @@
             <!-- ==========================================
                  SECTION 3: SECTOR HEAD PERFORMANCE
                  ========================================== -->
-            <div class="p-6 rounded-2xl border border-amber-500/20 bg-slate-950/30 space-y-6 mt-8">
+            <div class="p-6 rounded-2xl border border-amber-500/20 bg-slate-950/30 space-y-6 mt-8 relative">
+                <!-- Standalone SH Report Badge when synced/hidden -->
+                <div id="sh-standalone-badge" class="hidden absolute -top-4 left-6 z-20">
+                    <span class="text-[14px] font-cyber tracking-[0.4em] text-amber-400 uppercase bg-[#02040a] px-3 py-1 rounded border border-amber-500/40 font-bold shadow-neon-amber">SH Report</span>
+                </div>
+
                 <!-- Strategic 6 Product Selector Cards/Buttons (Sector Head) -->
-                <div class="backdrop-blur-xl bg-slate-950/80 cyber-border pt-7 pb-4 px-6 rounded-2xl relative overflow-visible">
+                <div id="sh-cards-container-wrapper" class="backdrop-blur-xl bg-slate-950/80 cyber-border pt-7 pb-4 px-6 rounded-2xl relative overflow-visible transition-all duration-300">
                     <span class="absolute -top-4 left-6 text-[14px] font-cyber tracking-[0.4em] text-amber-400 uppercase bg-[#02040a] px-2.5 py-1 rounded border border-amber-500/30">Sector Head Report</span>
 
                     <div class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory" style="scroll-behavior: smooth; -webkit-overflow-scrolling: touch;" id="strategic-6-buttons-container-copy2">
@@ -907,17 +924,17 @@
                 </div>
 
                 <!-- Month Filter & Active Product Banner (Sector Head) -->
-                <div class="flex flex-wrap justify-between items-center gap-3 bg-slate-950/90 p-4 rounded-xl border border-amber-500/40 shadow-neon-amber mt-6">
+                <div id="sh-banner-container-wrapper" class="flex flex-wrap justify-between items-center gap-3 bg-slate-950/90 p-4 rounded-xl border border-amber-500/40 shadow-neon-amber mt-6 transition-all duration-300">
                     <div class="flex flex-wrap items-center gap-3">
                         <!-- Export/Print options (left side) -->
                         <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
-                            <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-blue-600/80 border border-blue-500/50 text-white font-tech text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1">
+                            <button onclick="printSHStrategicTable()" class="px-3 py-1.5 rounded bg-blue-600/80 border border-blue-500/50 text-white font-tech text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1">
                                 🖨️ Print
                             </button>
-                            <button onclick="exportStrategicToCSV()" class="px-3 py-1.5 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1">
+                            <button onclick="exportSHStrategicToCSV()" class="px-3 py-1.5 rounded bg-emerald-600/80 border border-emerald-500/50 text-white font-tech text-xs font-bold hover:bg-emerald-700 transition-all flex items-center gap-1">
                                 📊 CSV
                             </button>
-                            <button onclick="printFullStrategicTable()" class="px-3 py-1.5 rounded bg-rose-600/80 border border-rose-500/50 text-white font-tech text-xs font-bold hover:bg-rose-700 transition-all flex items-center gap-1">
+                            <button onclick="printSHStrategicTable()" class="px-3 py-1.5 rounded bg-rose-600/80 border border-rose-500/50 text-white font-tech text-xs font-bold hover:bg-rose-700 transition-all flex items-center gap-1">
                                 📄 PDF
                             </button>
                         </div>

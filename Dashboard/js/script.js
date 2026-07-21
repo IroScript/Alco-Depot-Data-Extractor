@@ -2664,7 +2664,7 @@ function printFullStrategicTable() {
     printWindow.document.write(`
         <html>
         <head>
-            <title>Strategic Product Performance: ${prodName} - ${displayMonth}</title>
+            <title>MPO Performance Report: ${prodName} - ${displayMonth}</title>
             <style>
                 body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #1e293b; background-color: #ffffff; }
                 h1 { margin-bottom: 5px; font-size: 20px; color: #0f172a; }
@@ -2683,7 +2683,7 @@ function printFullStrategicTable() {
             </style>
         </head>
         <body>
-            <h1>🏆 Strategic Product Performance: ${prodName}</h1>
+            <h1>👤 MPO Performance Report: ${prodName}</h1>
             <h2>Month: ${displayMonth} | Total Records: ${list.length}</h2>
             <table>
                 <thead>

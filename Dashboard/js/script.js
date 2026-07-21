@@ -2437,16 +2437,19 @@ function printFullStrategicTable() {
         <head>
             <title>Strategic Product Performance: ${prodItem.product_name} - ${displayMonth}</title>
             <style>
-                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; color: #1e293b; background-color: #ffffff; }
-                h1 { margin-bottom: 5px; font-size: 24px; color: #0f172a; }
-                h2 { margin-top: 0; font-size: 14px; color: #64748b; font-weight: normal; margin-bottom: 25px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; font-size: 11px; }
-                th { background-color: #f8fafc; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; color: #1e293b; background-color: #ffffff; }
+                h1 { margin-bottom: 5px; font-size: 20px; color: #0f172a; }
+                h2 { margin-top: 0; font-size: 13px; color: #64748b; font-weight: normal; margin-bottom: 15px; }
+                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                th, td { border: 1px solid #cbd5e1; padding: 4px 8px; text-align: left; font-size: 10px; white-space: nowrap; line-height: 1.2; height: 18px; }
+                th { background-color: #f1f5f9; font-weight: 600; color: #334155; text-transform: uppercase; letter-spacing: 0.05em; }
                 tr:nth-child(even) { background-color: #f8fafc; }
+                tr { height: 22px; }
                 .text-right { text-align: right; }
                 @media print {
                     button { display: none; }
+                    body { padding: 0; }
+                    @page { margin: 1cm; }
                 }
             </style>
         </head>
@@ -2459,13 +2462,11 @@ function printFullStrategicTable() {
                         <th>RANK</th>
                         <th>ZONE</th>
                         <th>FIELD MANAGER</th>
-                        <th>MPO CODE</th>
                         <th>MPO MARKET NAME</th>
-                        <th>DEPOT</th>
-                        <th>QUANTITY (UNIT)</th>
-                        <th>PARTIES</th>
-                        <th>INVOICES</th>
-                        <th>NET SALES (BDT)</th>
+                        <th class="text-right">QUANTITY (UNIT)</th>
+                        <th class="text-right">PARTIES</th>
+                        <th class="text-right">INVOICES</th>
+                        <th class="text-right">NET SALES (BDT)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -2474,9 +2475,7 @@ function printFullStrategicTable() {
                             <td>${m.rank}</td>
                             <td>${m.zone}</td>
                             <td>${m.fm_name || 'Unknown'}</td>
-                            <td>${m.mpo_code}</td>
-                            <td>${m.market}</td>
-                            <td>${m.depot || 'Unknown'}</td>
+                            <td>${m.market}${m.is_vacant ? ' (VACANT)' : ''}</td>
                             <td class="text-right">${Number(m.units).toLocaleString()}</td>
                             <td class="text-right">${Number(m.parties).toLocaleString()}</td>
                             <td class="text-right">${Number(m.invoices).toLocaleString()}</td>

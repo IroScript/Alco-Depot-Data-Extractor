@@ -695,9 +695,16 @@ function renderStrategic6Products() {
     // Update the dropdown checkboxes selection UI
     updateProdGroupDropdownUI(keys);
 
-    const htmlContent = keys.map(prodName => {
+    // Sort keys so selected products come first in the exact selection order, followed by unselected ones
+    let selectedKeys = ACTIVE_STRATEGIC_PRODS.filter(k => keys.includes(k));
+    let unselectedKeys = keys.filter(k => !ACTIVE_STRATEGIC_PRODS.includes(k));
+    const orderedKeys = [...selectedKeys, ...unselectedKeys];
+
+    const htmlContent = orderedKeys.map(prodName => {
         const item = stratData[prodName];
         const isActive = ACTIVE_STRATEGIC_PRODS.includes(prodName);
+        const selectedIdx = ACTIVE_STRATEGIC_PRODS.indexOf(prodName);
+        const orderBadge = (isActive && ACTIVE_STRATEGIC_PRODS.length > 1) ? `<span class="px-1.5 py-0.5 rounded text-[10px] bg-cyan-500 text-black font-extrabold ml-1.5">#${selectedIdx + 1}</span>` : '';
         
         let displayUnits = item.total_units;
         let displayParties = item.total_parties;
@@ -711,8 +718,10 @@ function renderStrategic6Products() {
         }
 
         return `
-            <button class="strat-btn p-3 rounded-xl border text-left transition-all min-w-[200px] max-w-[220px] flex-shrink-0 snap-start ${isActive ? 'active' : 'bg-slate-900/80 border-slate-800 hover:border-cyan-500/50'}" onclick="selectStrategicProduct('${prodName.replace(/'/g, "\\'")}')">
-                <div class="font-cyber font-bold text-sm text-white truncate mb-2" title="${prodName}">${getProductIcon(prodName)} ${prodName}</div>
+            <button class="strat-btn p-3 rounded-xl border text-left transition-all duration-300 min-w-[200px] max-w-[220px] flex-shrink-0 snap-start ${isActive ? 'active shadow-neon-cyan' : 'bg-slate-900/80 border-slate-800 hover:border-cyan-500/50'}" onclick="selectStrategicProduct('${prodName.replace(/'/g, "\\'")}')">
+                <div class="font-cyber font-bold text-sm text-white truncate mb-2 flex items-center justify-between" title="${prodName}">
+                    <span class="truncate">${getProductIcon(prodName)} ${prodName}</span>${orderBadge}
+                </div>
                 <div class="flex items-center justify-between text-[10px] font-tech text-slate-400 border-t border-slate-800/80 pt-1.5 mt-1.5 gap-1.5">
                     <span class="text-emerald-400 font-mono font-bold">📦 ${Number(displayUnits).toLocaleString()} U</span>
                     <span>👥 ${Number(displayParties).toLocaleString()} Parties</span>

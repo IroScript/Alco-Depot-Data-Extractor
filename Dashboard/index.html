@@ -345,7 +345,7 @@
             </div>
 
             <!-- Month Filter & Active Product Banner -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-950/90 p-4 rounded-xl border border-cyan-500/40 shadow-neon-cyan">
+            <div class="flex flex-wrap justify-between items-center gap-3 bg-slate-950/90 p-4 rounded-xl border border-cyan-500/40 shadow-neon-cyan">
                 <div class="flex flex-wrap items-center gap-3">
                     <!-- Export/Print options (left side) -->
                     <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
@@ -368,7 +368,7 @@
                     </div>
                 </div>
                 <!-- Dynamic Product Group Multi-Select Dropdown -->
-                <div class="relative min-w-[240px] w-full sm:w-auto" id="prod-group-filter-wrapper">
+                <div class="relative min-w-[200px] max-w-full" id="prod-group-filter-wrapper">
                     <button onclick="toggleProdGroupDropdown(event, '')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs font-tech font-bold hover:bg-slate-800 transition-all">
                         <span id="selected-prod-group-label" class="truncate max-w-[200px]">ALL PRODUCTS SELECTED</span>
                         <span class="text-cyan-400 text-[10px]">▼</span>
@@ -603,7 +603,7 @@
                 </div>
 
                 <!-- Month Filter & Active Product Banner (Field Manager) -->
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-950/90 p-4 rounded-xl border border-purple-500/40 shadow-neon-purple mt-6">
+                <div class="flex flex-wrap justify-between items-center gap-3 bg-slate-950/90 p-4 rounded-xl border border-purple-500/40 shadow-neon-purple mt-6">
                     <div class="flex flex-wrap items-center gap-3">
                         <!-- Export/Print options (left side) -->
                         <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
@@ -626,7 +626,7 @@
                         </div>
                     </div>
                     <!-- Dynamic Product Group Multi-Select Dropdown (Field Manager) -->
-                    <div class="relative min-w-[240px] w-full sm:w-auto" id="prod-group-filter-wrapper-copy">
+                    <div class="relative min-w-[200px] max-w-full" id="prod-group-filter-wrapper-copy">
                         <button onclick="toggleProdGroupDropdown(event, '-copy')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs font-tech font-bold hover:bg-slate-800 transition-all">
                             <span id="selected-prod-group-label-copy" class="truncate max-w-[200px]">ALL PRODUCTS SELECTED</span>
                             <span class="text-purple-400 text-[10px]">▼</span>
@@ -654,7 +654,7 @@
                                 <!-- Rank -->
                                 <th class="w-[60px]" style="position: relative; height: 28px;">
                                     <div class="excel-header-wrapper" style="border-bottom-color: rgba(168, 85, 247, 0.4);">
-                                        <span class="excel-header-text">RANK 🏆 (Field Manager)</span>
+                                        <span class="excel-header-text">RANK 🏆</span>
                                         <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'rank')">▼</button>
                                     </div>
                                 <div id="popover-rank-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
@@ -667,7 +667,7 @@
                                     <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('rank')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('rank')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('rank')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('rank')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -687,7 +687,7 @@
                                     <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('zone')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('zone')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('zone')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('zone')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -707,11 +707,11 @@
                                     <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('fm')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('fm')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('fm')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('fm')">OK</button>
                                     </div>
                                 </div>
                             </th>
-                            <!-- MPO Code (replacing with TOTAL MPOS) -->
+                            <!-- Total MPOs -->
                             <th class="w-[110px]" style="position: relative; height: 28px;">
                                 <div class="excel-header-wrapper" style="border-bottom-color: rgba(168, 85, 247, 0.4);">
                                     <span class="excel-header-text">TOTAL MPOS</span>
@@ -727,11 +727,11 @@
                                     <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('total_mpos')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('total_mpos')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('total_mpos')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('total_mpos')">OK</button>
                                     </div>
                                 </div>
                             </th>
-                            <!-- Market Name (replacing with VACANT COUNT) -->
+                            <!-- Vacant COUNT -->
                             <th class="w-[110px]" style="position: relative; height: 28px;">
                                 <div class="excel-header-wrapper" style="border-bottom-color: rgba(168, 85, 247, 0.4);">
                                     <span class="excel-header-text">VACANT COUNT</span>
@@ -747,7 +747,7 @@
                                     <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('vacant_count')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('vacant_count')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('vacant_count')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('vacant_count')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -767,7 +767,7 @@
                                     <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('actual_market')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('actual_market')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('actual_market')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('actual_market')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -787,7 +787,7 @@
                                     <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('units')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('units')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('units')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('units')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -813,7 +813,7 @@
                                     <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('parties')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('parties')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('parties')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('parties')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -839,7 +839,7 @@
                                     <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('invoices')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('invoices')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('invoices')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('invoices')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -865,7 +865,7 @@
                                     <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('sales')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('sales')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('sales')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('sales')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -907,7 +907,7 @@
                 </div>
 
                 <!-- Month Filter & Active Product Banner (Sector Head) -->
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-950/90 p-4 rounded-xl border border-amber-500/40 shadow-neon-amber mt-6">
+                <div class="flex flex-wrap justify-between items-center gap-3 bg-slate-950/90 p-4 rounded-xl border border-amber-500/40 shadow-neon-amber mt-6">
                     <div class="flex flex-wrap items-center gap-3">
                         <!-- Export/Print options (left side) -->
                         <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
@@ -930,7 +930,7 @@
                         </div>
                     </div>
                     <!-- Dynamic Product Group Multi-Select Dropdown (Sector Head) -->
-                    <div class="relative min-w-[240px] w-full sm:w-auto" id="prod-group-filter-wrapper-copy2">
+                    <div class="relative min-w-[200px] max-w-full" id="prod-group-filter-wrapper-copy2">
                         <button onclick="toggleProdGroupDropdown(event, '-copy2')" class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs font-tech font-bold hover:bg-slate-800 transition-all">
                             <span id="selected-prod-group-label-copy2" class="truncate max-w-[200px]">ALL PRODUCTS SELECTED</span>
                             <span class="text-amber-400 text-[10px]">▼</span>

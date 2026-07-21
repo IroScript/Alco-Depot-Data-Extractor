@@ -697,6 +697,8 @@ function getProductIcon(prodName) {
 let ACTIVE_STRATEGIC_PROD = "MOKAST 10 TAB";
 let ACTIVE_STRATEGIC_PRODS = [];
 let CURRENT_AGGREGATED_MPOS = [];
+let CURRENT_AGGREGATED_MPOS_FM = [];
+let CURRENT_AGGREGATED_MPOS_SH = [];
 let ACTIVE_STRATEGIC_MONTH = "ALL";
 
 // Independent states for FM and SH
@@ -1101,7 +1103,17 @@ function renderStrategicMPOTable() {
                 mpoMap[code].is_vacant = false;
             }
             
-            (m.monthly_breakdown || []).forEach(mb => {
+            let mbSource = m.monthly_breakdown;
+            if (!mbSource || mbSource.length === 0) {
+                const allItem = (item.mpo_top50_all || []).find(x => x.mpo_code === code);
+                if (allItem && allItem.monthly_breakdown) {
+                    mbSource = allItem.monthly_breakdown;
+                } else {
+                    mbSource = [];
+                }
+            }
+            
+            mbSource.forEach(mb => {
                 const mo = mb.month;
                 if (!mpoMap[code].monthly_breakdown[mo]) {
                     mpoMap[code].monthly_breakdown[mo] = { month: mo, units: 0, parties: 0, invoices: 0, sales: 0 };
@@ -1139,17 +1151,41 @@ function renderStrategicMPOTable() {
             list.forEach(m => {
                 const code = m.mpo_code;
                 if (!mpoMapFM[code]) {
-                    mpoMapFM[code] = { mpo_code: code, fm_name: m.fm_name || 'Unknown', zone: m.zone || 'Unknown', market: m.market || 'Unknown', units: 0, parties: 0, invoices: 0, sales: 0, is_vacant: m.is_vacant };
+                    mpoMapFM[code] = { mpo_code: code, fm_name: m.fm_name || 'Unknown', zone: m.zone || 'Unknown', market: m.market || 'Unknown', units: 0, parties: 0, invoices: 0, sales: 0, is_vacant: m.is_vacant, monthly_breakdown: {} };
                 }
                 mpoMapFM[code].units += m.units || 0;
                 mpoMapFM[code].parties += m.parties || 0;
                 mpoMapFM[code].invoices += m.invoices || 0;
                 mpoMapFM[code].sales += m.sales || 0;
                 if (!m.is_vacant) mpoMapFM[code].is_vacant = false;
+
+                let mbSource = m.monthly_breakdown;
+                if (!mbSource || mbSource.length === 0) {
+                    const allItem = (item.mpo_top50_all || []).find(x => x.mpo_code === code);
+                    if (allItem && allItem.monthly_breakdown) {
+                        mbSource = allItem.monthly_breakdown;
+                    } else {
+                        mbSource = [];
+                    }
+                }
+                mbSource.forEach(mb => {
+                    const mo = mb.month;
+                    if (!mpoMapFM[code].monthly_breakdown[mo]) {
+                        mpoMapFM[code].monthly_breakdown[mo] = { month: mo, units: 0, parties: 0, invoices: 0, sales: 0 };
+                    }
+                    mpoMapFM[code].monthly_breakdown[mo].units += mb.units || mb.quantity || 0;
+                    mpoMapFM[code].monthly_breakdown[mo].parties += mb.parties || 0;
+                    mpoMapFM[code].monthly_breakdown[mo].invoices += mb.invoices || 0;
+                    mpoMapFM[code].monthly_breakdown[mo].sales += mb.sales || 0;
+                });
             });
         });
-        mposFM = Object.values(mpoMapFM);
+        mposFM = Object.values(mpoMapFM).map(m => {
+            m.monthly_breakdown = Object.values(m.monthly_breakdown);
+            return m;
+        });
     }
+    CURRENT_AGGREGATED_MPOS_FM = mposFM;
 
     // 3. Aggregate MPOs for SH Table (either synced with MPO or independent SH selections)
     let mposSH = mpos;
@@ -1163,17 +1199,41 @@ function renderStrategicMPOTable() {
             list.forEach(m => {
                 const code = m.mpo_code;
                 if (!mpoMapSH[code]) {
-                    mpoMapSH[code] = { mpo_code: code, fm_name: m.fm_name || 'Unknown', zone: m.zone || 'Unknown', market: m.market || 'Unknown', units: 0, parties: 0, invoices: 0, sales: 0, is_vacant: m.is_vacant };
+                    mpoMapSH[code] = { mpo_code: code, fm_name: m.fm_name || 'Unknown', zone: m.zone || 'Unknown', market: m.market || 'Unknown', units: 0, parties: 0, invoices: 0, sales: 0, is_vacant: m.is_vacant, monthly_breakdown: {} };
                 }
                 mpoMapSH[code].units += m.units || 0;
                 mpoMapSH[code].parties += m.parties || 0;
                 mpoMapSH[code].invoices += m.invoices || 0;
                 mpoMapSH[code].sales += m.sales || 0;
                 if (!m.is_vacant) mpoMapSH[code].is_vacant = false;
+
+                let mbSource = m.monthly_breakdown;
+                if (!mbSource || mbSource.length === 0) {
+                    const allItem = (item.mpo_top50_all || []).find(x => x.mpo_code === code);
+                    if (allItem && allItem.monthly_breakdown) {
+                        mbSource = allItem.monthly_breakdown;
+                    } else {
+                        mbSource = [];
+                    }
+                }
+                mbSource.forEach(mb => {
+                    const mo = mb.month;
+                    if (!mpoMapSH[code].monthly_breakdown[mo]) {
+                        mpoMapSH[code].monthly_breakdown[mo] = { month: mo, units: 0, parties: 0, invoices: 0, sales: 0 };
+                    }
+                    mpoMapSH[code].monthly_breakdown[mo].units += mb.units || mb.quantity || 0;
+                    mpoMapSH[code].monthly_breakdown[mo].parties += mb.parties || 0;
+                    mpoMapSH[code].monthly_breakdown[mo].invoices += mb.invoices || 0;
+                    mpoMapSH[code].monthly_breakdown[mo].sales += mb.sales || 0;
+                });
             });
         });
-        mposSH = Object.values(mpoMapSH);
+        mposSH = Object.values(mpoMapSH).map(m => {
+            m.monthly_breakdown = Object.values(m.monthly_breakdown);
+            return m;
+        });
     }
+    CURRENT_AGGREGATED_MPOS_SH = mposSH;
 
     // Apply Excel-like column filters for original table
     const filteredMpos = mpos.filter(m => {
@@ -1996,7 +2056,7 @@ function openZoneDrillModal(zoneName) {
         return s;
     };
 
-    const zoneMpos = CURRENT_AGGREGATED_MPOS.filter(m => (m.zone || 'Unknown') === zoneName);
+    const zoneMpos = CURRENT_AGGREGATED_MPOS_SH.filter(m => (m.zone || 'Unknown') === zoneName);
     const totalMposCount = zoneMpos.length;
     const vacantMposCount = zoneMpos.filter(m => m.is_vacant).length;
     const actualMposCount = totalMposCount - vacantMposCount;
@@ -2201,7 +2261,7 @@ function openFMDrillModal(fmName) {
         return s;
     };
 
-    const fmMpos = CURRENT_AGGREGATED_MPOS.filter(m => (m.fm_name || 'Unknown') === fmName);
+    const fmMpos = CURRENT_AGGREGATED_MPOS_FM.filter(m => (m.fm_name || 'Unknown') === fmName);
     const totalMposCount = fmMpos.length;
     const vacantMposCount = fmMpos.filter(m => m.is_vacant).length;
     const actualMposCount = totalMposCount - vacantMposCount;

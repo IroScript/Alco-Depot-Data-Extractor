@@ -3810,10 +3810,14 @@ function updateProdGroupDropdownUI(keys) {
         const checkboxesDiv = document.getElementById(`prod-group-checkboxes${suffix}`);
         const labelSpan = document.getElementById(`selected-prod-group-label${suffix}`);
         if (!checkboxesDiv) return;
+        
+        let activeProds = ACTIVE_STRATEGIC_PRODS;
+        if (suffix === "-copy") activeProds = ACTIVE_STRATEGIC_PRODS_FM;
+        else if (suffix === "-copy2") activeProds = ACTIVE_STRATEGIC_PRODS_SH;
 
         // Build list of checkboxes
         checkboxesDiv.innerHTML = keys.map(k => {
-            const isChecked = ACTIVE_STRATEGIC_PRODS.includes(k);
+            const isChecked = activeProds.includes(k);
             return `
                 <label class="flex items-center gap-2 cursor-pointer py-1 hover:bg-slate-900 rounded px-1.5 transition-colors">
                     <input type="checkbox" class="prod-group-chk${suffix}" value="${k}" ${isChecked ? 'checked' : ''}>
@@ -3824,16 +3828,16 @@ function updateProdGroupDropdownUI(keys) {
 
         // Update label
         if (labelSpan) {
-            if (ACTIVE_STRATEGIC_PRODS.length === keys.length) {
+            if (activeProds.length === keys.length) {
                 labelSpan.textContent = "ALL PRODUCTS SELECTED";
                 if (suffix === "") labelSpan.className = "truncate max-w-[200px] text-cyan-400 font-bold";
                 else if (suffix === "-copy") labelSpan.className = "truncate max-w-[200px] text-purple-400 font-bold";
                 else labelSpan.className = "truncate max-w-[200px] text-amber-400 font-bold";
-            } else if (ACTIVE_STRATEGIC_PRODS.length === 1) {
-                labelSpan.textContent = ACTIVE_STRATEGIC_PRODS[0];
+            } else if (activeProds.length === 1) {
+                labelSpan.textContent = activeProds[0];
                 labelSpan.className = "truncate max-w-[200px] text-slate-200";
             } else {
-                labelSpan.textContent = `${ACTIVE_STRATEGIC_PRODS.length} PRODUCTS SELECTED`;
+                labelSpan.textContent = `${activeProds.length} PRODUCTS SELECTED`;
                 if (suffix === "") labelSpan.className = "truncate max-w-[200px] text-cyan-400 font-bold";
                 else if (suffix === "-copy") labelSpan.className = "truncate max-w-[200px] text-purple-400 font-bold";
                 else labelSpan.className = "truncate max-w-[200px] text-amber-400 font-bold";
@@ -3861,27 +3865,29 @@ function applyProdGroupSelection(suffix) {
         return;
     }
 
-    ACTIVE_STRATEGIC_PRODS = selected;
-    if (selected.length > 0) {
-        ACTIVE_STRATEGIC_PROD = selected[0];
+    if (suffix === "") {
+        ACTIVE_STRATEGIC_PRODS = selected;
+        if (selected.length > 0) ACTIVE_STRATEGIC_PROD = selected[0];
+        STRATEGIC_PAGE = 1;
+        STRATEGIC_FILTERS_SELECTIONS = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
+        TEMP_FILTERS_SELECTIONS = {};
+    } else if (suffix === "-copy") {
+        ACTIVE_STRATEGIC_PRODS_FM = selected;
+        if (selected.length > 0) ACTIVE_STRATEGIC_PROD_FM = selected[0];
+        STRATEGIC_PAGE_COPY = 1;
+        STRATEGIC_FILTERS_SELECTIONS_COPY = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
+        TEMP_FILTERS_SELECTIONS_COPY = {};
+    } else if (suffix === "-copy2") {
+        ACTIVE_STRATEGIC_PRODS_SH = selected;
+        if (selected.length > 0) ACTIVE_STRATEGIC_PROD_SH = selected[0];
+        STRATEGIC_PAGE_COPY2 = 1;
+        STRATEGIC_FILTERS_SELECTIONS_COPY2 = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
+        TEMP_FILTERS_SELECTIONS_COPY2 = {};
     }
 
     // Hide dropdown panel
     const panel = document.getElementById(`prod-group-dropdown-panel${suffix}`);
     if (panel) panel.classList.add("hidden");
-
-    // Reset pagination
-    STRATEGIC_PAGE = 1;
-    STRATEGIC_PAGE_COPY = 1;
-    STRATEGIC_PAGE_COPY2 = 1;
-
-    // Reset all column filters
-    STRATEGIC_FILTERS_SELECTIONS = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    STRATEGIC_FILTERS_SELECTIONS_COPY = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    STRATEGIC_FILTERS_SELECTIONS_COPY2 = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    TEMP_FILTERS_SELECTIONS = {};
-    TEMP_FILTERS_SELECTIONS_COPY = {};
-    TEMP_FILTERS_SELECTIONS_COPY2 = {};
 
     renderStrategic6Products();
 }

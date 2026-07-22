@@ -853,9 +853,9 @@ function renderStrategic6Products() {
                     <span class="truncate">${getProductIcon(prodName)} ${prodName}</span>${orderBadge}
                 </div>
                 <div class="flex items-center justify-between text-[10px] font-tech text-slate-400 border-t border-slate-800/80 pt-1.5 mt-1.5 gap-1.5">
-                    <span class="text-emerald-400 font-mono font-bold">📦 ${Number(displayUnits).toLocaleString()} U</span>
-                    <span>👥 ${Number(displayParties).toLocaleString()} Parties</span>
-                    <span>🧾 ${Number(displayInvoices).toLocaleString()} Inv</span>
+                    <span class="strat-val-units text-emerald-400 font-mono font-bold">📦 ${Number(displayUnits).toLocaleString()} U</span>
+                    <span class="strat-val-parties">👥 ${Number(displayParties).toLocaleString()} Parties</span>
+                    <span class="strat-val-invoices">🧾 ${Number(displayInvoices).toLocaleString()} Inv</span>
                 </div>
             </button>
         `;
@@ -892,9 +892,9 @@ function renderStrategic6Products() {
                         <span class="truncate">${getProductIcon(prodName)} ${prodName}</span>${orderBadge}
                     </div>
                     <div class="flex items-center justify-between text-[10px] font-tech text-slate-400 border-t border-slate-800/80 pt-1.5 mt-1.5 gap-1.5">
-                        <span class="text-emerald-400 font-mono font-bold">📦 ${Number(displayUnits).toLocaleString()} U</span>
-                        <span>👥 ${Number(displayParties).toLocaleString()} Parties</span>
-                        <span>🧾 ${Number(displayInvoices).toLocaleString()} Inv</span>
+                        <span class="strat-val-units text-emerald-400 font-mono font-bold">📦 ${Number(displayUnits).toLocaleString()} U</span>
+                        <span class="strat-val-parties">👥 ${Number(displayParties).toLocaleString()} Parties</span>
+                        <span class="strat-val-invoices">🧾 ${Number(displayInvoices).toLocaleString()} Inv</span>
                     </div>
                 </button>
             `;
@@ -930,9 +930,9 @@ function renderStrategic6Products() {
                         <span class="truncate">${getProductIcon(prodName)} ${prodName}</span>${orderBadge}
                     </div>
                     <div class="flex items-center justify-between text-[10px] font-tech text-slate-400 border-t border-slate-800/80 pt-1.5 mt-1.5 gap-1.5">
-                        <span class="text-emerald-400 font-mono font-bold">📦 ${Number(displayUnits).toLocaleString()} U</span>
-                        <span>👥 ${Number(displayParties).toLocaleString()} Parties</span>
-                        <span>🧾 ${Number(displayInvoices).toLocaleString()} Inv</span>
+                        <span class="strat-val-units text-emerald-400 font-mono font-bold">📦 ${Number(displayUnits).toLocaleString()} U</span>
+                        <span class="strat-val-parties">👥 ${Number(displayParties).toLocaleString()} Parties</span>
+                        <span class="strat-val-invoices">🧾 ${Number(displayInvoices).toLocaleString()} Inv</span>
                     </div>
                 </button>
             `;
@@ -1418,12 +1418,12 @@ function renderStrategicMPOTable() {
                     dU = source.reduce((s, m) => s + (m.units || 0), 0); dP = source.reduce((s, m) => s + (m.parties || 0), 0); dI = source.reduce((s, m) => s + (m.invoices || 0), 0);
                 }
             }
-            const spans = card.querySelectorAll("div:nth-of-type(2) span");
-            if (spans.length >= 3) {
-                spans[0].innerHTML = `📦 ${Number(dU).toLocaleString()} U`;
-                spans[1].innerHTML = `👥 ${Number(dP).toLocaleString()} Parties`;
-                spans[2].innerHTML = `🧾 ${Number(dI).toLocaleString()} Inv`;
-            }
+            const uSpan = card.querySelector(".strat-val-units");
+            const pSpan = card.querySelector(".strat-val-parties");
+            const iSpan = card.querySelector(".strat-val-invoices");
+            if (uSpan) uSpan.innerHTML = `📦 ${Number(dU).toLocaleString()} U`;
+            if (pSpan) pSpan.innerHTML = `👥 ${Number(dP).toLocaleString()} Parties`;
+            if (iSpan) iSpan.innerHTML = `🧾 ${Number(dI).toLocaleString()} Inv`;
         });
     }
 
@@ -1583,12 +1583,12 @@ function renderStrategicMPOTable() {
                     dU = source.reduce((s, m) => s + (m.units || 0), 0); dP = source.reduce((s, m) => s + (m.parties || 0), 0); dI = source.reduce((s, m) => s + (m.invoices || 0), 0);
                 }
             }
-            const spans = card.querySelectorAll("div:nth-of-type(2) span");
-            if (spans.length >= 3) {
-                spans[0].innerHTML = `📦 ${Number(dU).toLocaleString()} U`;
-                spans[1].innerHTML = `👥 ${Number(dP).toLocaleString()} Parties`;
-                spans[2].innerHTML = `🧾 ${Number(dI).toLocaleString()} Inv`;
-            }
+            const uSpan = card.querySelector(".strat-val-units");
+            const pSpan = card.querySelector(".strat-val-parties");
+            const iSpan = card.querySelector(".strat-val-invoices");
+            if (uSpan) uSpan.innerHTML = `📦 ${Number(dU).toLocaleString()} U`;
+            if (pSpan) pSpan.innerHTML = `👥 ${Number(dP).toLocaleString()} Parties`;
+            if (iSpan) iSpan.innerHTML = `🧾 ${Number(dI).toLocaleString()} Inv`;
         });
     }
 
@@ -1750,12 +1750,12 @@ function renderStrategicMPOTable() {
                     dU = source.reduce((s, m) => s + (m.units || 0), 0); dP = source.reduce((s, m) => s + (m.parties || 0), 0); dI = source.reduce((s, m) => s + (m.invoices || 0), 0);
                 }
             }
-            const spans = card.querySelectorAll("div:nth-of-type(2) span");
-            if (spans.length >= 3) {
-                spans[0].innerHTML = `📦 ${Number(dU).toLocaleString()} U`;
-                spans[1].innerHTML = `👥 ${Number(dP).toLocaleString()} Parties`;
-                spans[2].innerHTML = `🧾 ${Number(dI).toLocaleString()} Inv`;
-            }
+            const uSpan = card.querySelector(".strat-val-units");
+            const pSpan = card.querySelector(".strat-val-parties");
+            const iSpan = card.querySelector(".strat-val-invoices");
+            if (uSpan) uSpan.innerHTML = `📦 ${Number(dU).toLocaleString()} U`;
+            if (pSpan) pSpan.innerHTML = `👥 ${Number(dP).toLocaleString()} Parties`;
+            if (iSpan) iSpan.innerHTML = `🧾 ${Number(dI).toLocaleString()} Inv`;
         });
     }
 

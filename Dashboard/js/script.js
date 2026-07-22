@@ -2770,7 +2770,7 @@ function toggleFilterPopover(event, colName) {
             if (searchInput) searchInput.value = '';
             
             // Portal: move popover to body and position fixed
-            _portalPopover(popover, event.currentTarget);
+            popover.classList.remove("hidden");
             
             if (searchInput) searchInput.focus();
         } else {
@@ -3591,7 +3591,7 @@ function toggleFilterPopoverCopy(event, colName) {
                 TEMP_FILTERS_SELECTIONS_COPY[colName] = null;
             }
             populateFilterOptionsCopy(colName);
-            _portalPopover(popover, event.currentTarget);
+            popover.classList.remove("hidden");
         } else {
             popover.classList.add("hidden");
         }
@@ -3852,7 +3852,7 @@ function toggleFilterPopoverCopy2(event, colName) {
                 TEMP_FILTERS_SELECTIONS_COPY2[colName] = null;
             }
             populateFilterOptionsCopy2(colName);
-            _portalPopover(popover, event.currentTarget);
+            popover.classList.remove("hidden");
         } else {
             popover.classList.add("hidden");
         }

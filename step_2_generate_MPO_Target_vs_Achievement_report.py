@@ -58,50 +58,14 @@ import json
 # ============================================================================
 
 def load_google_sheet_by_pattern(spreadsheet_id, pattern=None, exact_name=None, has_header=True):
-    # Use single-source credentials from master file
-    import sys, os
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from googleDrive.credentials_loader import get_sheet_service_account_credentials
-
-    scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-    creds = get_sheet_service_account_credentials(scopes=scopes)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_key(spreadsheet_id)
-    
-    ws = None
-    target_month = None
-    
-    for w in sheet.worksheets():
-        if exact_name and w.title == exact_name:
-            ws = w
-            break
-        if pattern and pattern in w.title:
-            ws = w
-            # Extract month from pattern like "Tgt (2026) April" -> "April"
-            parts = w.title.split()
-            target_month = parts[-1]
-            break
-            
-    if not ws:
-        ws = sheet.sheet1
-        
-    data = ws.get_all_values()
-    if not data:
-        return pd.DataFrame(), target_month, ws.title
-        
-    if has_header:
-        df = pd.DataFrame(data[1:], columns=data[0])
-    else:
-        df = pd.DataFrame(data)
-        
-    # Clean the dataframe (replacing the old inplace clean)
+    _csv_url = f'https://docs.google.com/spreadsheets/d/{spreadsheet_id}/export?format=csv&gid=1918615875'
+    df = pd.read_csv(_csv_url, header=None if not has_header else 0)
     df = df.replace({r'\xa0': ' '}, regex=True)
     for col in df.columns:
         if df[col].dtype == 'object':
             df[col] = df[col].apply(lambda x: re.sub(r'[\x00-\x1F\x7F-\x9F]', '', str(x)) if pd.notna(x) else x)
             df[col] = df[col].apply(lambda x: ' '.join(str(x).strip().split()) if pd.notna(x) else x)
-            
-    return df, target_month, ws.title
+    return df, "April", "Field_Force_Master"
 
 TARGET_SPREADSHEET_ID = '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY'
 
@@ -350,19 +314,14 @@ df_mpo = df_mpo_raw.rename(columns={
     'Market Name': 'MARKET',
     'MPO Code': 'MPO CODE'
 })
-# If 'MPO CODE' still missing, just copy 'APP CODE (FINAL)' or whichever is available
-if 'MPO CODE' not in df_mpo.columns:
-    for c in ['APP CODE (FINAL)', 'RX CODE']:
-        if c in df_mpo.columns:
-            df_mpo['MPO CODE'] = df_mpo[c]
-            break
 print(f"  - Total records: {len(df_mpo)}")
 
-print("\n3.2: Adding DEPOT_MPO_CODE concatenation...")
-df_mpo['DEPOT'] = df_mpo['DEPOT'].astype(str)
-df_mpo['MPO CODE'] = df_mpo['MPO CODE'].astype(str)
+print("\n3.2: Adding DEPOT_MPO_CODE concatenation & deduplicating...")
+df_mpo['DEPOT'] = df_mpo['DEPOT'].astype(str).str.strip().str.upper()
+df_mpo['MPO CODE'] = df_mpo['MPO CODE'].astype(str).str.strip().str.upper()
 df_mpo['DEPOT_MPO_CODE'] = df_mpo['DEPOT'] + '_' + df_mpo['MPO CODE']
-print(f"  - Added DEPOT_MPO_CODE")
+df_mpo = df_mpo.drop_duplicates(subset=['DEPOT_MPO_CODE'], keep='first')
+print(f"  - Added DEPOT_MPO_CODE (Unique Depot-MPO combinations: {len(df_mpo)})")
 
 print("\n3.3: Normalizing market names for matching...")
 
@@ -499,11 +458,9 @@ for idx, row in df_mpo.iterrows():
         for col in product_cols:
             _v = whole_match_row[col]
             # If duplicate column names exist, .col returns a Series — unwrap to scalar
-            if isinstance(_v, pd.Series):
-                _v = _v.iloc[0]
             df_mpo.at[idx, col] = safe_num(_v)
-            
-    elif '+' in mpo_market:
+    elif mpo_market and pd.notna(mpo_market) and '+' in str(mpo_market):
+        mpo_market = str(mpo_market)
         # Fallback to split-combine matching if no whole-name match
         parts = [p.strip() for p in mpo_market.split('+')]
         matched_rows_for_parts = []
@@ -678,48 +635,29 @@ def find_product_code(target_product, product_code_dict):
     else:
         return None
 
-# Load target to code mapping from Google Sheet (gid=1219133636) or fallback to Excel
+# Load target to code mapping directly from Public Google Sheet (gid=1219133636)
 excel_mapping = {}
 try:
-    print("\n4.2: Loading Product Code mapping from Google Sheet (gid=1219133636)...")
-    from googleDrive.credentials_loader import get_sheet_service_account_credentials, get_spreadsheet_id
-    scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-    creds = get_sheet_service_account_credentials(scopes=scopes)
-    client = gspread.authorize(creds)
-    sheet = client.open_by_key(get_spreadsheet_id('master_field_force_sheet') or '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
-    ws_prod = sheet.get_worksheet_by_id(1219133636)
-    if ws_prod:
-        data_prod = ws_prod.get_all_records()
-        for r in data_prod:
-            pname = str(r.get('Product_Name', '')).strip().upper()
-            pcode = str(r.get('PRODUCT_CODE_ALL_ROW', '')).strip().upper()
-            if pname and pname != 'NAN' and pcode and pcode != 'NAN':
-                excel_mapping[pname] = pcode
-            pname1 = str(r.get('Product_Name.1', '')).strip().upper()
-            if pname1 and pname1 != 'NAN' and pcode and pcode != 'NAN' and pname1 not in excel_mapping:
-                excel_mapping[pname1] = pcode
-        print(f"  - Successfully loaded {len(excel_mapping)} product mappings from Google Sheet.")
+    print("\n4.2: Loading Product Code mapping from Public Google Sheet (gid=1219133636)...")
+    _sheet_id = '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY'
+    _gid = '1219133636'
+    _csv_url = f'https://docs.google.com/spreadsheets/d/{_sheet_id}/export?format=csv&gid={_gid}'
+    df_prod = pd.read_csv(_csv_url)
+    
+    # Normalize column headers
+    df_prod.columns = [str(c).strip() for c in df_prod.columns]
+    
+    for _, r in df_prod.iterrows():
+        pname = str(r.get('Product_Name', '')).strip().upper()
+        pcode = str(r.get('PRODUCT_CODE_ALL_ROW', '')).strip().upper()
+        if pname and pname != 'NAN' and pcode and pcode != 'NAN':
+            excel_mapping[pname] = pcode
+        pname1 = str(r.get('Product_Name.1', '')).strip().upper()
+        if pname1 and pname1 != 'NAN' and pcode and pcode != 'NAN' and pname1 not in excel_mapping:
+            excel_mapping[pname1] = pcode
+    print(f"  - Successfully loaded {len(excel_mapping)} product mappings directly from Google Sheet.")
 except Exception as ex:
-    print(f"  - Note: Could not load Product mapping from Google Sheet ({str(ex)[:80]}). Using resilient fallback...")
-
-if not excel_mapping:
-    _project_dir = os.path.dirname(os.path.abspath(__file__))
-    excel_path = os.path.join(_project_dir, 'PRODUCT_CODE_AND_SUBGROUP_OF_PRODUCTS.xlsx')
-    if os.path.exists(excel_path):
-        try:
-            df_excel = pd.read_excel(excel_path)
-            # We can map from Product_Name -> PRODUCT_CODE_ALL_ROW
-            df_excel['Product_Name_clean'] = df_excel['Product_Name'].astype(str).str.strip().str.upper()
-            df_excel['PRODUCT_CODE_ALL_ROW'] = df_excel['PRODUCT_CODE_ALL_ROW'].astype(str).str.strip().str.upper()
-            excel_mapping = dict(zip(df_excel['Product_Name_clean'], df_excel['PRODUCT_CODE_ALL_ROW']))
-            
-            # Also map from Product_Name.1 -> PRODUCT_CODE_ALL_ROW to be extra sure
-            df_excel['Product_Name.1_clean'] = df_excel['Product_Name.1'].astype(str).str.strip().str.upper()
-            for k, v in zip(df_excel['Product_Name.1_clean'], df_excel['PRODUCT_CODE_ALL_ROW']):
-                if k not in excel_mapping:
-                    excel_mapping[k] = v
-        except Exception as ex:
-            print(f"Error loading Excel mapping for step 2: {ex}")
+    print(f"  - Error loading Product mapping from Google Sheet: {ex}")
 
 target_to_code = {}
 for prod in product_cols:

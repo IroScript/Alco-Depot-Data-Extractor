@@ -529,11 +529,11 @@ class ZoneReportApp:
             standard_name_mapping = {}
             try:
                 print("Loading Product Code mapping from Google Sheet (gid=1219133636)...")
-                # Use direct XLSX export instead of gspread — handles duplicate headers gracefully
+                # Use direct CSV export format
                 _sheet_id = '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY'
                 _gid = '1219133636'
-                _url = f'https://docs.google.com/spreadsheets/d/{_sheet_id}/export?format=xlsx&gid={_gid}'
-                df_prod = pd.read_excel(_url, engine='openpyxl')
+                _url = f'https://docs.google.com/spreadsheets/d/{_sheet_id}/export?format=csv&gid={_gid}'
+                df_prod = pd.read_csv(_url)
                 # Normalize column names for easier lookup (handle pandas-added suffixes like .1)
                 df_prod.columns = [str(c).strip() for c in df_prod.columns]
 
@@ -933,26 +933,14 @@ class ZoneReportApp:
 
         def task():
             try:
-                self.root.after(0, lambda: self.set_progress(10, 'CONNECTING API'))
+                self.root.after(0, lambda: self.set_progress(10, 'DOWNLOADING GSHEET DATA'))
 
-                # Spreadsheet ID and gid are read from credentials_master.json via the loader.
-                from googleDrive.credentials_loader import get_sheet_service_account_credentials, get_spreadsheet_id
-                scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-                creds = get_sheet_service_account_credentials(scopes=scopes)
-                client = gspread.authorize(creds)
-                sheet = client.open_by_key(get_spreadsheet_id('master_field_force_sheet') or '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
-
-                # Get worksheet
-                ws = None
-                for w in sheet.worksheets():
-                    if str(w.id) == '1918615875':
-                        ws = w
-                        break
-                if not ws:
-                    ws = sheet.get_worksheet(0)
-
-                # Fetch GSheet values
-                all_values = ws.get_all_values()
+                _sheet_id = '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY'
+                _gid = '1918615875'
+                _csv_url = f'https://docs.google.com/spreadsheets/d/{_sheet_id}/export?format=csv&gid={_gid}'
+                df_mpo_sheet = pd.read_csv(_csv_url, header=None)
+                all_values = df_mpo_sheet.fillna('').values.tolist()
+                
                 if not all_values:
                     raise ValueError("Worksheet is empty!")
 

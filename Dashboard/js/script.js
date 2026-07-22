@@ -276,11 +276,9 @@ async function loadDashboardData(forceRefresh = false) {
 function renderAllComponents() {
     if (!GLOBAL_DATA) return;
 
-    // Set ACTIVE_STRATEGIC_MONTH to the latest month by default if still "ALL"
-    if (GLOBAL_DATA.monthly_trends && GLOBAL_DATA.monthly_trends.length > 0 && ACTIVE_STRATEGIC_MONTH === "ALL") {
-        const months = GLOBAL_DATA.monthly_trends.map(t => t.month);
-        months.sort((a, b) => b.localeCompare(a));
-        ACTIVE_STRATEGIC_MONTH = months[0];
+    // Default to "ALL" months on initial load to show complete aggregated data
+    if (!ACTIVE_STRATEGIC_MONTH) {
+        ACTIVE_STRATEGIC_MONTH = "ALL";
     }
 
     renderKPIs(GLOBAL_DATA.kpis);
@@ -787,6 +785,19 @@ function renderStrategic6Products() {
         return;
     }
 
+    if (!stratData[ACTIVE_STRATEGIC_PROD] && keys.length > 0) {
+        ACTIVE_STRATEGIC_PROD = keys[0];
+        ACTIVE_STRATEGIC_PRODS = [keys[0]];
+    }
+    if (!stratData[ACTIVE_STRATEGIC_PROD_FM] && keys.length > 0) {
+        ACTIVE_STRATEGIC_PROD_FM = keys[0];
+        ACTIVE_STRATEGIC_PRODS_FM = [keys[0]];
+    }
+    if (!stratData[ACTIVE_STRATEGIC_PROD_SH] && keys.length > 0) {
+        ACTIVE_STRATEGIC_PROD_SH = keys[0];
+        ACTIVE_STRATEGIC_PRODS_SH = [keys[0]];
+    }
+
     if (ACTIVE_STRATEGIC_PRODS.length === 0 && keys.length > 0) {
         ACTIVE_STRATEGIC_PRODS = [ACTIVE_STRATEGIC_PROD];
     }
@@ -795,10 +806,6 @@ function renderStrategic6Products() {
     }
     if (ACTIVE_STRATEGIC_PRODS_SH.length === 0 && keys.length > 0) {
         ACTIVE_STRATEGIC_PRODS_SH = [ACTIVE_STRATEGIC_PROD_SH];
-    }
-
-    if (!stratData[ACTIVE_STRATEGIC_PROD] && keys.length > 0) {
-        ACTIVE_STRATEGIC_PROD = keys[0];
     }
 
     // Update the dropdown checkboxes selection UI
@@ -975,8 +982,6 @@ function selectStrategicProduct(prodName) {
     ACTIVE_STRATEGIC_PROD = prodName;
     ACTIVE_STRATEGIC_PRODS = [prodName];
     STRATEGIC_PAGE = 1;
-    STRATEGIC_FILTERS_SELECTIONS = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    TEMP_FILTERS_SELECTIONS = {};
     renderStrategic6Products();
 }
 
@@ -984,8 +989,6 @@ function selectStrategicProductFM(prodName) {
     ACTIVE_STRATEGIC_PROD_FM = prodName;
     ACTIVE_STRATEGIC_PRODS_FM = [prodName];
     STRATEGIC_PAGE_COPY = 1;
-    STRATEGIC_FILTERS_SELECTIONS_COPY = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    TEMP_FILTERS_SELECTIONS_COPY = {};
     renderStrategic6Products();
 }
 
@@ -993,32 +996,24 @@ function selectStrategicProductSH(prodName) {
     ACTIVE_STRATEGIC_PROD_SH = prodName;
     ACTIVE_STRATEGIC_PRODS_SH = [prodName];
     STRATEGIC_PAGE_COPY2 = 1;
-    STRATEGIC_FILTERS_SELECTIONS_COPY2 = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    TEMP_FILTERS_SELECTIONS_COPY2 = {};
     renderStrategic6Products();
 }
 
 function selectStrategicMonth(monthVal) {
     ACTIVE_STRATEGIC_MONTH = monthVal;
     STRATEGIC_PAGE = 1;
-    STRATEGIC_FILTERS_SELECTIONS = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    TEMP_FILTERS_SELECTIONS = {};
     renderStrategic6Products();
 }
 
 function selectStrategicMonthFM(monthVal) {
     ACTIVE_STRATEGIC_MONTH_FM = monthVal;
     STRATEGIC_PAGE_COPY = 1;
-    STRATEGIC_FILTERS_SELECTIONS_COPY = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    TEMP_FILTERS_SELECTIONS_COPY = {};
     renderStrategic6Products();
 }
 
 function selectStrategicMonthSH(monthVal) {
     ACTIVE_STRATEGIC_MONTH_SH = monthVal;
     STRATEGIC_PAGE_COPY2 = 1;
-    STRATEGIC_FILTERS_SELECTIONS_COPY2 = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-    TEMP_FILTERS_SELECTIONS_COPY2 = {};
     renderStrategic6Products();
 }
 
@@ -1104,10 +1099,13 @@ function renderStrategicMPOTable() {
         }
         
         list.forEach(m => {
+            const depot = m.depot || 'Unknown';
             const code = m.mpo_code;
-            if (!mpoMap[code]) {
-                mpoMap[code] = {
+            const uniqueKey = depot + '_' + code;
+            if (!mpoMap[uniqueKey]) {
+                mpoMap[uniqueKey] = {
                     mpo_code: code,
+                    depot: depot,
                     fm_name: m.fm_name || 'Unknown',
                     zone: m.zone || 'Unknown',
                     market: m.market || 'Unknown',
@@ -1119,17 +1117,17 @@ function renderStrategicMPOTable() {
                     monthly_breakdown: {}
                 };
             }
-            mpoMap[code].units += m.units || 0;
-            mpoMap[code].parties += m.parties || 0;
-            mpoMap[code].invoices += m.invoices || 0;
-            mpoMap[code].sales += m.sales || 0;
+            mpoMap[uniqueKey].units += m.units || 0;
+            mpoMap[uniqueKey].parties += m.parties || 0;
+            mpoMap[uniqueKey].invoices += m.invoices || 0;
+            mpoMap[uniqueKey].sales += m.sales || 0;
             if (!m.is_vacant) {
-                mpoMap[code].is_vacant = false;
+                mpoMap[uniqueKey].is_vacant = false;
             }
             
             let mbSource = m.monthly_breakdown;
             if (!mbSource || mbSource.length === 0) {
-                const allItem = (item.mpo_top50_all || []).find(x => x.mpo_code === code);
+                const allItem = (item.mpo_top50_all || []).find(x => x.mpo_code === code && (x.depot || 'Unknown') === depot);
                 if (allItem && allItem.monthly_breakdown) {
                     mbSource = allItem.monthly_breakdown;
                 } else {
@@ -1139,13 +1137,13 @@ function renderStrategicMPOTable() {
             
             mbSource.forEach(mb => {
                 const mo = mb.month;
-                if (!mpoMap[code].monthly_breakdown[mo]) {
-                    mpoMap[code].monthly_breakdown[mo] = { month: mo, units: 0, parties: 0, invoices: 0, sales: 0 };
+                if (!mpoMap[uniqueKey].monthly_breakdown[mo]) {
+                    mpoMap[uniqueKey].monthly_breakdown[mo] = { month: mo, units: 0, parties: 0, invoices: 0, sales: 0 };
                 }
-                mpoMap[code].monthly_breakdown[mo].units += mb.units || mb.quantity || 0;
-                mpoMap[code].monthly_breakdown[mo].parties += mb.parties || 0;
-                mpoMap[code].monthly_breakdown[mo].invoices += mb.invoices || 0;
-                mpoMap[code].monthly_breakdown[mo].sales += mb.sales || 0;
+                mpoMap[uniqueKey].monthly_breakdown[mo].units += mb.units || mb.quantity || 0;
+                mpoMap[uniqueKey].monthly_breakdown[mo].parties += mb.parties || 0;
+                mpoMap[uniqueKey].monthly_breakdown[mo].invoices += mb.invoices || 0;
+                mpoMap[uniqueKey].monthly_breakdown[mo].sales += mb.sales || 0;
             });
         });
     });
@@ -1173,19 +1171,21 @@ function renderStrategicMPOTable() {
             if (!item) return;
             let list = ACTIVE_STRATEGIC_MONTH_FM === "ALL" ? (item.mpo_top50_all || []) : ((item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_FM]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_FM] : []);
             list.forEach(m => {
+                const depot = m.depot || 'Unknown';
                 const code = m.mpo_code;
-                if (!mpoMapFM[code]) {
-                    mpoMapFM[code] = { mpo_code: code, fm_name: m.fm_name || 'Unknown', zone: m.zone || 'Unknown', market: m.market || 'Unknown', units: 0, parties: 0, invoices: 0, sales: 0, is_vacant: m.is_vacant, monthly_breakdown: {} };
+                const uniqueKey = depot + '_' + code;
+                if (!mpoMapFM[uniqueKey]) {
+                    mpoMapFM[uniqueKey] = { mpo_code: code, depot: depot, fm_name: m.fm_name || 'Unknown', zone: m.zone || 'Unknown', market: m.market || 'Unknown', units: 0, parties: 0, invoices: 0, sales: 0, is_vacant: m.is_vacant, monthly_breakdown: {} };
                 }
-                mpoMapFM[code].units += m.units || 0;
-                mpoMapFM[code].parties += m.parties || 0;
-                mpoMapFM[code].invoices += m.invoices || 0;
-                mpoMapFM[code].sales += m.sales || 0;
-                if (!m.is_vacant) mpoMapFM[code].is_vacant = false;
+                mpoMapFM[uniqueKey].units += m.units || 0;
+                mpoMapFM[uniqueKey].parties += m.parties || 0;
+                mpoMapFM[uniqueKey].invoices += m.invoices || 0;
+                mpoMapFM[uniqueKey].sales += m.sales || 0;
+                if (!m.is_vacant) mpoMapFM[uniqueKey].is_vacant = false;
 
                 let mbSource = m.monthly_breakdown;
                 if (!mbSource || mbSource.length === 0) {
-                    const allItem = (item.mpo_top50_all || []).find(x => x.mpo_code === code);
+                    const allItem = (item.mpo_top50_all || []).find(x => x.mpo_code === code && (x.depot || 'Unknown') === depot);
                     if (allItem && allItem.monthly_breakdown) {
                         mbSource = allItem.monthly_breakdown;
                     } else {
@@ -1194,13 +1194,13 @@ function renderStrategicMPOTable() {
                 }
                 mbSource.forEach(mb => {
                     const mo = mb.month;
-                    if (!mpoMapFM[code].monthly_breakdown[mo]) {
-                        mpoMapFM[code].monthly_breakdown[mo] = { month: mo, units: 0, parties: 0, invoices: 0, sales: 0 };
+                    if (!mpoMapFM[uniqueKey].monthly_breakdown[mo]) {
+                        mpoMapFM[uniqueKey].monthly_breakdown[mo] = { month: mo, units: 0, parties: 0, invoices: 0, sales: 0 };
                     }
-                    mpoMapFM[code].monthly_breakdown[mo].units += mb.units || mb.quantity || 0;
-                    mpoMapFM[code].monthly_breakdown[mo].parties += mb.parties || 0;
-                    mpoMapFM[code].monthly_breakdown[mo].invoices += mb.invoices || 0;
-                    mpoMapFM[code].monthly_breakdown[mo].sales += mb.sales || 0;
+                    mpoMapFM[uniqueKey].monthly_breakdown[mo].units += mb.units || mb.quantity || 0;
+                    mpoMapFM[uniqueKey].monthly_breakdown[mo].parties += mb.parties || 0;
+                    mpoMapFM[uniqueKey].monthly_breakdown[mo].invoices += mb.invoices || 0;
+                    mpoMapFM[uniqueKey].monthly_breakdown[mo].sales += mb.sales || 0;
                 });
             });
         });
@@ -1221,19 +1221,21 @@ function renderStrategicMPOTable() {
             if (!item) return;
             let list = ACTIVE_STRATEGIC_MONTH_SH === "ALL" ? (item.mpo_top50_all || []) : ((item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_SH]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_SH] : []);
             list.forEach(m => {
+                const depot = m.depot || 'Unknown';
                 const code = m.mpo_code;
-                if (!mpoMapSH[code]) {
-                    mpoMapSH[code] = { mpo_code: code, fm_name: m.fm_name || 'Unknown', zone: m.zone || 'Unknown', market: m.market || 'Unknown', units: 0, parties: 0, invoices: 0, sales: 0, is_vacant: m.is_vacant, monthly_breakdown: {} };
+                const uniqueKey = depot + '_' + code;
+                if (!mpoMapSH[uniqueKey]) {
+                    mpoMapSH[uniqueKey] = { mpo_code: code, depot: depot, fm_name: m.fm_name || 'Unknown', zone: m.zone || 'Unknown', market: m.market || 'Unknown', units: 0, parties: 0, invoices: 0, sales: 0, is_vacant: m.is_vacant, monthly_breakdown: {} };
                 }
-                mpoMapSH[code].units += m.units || 0;
-                mpoMapSH[code].parties += m.parties || 0;
-                mpoMapSH[code].invoices += m.invoices || 0;
-                mpoMapSH[code].sales += m.sales || 0;
-                if (!m.is_vacant) mpoMapSH[code].is_vacant = false;
+                mpoMapSH[uniqueKey].units += m.units || 0;
+                mpoMapSH[uniqueKey].parties += m.parties || 0;
+                mpoMapSH[uniqueKey].invoices += m.invoices || 0;
+                mpoMapSH[uniqueKey].sales += m.sales || 0;
+                if (!m.is_vacant) mpoMapSH[uniqueKey].is_vacant = false;
 
                 let mbSource = m.monthly_breakdown;
                 if (!mbSource || mbSource.length === 0) {
-                    const allItem = (item.mpo_top50_all || []).find(x => x.mpo_code === code);
+                    const allItem = (item.mpo_top50_all || []).find(x => x.mpo_code === code && (x.depot || 'Unknown') === depot);
                     if (allItem && allItem.monthly_breakdown) {
                         mbSource = allItem.monthly_breakdown;
                     } else {
@@ -1242,13 +1244,13 @@ function renderStrategicMPOTable() {
                 }
                 mbSource.forEach(mb => {
                     const mo = mb.month;
-                    if (!mpoMapSH[code].monthly_breakdown[mo]) {
-                        mpoMapSH[code].monthly_breakdown[mo] = { month: mo, units: 0, parties: 0, invoices: 0, sales: 0 };
+                    if (!mpoMapSH[uniqueKey].monthly_breakdown[mo]) {
+                        mpoMapSH[uniqueKey].monthly_breakdown[mo] = { month: mo, units: 0, parties: 0, invoices: 0, sales: 0 };
                     }
-                    mpoMapSH[code].monthly_breakdown[mo].units += mb.units || mb.quantity || 0;
-                    mpoMapSH[code].monthly_breakdown[mo].parties += mb.parties || 0;
-                    mpoMapSH[code].monthly_breakdown[mo].invoices += mb.invoices || 0;
-                    mpoMapSH[code].monthly_breakdown[mo].sales += mb.sales || 0;
+                    mpoMapSH[uniqueKey].monthly_breakdown[mo].units += mb.units || mb.quantity || 0;
+                    mpoMapSH[uniqueKey].monthly_breakdown[mo].parties += mb.parties || 0;
+                    mpoMapSH[uniqueKey].monthly_breakdown[mo].invoices += mb.invoices || 0;
+                    mpoMapSH[uniqueKey].monthly_breakdown[mo].sales += mb.sales || 0;
                 });
             });
         });
@@ -1279,6 +1281,25 @@ function renderStrategicMPOTable() {
         return true;
     });
 
+    // Update table header highlight state for active filters
+    const updateHeaderHighlights = (tableId, filterObj) => {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+        const ths = table.querySelectorAll("thead th");
+        ths.forEach(th => {
+            const colKey = th.getAttribute("data-col-key");
+            if (colKey && filterObj[colKey] && filterObj[colKey].length > 0) {
+                th.classList.add("header-filter-active");
+            } else {
+                th.classList.remove("header-filter-active");
+            }
+        });
+    };
+
+    updateHeaderHighlights("table-strategic-mpos", STRATEGIC_FILTERS_SELECTIONS);
+    updateHeaderHighlights("table-strategic-mpos-copy", STRATEGIC_FILTERS_SELECTIONS_COPY);
+    updateHeaderHighlights("table-strategic-mpos-copy2", STRATEGIC_FILTERS_SELECTIONS_COPY2);
+
     CURRENT_FILTERED_MPOS = filteredMpos;
 
     const totalRecords = filteredMpos.length;
@@ -1306,7 +1327,7 @@ function renderStrategicMPOTable() {
                     <td><div class="cell-clip">${formatBDT(m.sales)}</div></td>
                     <td>
                         <div class="cell-clip">
-                            <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}')">
+                            <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}', '${(m.depot || '').replace(/'/g, "\\'")}')">
                                 📈 GRAPH
                             </button>
                         </div>
@@ -1856,7 +1877,7 @@ function renderCharts() {
 }
 
 /* Open Modal for Detailed Drilldown */
-function openDrillModal(type, code) {
+function openDrillModal(type, code, depot = '') {
     const modal = document.getElementById("drill-modal");
     const title = document.getElementById("modal-title");
     const subtitle = document.getElementById("modal-subtitle");
@@ -1887,18 +1908,18 @@ function openDrillModal(type, code) {
             subtitle.innerHTML = `<span class="text-emerald-400 font-bold">🔒 STRICT CODE ANCHOR</span> // TOTAL UNITS: <span class="text-white font-cyber">${Number(totalUnits).toLocaleString()}</span> // UNIQUE PARTIES: <span class="text-purple-300 font-bold">${item.total_parties}</span>`;
         }
     } else if (type === "mpo") {
-        const aggMpo = CURRENT_AGGREGATED_MPOS.find(m => m.mpo_code === code);
+        const aggMpo = CURRENT_AGGREGATED_MPOS.find(m => m.mpo_code === code && (!depot || (m.depot || '') === depot));
         if (aggMpo) {
             item = aggMpo;
         } else {
-            item = GLOBAL_DATA.top_50_mpos.find(m => m.mpo_code === code);
+            item = GLOBAL_DATA.top_50_mpos.find(m => m.mpo_code === code && (!depot || (m.depot || '') === depot));
         }
 
         if (item) {
             // Title shows active strategic product name (e.g. "💊 MOKAST 10 TAB") + market + zone
             const productName = ACTIVE_STRATEGIC_PROD || 'PRODUCT';
             title.innerHTML = `${getProductIcon(productName)} <span class="text-cyan-300">${productName}</span> // 📍 MARKET: <span class="text-emerald-400 font-bold">${item.market||'Unknown'}</span> // ZONE: <span class="text-purple-300 font-bold">${item.zone}</span>`;
-            subtitle.innerHTML = `<span class="text-purple-300 font-bold">👔 MPO ${item.mpo_code}</span> ${item.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-xs px-2 py-0.5 rounded border border-amber-500/40 ml-1 font-mono">VACANT</span>' : ''}`;
+            subtitle.innerHTML = `<span class="text-purple-300 font-bold">👔 MPO ${item.mpo_code} (${item.depot || ''})</span> ${item.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-xs px-2 py-0.5 rounded border border-amber-500/40 ml-1 font-mono">VACANT</span>' : ''}`;
         }
     }
 
@@ -2675,6 +2696,11 @@ function cancelFilter(colName) {
 function clearColumnFilter(colName) {
     STRATEGIC_FILTERS_SELECTIONS[colName] = null;
     TEMP_FILTERS_SELECTIONS[colName] = null;
+    const optionsDiv = document.getElementById(`options-${colName}`);
+    if (optionsDiv) {
+        const checkboxes = optionsDiv.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(chk => chk.checked = false);
+    }
     const popover = document.getElementById(`popover-${colName}`);
     if (popover) popover.classList.add("hidden");
     STRATEGIC_PAGE = 1;
@@ -3464,6 +3490,11 @@ function cancelFilterCopy(colName) {
 function clearColumnFilterCopy(colName) {
     STRATEGIC_FILTERS_SELECTIONS_COPY[colName] = null;
     TEMP_FILTERS_SELECTIONS_COPY[colName] = null;
+    const optionsDiv = document.getElementById(`options-${colName}-copy`);
+    if (optionsDiv) {
+        const checkboxes = optionsDiv.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(chk => chk.checked = false);
+    }
     const popover = document.getElementById(`popover-${colName}-copy`);
     if (popover) popover.classList.add("hidden");
     STRATEGIC_PAGE_COPY = 1;
@@ -3686,6 +3717,11 @@ function cancelFilterCopy2(colName) {
 function clearColumnFilterCopy2(colName) {
     STRATEGIC_FILTERS_SELECTIONS_COPY2[colName] = null;
     TEMP_FILTERS_SELECTIONS_COPY2[colName] = null;
+    const optionsDiv = document.getElementById(`options-${colName}-copy2`);
+    if (optionsDiv) {
+        const checkboxes = optionsDiv.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(chk => chk.checked = false);
+    }
     const popover = document.getElementById(`popover-${colName}-copy2`);
     if (popover) popover.classList.add("hidden");
     STRATEGIC_PAGE_COPY2 = 1;
@@ -3869,20 +3905,14 @@ function applyProdGroupSelection(suffix) {
         ACTIVE_STRATEGIC_PRODS = selected;
         if (selected.length > 0) ACTIVE_STRATEGIC_PROD = selected[0];
         STRATEGIC_PAGE = 1;
-        STRATEGIC_FILTERS_SELECTIONS = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-        TEMP_FILTERS_SELECTIONS = {};
     } else if (suffix === "-copy") {
         ACTIVE_STRATEGIC_PRODS_FM = selected;
         if (selected.length > 0) ACTIVE_STRATEGIC_PROD_FM = selected[0];
         STRATEGIC_PAGE_COPY = 1;
-        STRATEGIC_FILTERS_SELECTIONS_COPY = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-        TEMP_FILTERS_SELECTIONS_COPY = {};
     } else if (suffix === "-copy2") {
         ACTIVE_STRATEGIC_PRODS_SH = selected;
         if (selected.length > 0) ACTIVE_STRATEGIC_PROD_SH = selected[0];
         STRATEGIC_PAGE_COPY2 = 1;
-        STRATEGIC_FILTERS_SELECTIONS_COPY2 = { rank: null, zone: null, fm: null, code: null, market: null, units: null, parties: null, invoices: null, sales: null };
-        TEMP_FILTERS_SELECTIONS_COPY2 = {};
     }
 
     // Hide dropdown panel

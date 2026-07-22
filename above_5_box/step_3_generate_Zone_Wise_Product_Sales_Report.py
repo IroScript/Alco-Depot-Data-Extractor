@@ -511,29 +511,38 @@ class ZoneReportApp:
             subgroup_mapping = {}
             standard_name_mapping = {}
             try:
-                print("Loading Product Code mapping from Google Sheet (gid=1219133636)...")
-                import sys, os
-                sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
-                from googleDrive.credentials_loader import get_sheet_service_account_credentials, get_spreadsheet_id
-                scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-                creds = get_sheet_service_account_credentials(scopes=scopes)
-                client = gspread.authorize(creds)
-                sheet = client.open_by_key(get_spreadsheet_id('master_field_force_sheet') or '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
-                ws_prod = sheet.get_worksheet_by_id(1219133636)
-                if ws_prod:
-                    rows_prod = ws_prod.get_all_records()
-                    for r in rows_prod:
+                print("Loading Product Code mapping from Public Google Sheet (gid=1219133636)...")
+                _sheet_id = '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY'
+                _gid = '1219133636'
+                _url = f'https://docs.google.com/spreadsheets/d/{_sheet_id}/export?format=csv&gid={_gid}'
+                df_prod = pd.read_csv(_url)
+                df_prod.columns = [str(c).strip() for c in df_prod.columns]
+
+                _cols_set = set(df_prod.columns)
+                for _, r in df_prod.iterrows():
+                    if 'PRODUCT_CODE_ALL_ROW' in _cols_set and 'SUB_GROUP_STANDARD' in _cols_set:
                         pcode_all = str(r.get('PRODUCT_CODE_ALL_ROW', '')).strip().upper()
                         subg = str(r.get('SUB_GROUP_STANDARD', '')).strip()
                         if pcode_all and pcode_all != 'NAN' and subg and subg != 'NAN':
                             subgroup_mapping[pcode_all] = subg
-                        pcode = str(r.get('Product_Code', '')).strip().upper()
-                        pname = str(r.get('Product_Name', '')).strip()
-                        if pcode and pcode != 'NAN' and pname and pname != 'NAN':
-                            standard_name_mapping[pcode] = pname
-                    print(f"Loaded {len(subgroup_mapping)} subgroups and {len(standard_name_mapping)} product names from Google Sheet.")
+                    pcode_raw = r.get('Product_Code')
+                    if pd.isna(pcode_raw):
+                        continue
+                    pcode = str(pcode_raw).strip().upper()
+                    if not pcode or pcode == 'NAN':
+                        continue
+                    pname = r.get('Product_Name')
+                    if pd.isna(pname) or not str(pname).strip():
+                        pname = r.get('Product_Name.1')
+                    if pd.isna(pname):
+                        pname = ''
+                    pname = str(pname).strip()
+                    if pname and pname != 'NAN':
+                        standard_name_mapping[pcode] = pname
+
+                print(f"Loaded {len(subgroup_mapping)} subgroups and {len(standard_name_mapping)} product names directly from Google Sheet.")
             except Exception as ex:
-                print(f"Note: Could not load Product mapping from Google Sheet ({str(ex)[:80]}). Using resilient fallback...")
+                print(f"Note: Could not load Product mapping from Google Sheet ({ex}).")
 
             if not subgroup_mapping:
                 excel_path = None
@@ -898,26 +907,14 @@ class ZoneReportApp:
 
         def task():
             try:
-                self.root.after(0, lambda: self.set_progress(10, 'CONNECTING API'))
+                self.root.after(0, lambda: self.set_progress(10, 'DOWNLOADING GSHEET DATA'))
 
-                # Spreadsheet ID and gid are read from credentials_master.json via the loader.
-                from googleDrive.credentials_loader import get_sheet_service_account_credentials, get_spreadsheet_id
-                scopes = ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive']
-                creds = get_sheet_service_account_credentials(scopes=scopes)
-                client = gspread.authorize(creds)
-                sheet = client.open_by_key(get_spreadsheet_id('master_field_force_sheet') or '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY')
-
-                # Get worksheet
-                ws = None
-                for w in sheet.worksheets():
-                    if str(w.id) == '1918615875':
-                        ws = w
-                        break
-                if not ws:
-                    ws = sheet.get_worksheet(0)
-
-                # Fetch GSheet values
-                all_values = ws.get_all_values()
+                _sheet_id = '1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY'
+                _gid = '1918615875'
+                _csv_url = f'https://docs.google.com/spreadsheets/d/{_sheet_id}/export?format=csv&gid={_gid}'
+                df_mpo_sheet = pd.read_csv(_csv_url, header=None)
+                all_values = df_mpo_sheet.fillna('').values.tolist()
+                
                 if not all_values:
                     raise ValueError("Worksheet is empty!")
 

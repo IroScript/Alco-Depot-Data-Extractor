@@ -636,8 +636,21 @@ tr:hover td:first-child {
 #table-strategic-mpos-copy2 .btn-action {
     font-size: 1.08em !important;
 }
-#table-strategic-mpos th,
-#table-strategic-mpos-copy th,
+#table-strategic-mpos th.header-filter-active,
+#table-strategic-mpos-copy th.header-filter-active,
+#table-strategic-mpos-copy2 th.header-filter-active,
+th.header-filter-active {
+    background: linear-gradient(135deg, #eab308, #ca8a04) !important;
+    color: #000000 !important;
+    font-weight: 900 !important;
+    border: 2px solid #fef08a !important;
+    box-shadow: 0 0 15px rgba(234, 179, 8, 0.8), inset 0 0 10px rgba(254, 240, 138, 0.6) !important;
+}
+th.header-filter-active .excel-header-text,
+th.header-filter-active button {
+    color: #000000 !important;
+    font-weight: 900 !important;
+}
 #table-strategic-mpos-copy2 th {
     padding: 2px 4px !important;
     overflow: visible !important;

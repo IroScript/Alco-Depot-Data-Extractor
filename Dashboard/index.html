@@ -403,9 +403,9 @@
                     <thead>
                         <tr class="bg-slate-900/90 text-cyan-300 font-cyber text-xs" style="height: 28px;">
                             <!-- Rank -->
-                            <th class="w-[60px]" style="position: relative; height: 28px;">
+                            <th class="w-[60px]" style="position: relative; height: 28px;" data-col-key="rank">
                                 <div class="excel-header-wrapper">
-                                    <span class="excel-header-text">RANK 🏆</span>
+                                    <span class="excel-header-text">#</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'rank')">▼</button>
                                 </div>
                                 <div id="popover-rank" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
@@ -423,7 +423,7 @@
                                 </div>
                             </th>
                             <!-- Zone -->
-                            <th class="w-[75px]" style="position: relative; height: 28px;">
+                            <th class="w-[75px]" style="position: relative; height: 28px;" data-col-key="zone">
                                 <div class="excel-header-wrapper">
                                     <span class="excel-header-text">ZONE</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'zone')">▼</button>
@@ -443,7 +443,7 @@
                                 </div>
                             </th>
                             <!-- Field Manager -->
-                            <th class="w-[170px]" style="position: relative; height: 28px;">
+                            <th class="w-[170px]" style="position: relative; height: 28px;" data-col-key="fm">
                                 <div class="excel-header-wrapper">
                                     <span class="excel-header-text">FIELD MANAGER</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'fm')">▼</button>
@@ -463,7 +463,7 @@
                                 </div>
                             </th>
                             <!-- MPO Code -->
-                            <th class="w-[90px]" style="position: relative; height: 28px;">
+                            <th class="w-[90px]" style="position: relative; height: 28px;" data-col-key="code">
                                 <div class="excel-header-wrapper">
                                     <span class="excel-header-text">MPO CODE 👤</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'code')">▼</button>
@@ -483,7 +483,7 @@
                                 </div>
                             </th>
                             <!-- Market Name -->
-                            <th class="w-[150px]" style="position: relative; height: 28px;">
+                            <th class="w-[150px]" style="position: relative; height: 28px;" data-col-key="market">
                                 <div class="excel-header-wrapper">
                                     <span class="excel-header-text">MARKET NAME 📍</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'market')">▼</button>
@@ -503,7 +503,7 @@
                                 </div>
                             </th>
                             <!-- Total Units -->
-                            <th class="bg-cyan-950/50 text-cyan-200 w-[130px]" style="position: relative; height: 28px;">
+                            <th class="bg-cyan-950/50 text-cyan-200 w-[130px]" style="position: relative; height: 28px;" data-col-key="units">
                                 <div class="excel-header-wrapper" style="background: rgba(8, 47, 73, 0.9);">
                                     <span class="excel-header-text">TOTAL UNITS 📦</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'units')">▼</button>
@@ -523,7 +523,7 @@
                                 </div>
                             </th>
                             <!-- Parties -->
-                            <th class="w-[110px]" style="position: relative; height: 28px;">
+                            <th class="w-[110px]" style="position: relative; height: 28px;" data-col-key="parties">
                                 <div class="excel-header-wrapper">
                                     <span class="excel-header-text">PARTIES 👥</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'parties')">▼</button>
@@ -543,7 +543,7 @@
                                 </div>
                             </th>
                             <!-- Invoices -->
-                            <th class="w-[110px]" style="position: relative; height: 28px;">
+                            <th class="w-[110px]" style="position: relative; height: 28px;" data-col-key="invoices">
                                 <div class="excel-header-wrapper">
                                     <span class="excel-header-text">INVOICES 🧾</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'invoices')">▼</button>
@@ -563,7 +563,7 @@
                                 </div>
                             </th>
                             <!-- Value in Tk. -->
-                            <th class="w-[140px]" style="position: relative; height: 28px;">
+                            <th class="w-[140px]" style="position: relative; height: 28px;" data-col-key="sales">
                                 <div class="excel-header-wrapper">
                                     <span class="excel-header-text">Value in Tk. (Incl. VAT)</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'sales')">▼</button>

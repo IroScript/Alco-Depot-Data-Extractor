@@ -279,9 +279,15 @@ async function loadDashboardData(forceRefresh = false) {
 function renderAllComponents() {
     if (!GLOBAL_DATA) return;
 
-    // Default to "ALL" months on initial load to show complete aggregated data
-    if (!ACTIVE_STRATEGIC_MONTH) {
-        ACTIVE_STRATEGIC_MONTH = "ALL";
+    // Default to latest month on initial load
+    if (ACTIVE_STRATEGIC_MONTH === null) {
+        let defaultMonth = "ALL";
+        if (GLOBAL_DATA.monthly_trends && GLOBAL_DATA.monthly_trends.length > 0) {
+            defaultMonth = GLOBAL_DATA.monthly_trends[GLOBAL_DATA.monthly_trends.length - 1].month;
+        }
+        ACTIVE_STRATEGIC_MONTH = defaultMonth;
+        ACTIVE_STRATEGIC_MONTH_FM = defaultMonth;
+        ACTIVE_STRATEGIC_MONTH_SH = defaultMonth;
     }
 
     renderKPIs(GLOBAL_DATA.kpis);
@@ -303,20 +309,25 @@ function formatBDT(val) {
         return "৳ " + (num / 10000000).toFixed(2) + " Cr";
     } else if (absNum >= 100000) { // 1 Lakh = 100,000
         return "৳ " + (num / 100000).toFixed(2) + " L";
+    } else if (absNum >= 1000) {
+        let kVal = (num / 1000).toFixed(1);
+        return "৳ " + (kVal.endsWith(".0") ? kVal.slice(0, -2) : kVal) + "K";
     }
-    // For values under 1 Lakh (e.g. 4000), use standard comma formatting for readability
-    return "৳ " + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return "৳ " + Math.round(num);
 }
 
 function formatBDTRound(val) {
-    const num = Math.round(Number(val) || 0);
+    const num = Number(val) || 0;
     const absNum = Math.abs(num);
-    if (absNum >= 10000000) {
+    if (absNum >= 10000000) { // 1 Crore = 10,000,000
         return "৳ " + (num / 10000000).toFixed(2) + " Cr";
-    } else if (absNum >= 100000) {
+    } else if (absNum >= 100000) { // 1 Lakh = 100,000
         return "৳ " + (num / 100000).toFixed(2) + " L";
+    } else if (absNum >= 1000) {
+        let kVal = (num / 1000).toFixed(1);
+        return "৳ " + (kVal.endsWith(".0") ? kVal.slice(0, -2) : kVal) + "K";
     }
-    return "৳ " + num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return "৳ " + Math.round(num);
 }
 
 /* Render KPI Matrix */
@@ -700,7 +711,7 @@ let ACTIVE_STRATEGIC_PRODS = [];
 let CURRENT_AGGREGATED_MPOS = [];
 let CURRENT_AGGREGATED_MPOS_FM = [];
 let CURRENT_AGGREGATED_MPOS_SH = [];
-let ACTIVE_STRATEGIC_MONTH = "ALL";
+let ACTIVE_STRATEGIC_MONTH = null;
 
 // Independent states for FM and SH
 let IS_FM_SYNCED = false;
@@ -708,11 +719,11 @@ let IS_SH_SYNCED = false;
 
 let ACTIVE_STRATEGIC_PROD_FM = "MOKAST 10 TAB";
 let ACTIVE_STRATEGIC_PRODS_FM = [];
-let ACTIVE_STRATEGIC_MONTH_FM = "ALL";
+let ACTIVE_STRATEGIC_MONTH_FM = null;
 
 let ACTIVE_STRATEGIC_PROD_SH = "MOKAST 10 TAB";
 let ACTIVE_STRATEGIC_PRODS_SH = [];
-let ACTIVE_STRATEGIC_MONTH_SH = "ALL";
+let ACTIVE_STRATEGIC_MONTH_SH = null;
 
 let CURRENT_FILTERED_FMS = [];
 let CURRENT_FILTERED_ZONES = [];
@@ -837,7 +848,7 @@ function renderStrategic6Products() {
         }
 
         return `
-            <button class="strat-btn p-3 rounded-xl border text-left transition-all duration-300 min-w-[200px] max-w-[220px] flex-shrink-0 snap-start ${isActive ? 'active shadow-neon-cyan' : 'bg-slate-900/80 border-slate-800 hover:border-cyan-500/50'}" onclick="selectStrategicProduct('${prodName.replace(/'/g, "\\'")}')">
+            <button class="strat-btn p-3 rounded-xl border text-left transition-all duration-300 min-w-[200px] max-w-[220px] flex-shrink-0 snap-start ${isActive ? 'active shadow-neon-cyan' : 'bg-cyan-950/60 border-cyan-800 hover:border-cyan-500/50'}" onclick="selectStrategicProduct('${prodName.replace(/'/g, "\\'")}')">
                 <div class="font-cyber font-bold text-sm text-white truncate mb-2 flex items-center justify-between" title="${prodName}">
                     <span class="truncate">${getProductIcon(prodName)} ${prodName}</span>${orderBadge}
                 </div>
@@ -876,7 +887,7 @@ function renderStrategic6Products() {
             }
 
             return `
-                <button class="strat-btn p-3 rounded-xl border text-left transition-all duration-300 min-w-[200px] max-w-[220px] flex-shrink-0 snap-start ${isActive ? 'active shadow-neon-purple' : 'bg-slate-900/80 border-slate-800 hover:border-purple-500/50'}" onclick="selectStrategicProductFM('${prodName.replace(/'/g, "\\'")}')">
+                <button class="strat-btn p-3 rounded-xl border text-left transition-all duration-300 min-w-[200px] max-w-[220px] flex-shrink-0 snap-start ${isActive ? 'active shadow-neon-purple' : 'bg-purple-950/60 border-purple-800 hover:border-purple-500/50'}" onclick="selectStrategicProductFM('${prodName.replace(/'/g, "\\'")}')">
                     <div class="font-cyber font-bold text-sm text-white truncate mb-2 flex items-center justify-between" title="${prodName}">
                         <span class="truncate">${getProductIcon(prodName)} ${prodName}</span>${orderBadge}
                     </div>
@@ -914,7 +925,7 @@ function renderStrategic6Products() {
             }
 
             return `
-                <button class="strat-btn p-3 rounded-xl border text-left transition-all duration-300 min-w-[200px] max-w-[220px] flex-shrink-0 snap-start ${isActive ? 'active shadow-neon-amber' : 'bg-slate-900/80 border-slate-800 hover:border-amber-500/50'}" onclick="selectStrategicProductSH('${prodName.replace(/'/g, "\\'")}')">
+                <button class="strat-btn p-3 rounded-xl border text-left transition-all duration-300 min-w-[200px] max-w-[220px] flex-shrink-0 snap-start ${isActive ? 'active shadow-neon-amber' : 'bg-amber-950/60 border-amber-800 hover:border-amber-500/50'}" onclick="selectStrategicProductSH('${prodName.replace(/'/g, "\\'")}')">
                     <div class="font-cyber font-bold text-sm text-white truncate mb-2 flex items-center justify-between" title="${prodName}">
                         <span class="truncate">${getProductIcon(prodName)} ${prodName}</span>${orderBadge}
                     </div>
@@ -942,11 +953,11 @@ function renderStrategic6Products() {
 
         // MPO Month Pills
         monthPillsEl.innerHTML = `
-            <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH === 'ALL' ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonth('ALL')">ALL MONTHS (${minLabel} - ${maxLabel})</button>
+            <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH === 'ALL' ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-cyan-950 border border-cyan-500/30 text-cyan-200 hover:bg-cyan-900'} px-3 py-1.5 rounded font-tech text-sm tracking-wide" onclick="selectStrategicMonth('ALL')">ALL MONTHS (${minLabel} - ${maxLabel})</button>
             ${sortedMonths.map(m => {
                 const monthLabel = MONTH_MAP[m] || m;
                 return `
-                    <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH === m ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonth('${m}')">[ ${monthLabel} ]</button>
+                    <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH === m ? 'active bg-cyan-600 text-white shadow-neon-cyan font-bold' : 'bg-cyan-950 border border-cyan-500/30 text-cyan-200 hover:bg-cyan-900'} px-3 py-1.5 rounded font-tech text-sm tracking-wide" onclick="selectStrategicMonth('${m}')">[ ${monthLabel} ]</button>
                 `;
             }).join('')}
         `;
@@ -954,11 +965,11 @@ function renderStrategic6Products() {
         // FM Month Pills
         if (monthPillsElCopy && !IS_FM_SYNCED) {
             monthPillsElCopy.innerHTML = `
-                <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH_FM === 'ALL' ? 'active bg-purple-600 text-white shadow-neon-purple font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonthFM('ALL')">ALL MONTHS (${minLabel} - ${maxLabel})</button>
+                <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH_FM === 'ALL' ? 'active bg-purple-600 text-white shadow-neon-purple font-bold' : 'bg-purple-950 border border-purple-500/30 text-purple-200 hover:bg-purple-900'} px-3 py-1.5 rounded font-tech text-sm tracking-wide" onclick="selectStrategicMonthFM('ALL')">ALL MONTHS (${minLabel} - ${maxLabel})</button>
                 ${sortedMonths.map(m => {
                     const monthLabel = MONTH_MAP[m] || m;
                     return `
-                        <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH_FM === m ? 'active bg-purple-600 text-white shadow-neon-purple font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonthFM('${m}')">[ ${monthLabel} ]</button>
+                        <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH_FM === m ? 'active bg-purple-600 text-white shadow-neon-purple font-bold' : 'bg-purple-950 border border-purple-500/30 text-purple-200 hover:bg-purple-900'} px-3 py-1.5 rounded font-tech text-sm tracking-wide" onclick="selectStrategicMonthFM('${m}')">[ ${monthLabel} ]</button>
                     `;
                 }).join('')}
             `;
@@ -967,11 +978,11 @@ function renderStrategic6Products() {
         // SH Month Pills
         if (monthPillsElCopy2 && !IS_SH_SYNCED) {
             monthPillsElCopy2.innerHTML = `
-                <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH_SH === 'ALL' ? 'active bg-amber-600 text-white shadow-neon-amber font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonthSH('ALL')">ALL MONTHS (${minLabel} - ${maxLabel})</button>
+                <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH_SH === 'ALL' ? 'active bg-amber-600 text-white shadow-neon-amber font-bold' : 'bg-amber-950 border border-amber-500/30 text-amber-200 hover:bg-amber-900'} px-3 py-1.5 rounded font-tech text-sm tracking-wide" onclick="selectStrategicMonthSH('ALL')">ALL MONTHS (${minLabel} - ${maxLabel})</button>
                 ${sortedMonths.map(m => {
                     const monthLabel = MONTH_MAP[m] || m;
                     return `
-                        <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH_SH === m ? 'active bg-amber-600 text-white shadow-neon-amber font-bold' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} px-3 py-1.5 rounded font-tech text-xs" onclick="selectStrategicMonthSH('${m}')">[ ${monthLabel} ]</button>
+                        <button class="strat-month-pill ${ACTIVE_STRATEGIC_MONTH_SH === m ? 'active bg-amber-600 text-white shadow-neon-amber font-bold' : 'bg-amber-950 border border-amber-500/30 text-amber-200 hover:bg-amber-900'} px-3 py-1.5 rounded font-tech text-sm tracking-wide" onclick="selectStrategicMonthSH('${m}')">[ ${monthLabel} ]</button>
                     `;
                 }).join('')}
             `;
@@ -1398,7 +1409,7 @@ function renderStrategicMPOTable() {
                     <td>
                         <div class="cell-clip">
                             <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openDrillModal('mpo', '${m.mpo_code}', '${(m.depot || '').replace(/'/g, "\\'")}')">
-                                📈 GRAPH
+                                📈 All Months
                             </button>
                         </div>
                     </td>
@@ -1523,7 +1534,7 @@ function renderStrategicMPOTable() {
                     <td>
                         <div class="cell-clip">
                             <button class="btn-action text-[10px] py-0.5 px-2 bg-purple-900/60 hover:bg-purple-800 border border-purple-400" onclick="openFMDrillModal('${f.fm_name}')">
-                                📈 GRAPH
+                                📈 All Months
                             </button>
                         </div>
                     </td>
@@ -1645,7 +1656,7 @@ function renderStrategicMPOTable() {
                     <td>
                         <div class="cell-clip">
                             <button class="btn-action text-[10px] py-0.5 px-2 bg-amber-900/60 hover:bg-amber-800 border border-amber-400" onclick="openZoneDrillModal('${z.zone}')">
-                                📈 GRAPH
+                                📈 All Months
                             </button>
                         </div>
                     </td>

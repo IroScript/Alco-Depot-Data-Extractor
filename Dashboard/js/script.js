@@ -1098,6 +1098,7 @@ function toggleExcludeVacantsCopy2() {
 function renderStrategicMPOTable() {
     if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
     const stratData = GLOBAL_DATA.strategic_6_products;
+    const keys = GLOBAL_DATA._strategic_keys || Object.keys(stratData);
     const prodItem = stratData[ACTIVE_STRATEGIC_PROD];
     if (!prodItem) return;
 
@@ -1381,6 +1382,50 @@ function renderStrategicMPOTable() {
     updateHeaderHighlights("table-strategic-mpos-copy2", STRATEGIC_FILTERS_SELECTIONS_COPY2);
 
     CURRENT_FILTERED_MPOS = filteredMpos;
+    const isMpoFiltered = filteredMpos.length < displayMpos.length;
+    
+    if (isMpoFiltered) {
+        let stU = 0, stP = 0, stI = 0, stS = 0;
+        filteredMpos.forEach(m => { stU += (m.units || 0); stP += (m.parties || 0); stI += (m.invoices || 0); stS += (m.sales || 0); });
+        const stText = ` // FILTER SUBTOTAL: ${Math.round(stU).toLocaleString()} U, ${Math.round(stP).toLocaleString()} P, ${Math.round(stI).toLocaleString()} Inv, ${formatBDT(stS)} Sales`;
+        if (subEl) subEl.textContent = subEl.textContent.split(' // FILTER SUBTOTAL:')[0] + stText;
+    } else {
+        if (subEl) subEl.textContent = subEl.textContent.split(' // FILTER SUBTOTAL:')[0];
+    }
+
+    const mpoCards = document.querySelectorAll("#strategic-6-buttons-container .strat-btn");
+    if (mpoCards && mpoCards.length > 0) {
+        let selK = ACTIVE_STRATEGIC_PRODS.filter(k => keys.includes(k));
+        let unselK = keys.filter(k => !ACTIVE_STRATEGIC_PRODS.includes(k));
+        const ordK = [...selK, ...unselK];
+        const validIds = new Set(filteredMpos.map(m => (m.depot || 'Unknown') + '_' + m.mpo_code));
+        ordK.forEach((prodName, idx) => {
+            const card = mpoCards[idx];
+            if (!card) return;
+            const item = stratData[prodName];
+            let dU = 0, dP = 0, dI = 0;
+            if (isMpoFiltered) {
+                let source = (ACTIVE_STRATEGIC_MONTH === "ALL") ? (item.mpo_top50_all || []) : ((item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : []);
+                source.forEach(m => {
+                    const mk = (m.depot || 'Unknown') + '_' + m.mpo_code;
+                    if (validIds.has(mk)) { dU += (m.units || 0); dP += (m.parties || 0); dI += (m.invoices || 0); }
+                });
+            } else {
+                if (ACTIVE_STRATEGIC_MONTH === "ALL") {
+                    dU = item.total_units; dP = item.total_parties; dI = item.total_invoices;
+                } else {
+                    let source = (item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
+                    dU = source.reduce((s, m) => s + (m.units || 0), 0); dP = source.reduce((s, m) => s + (m.parties || 0), 0); dI = source.reduce((s, m) => s + (m.invoices || 0), 0);
+                }
+            }
+            const spans = card.querySelectorAll("div:nth-of-type(2) span");
+            if (spans.length >= 3) {
+                spans[0].innerHTML = `📦 ${Number(dU).toLocaleString()} U`;
+                spans[1].innerHTML = `👥 ${Number(dP).toLocaleString()} Parties`;
+                spans[2].innerHTML = `🧾 ${Number(dI).toLocaleString()} Inv`;
+            }
+        });
+    }
 
     const totalRecords = filteredMpos.length;
     const totalPages = Math.ceil(totalRecords / STRATEGIC_PER_PAGE) || 1;
@@ -1502,6 +1547,50 @@ function renderStrategicMPOTable() {
     });
 
     CURRENT_FILTERED_FMS = filteredFMs;
+    const isFmFiltered = filteredFMs.length < fmsList.length;
+
+    if (isFmFiltered) {
+        let stU = 0, stP = 0, stI = 0, stS = 0;
+        filteredFMs.forEach(f => { stU += (f.units || 0); stP += (f.parties || 0); stI += (f.invoices || 0); stS += (f.sales || 0); });
+        const stText = ` // FILTER SUBTOTAL: ${Math.round(stU).toLocaleString()} U, ${Math.round(stP).toLocaleString()} P, ${Math.round(stI).toLocaleString()} Inv, ${formatBDTRound(stS)} Sales`;
+        if (subElCopy) subElCopy.textContent = subElCopy.textContent.split(' // FILTER SUBTOTAL:')[0] + stText;
+    } else {
+        if (subElCopy) subElCopy.textContent = subElCopy.textContent.split(' // FILTER SUBTOTAL:')[0];
+    }
+
+    const fmCards = document.querySelectorAll("#strategic-6-buttons-container-copy .strat-btn");
+    if (fmCards && fmCards.length > 0) {
+        let selK = ACTIVE_STRATEGIC_PRODS_FM.filter(k => keys.includes(k));
+        let unselK = keys.filter(k => !ACTIVE_STRATEGIC_PRODS_FM.includes(k));
+        const ordK = [...selK, ...unselK];
+        const validFMs = new Set(filteredFMs.map(f => f.fm_name));
+        ordK.forEach((prodName, idx) => {
+            const card = fmCards[idx];
+            if (!card) return;
+            const item = stratData[prodName];
+            let dU = 0, dP = 0, dI = 0;
+            if (isFmFiltered) {
+                let source = (ACTIVE_STRATEGIC_MONTH_FM === "ALL") ? (item.mpo_top50_all || []) : ((item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_FM]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_FM] : []);
+                source.forEach(m => {
+                    const fName = m.fm_name || 'Unknown';
+                    if (validFMs.has(fName)) { dU += (m.units || 0); dP += (m.parties || 0); dI += (m.invoices || 0); }
+                });
+            } else {
+                if (ACTIVE_STRATEGIC_MONTH_FM === "ALL") {
+                    dU = item.total_units; dP = item.total_parties; dI = item.total_invoices;
+                } else {
+                    let source = (item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_FM]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_FM] : [];
+                    dU = source.reduce((s, m) => s + (m.units || 0), 0); dP = source.reduce((s, m) => s + (m.parties || 0), 0); dI = source.reduce((s, m) => s + (m.invoices || 0), 0);
+                }
+            }
+            const spans = card.querySelectorAll("div:nth-of-type(2) span");
+            if (spans.length >= 3) {
+                spans[0].innerHTML = `📦 ${Number(dU).toLocaleString()} U`;
+                spans[1].innerHTML = `👥 ${Number(dP).toLocaleString()} Parties`;
+                spans[2].innerHTML = `🧾 ${Number(dI).toLocaleString()} Inv`;
+            }
+        });
+    }
 
     const totalRecordsCopy = filteredFMs.length;
     const totalPagesCopy = Math.ceil(totalRecordsCopy / STRATEGIC_PER_PAGE_FM) || 1;
@@ -1625,6 +1714,50 @@ function renderStrategicMPOTable() {
     });
 
     CURRENT_FILTERED_ZONES = filteredZones;
+    const isShFiltered = filteredZones.length < zonesList.length;
+
+    if (isShFiltered) {
+        let stU = 0, stP = 0, stI = 0, stS = 0;
+        filteredZones.forEach(z => { stU += (z.units || 0); stP += (z.parties || 0); stI += (z.invoices || 0); stS += (z.sales || 0); });
+        const stText = ` // FILTER SUBTOTAL: ${Math.round(stU).toLocaleString()} U, ${Math.round(stP).toLocaleString()} P, ${Math.round(stI).toLocaleString()} Inv, ${formatBDTRound(stS)} Sales`;
+        if (subElCopy2) subElCopy2.textContent = subElCopy2.textContent.split(' // FILTER SUBTOTAL:')[0] + stText;
+    } else {
+        if (subElCopy2) subElCopy2.textContent = subElCopy2.textContent.split(' // FILTER SUBTOTAL:')[0];
+    }
+
+    const shCards = document.querySelectorAll("#strategic-6-buttons-container-copy2 .strat-btn");
+    if (shCards && shCards.length > 0) {
+        let selK = ACTIVE_STRATEGIC_PRODS_SH.filter(k => keys.includes(k));
+        let unselK = keys.filter(k => !ACTIVE_STRATEGIC_PRODS_SH.includes(k));
+        const ordK = [...selK, ...unselK];
+        const validZones = new Set(filteredZones.map(z => z.zone));
+        ordK.forEach((prodName, idx) => {
+            const card = shCards[idx];
+            if (!card) return;
+            const item = stratData[prodName];
+            let dU = 0, dP = 0, dI = 0;
+            if (isShFiltered) {
+                let source = (ACTIVE_STRATEGIC_MONTH_SH === "ALL") ? (item.mpo_top50_all || []) : ((item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_SH]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_SH] : []);
+                source.forEach(m => {
+                    const zName = m.zone || 'Unknown';
+                    if (validZones.has(zName)) { dU += (m.units || 0); dP += (m.parties || 0); dI += (m.invoices || 0); }
+                });
+            } else {
+                if (ACTIVE_STRATEGIC_MONTH_SH === "ALL") {
+                    dU = item.total_units; dP = item.total_parties; dI = item.total_invoices;
+                } else {
+                    let source = (item.mpo_top50_by_month && item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_SH]) ? item.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH_SH] : [];
+                    dU = source.reduce((s, m) => s + (m.units || 0), 0); dP = source.reduce((s, m) => s + (m.parties || 0), 0); dI = source.reduce((s, m) => s + (m.invoices || 0), 0);
+                }
+            }
+            const spans = card.querySelectorAll("div:nth-of-type(2) span");
+            if (spans.length >= 3) {
+                spans[0].innerHTML = `📦 ${Number(dU).toLocaleString()} U`;
+                spans[1].innerHTML = `👥 ${Number(dP).toLocaleString()} Parties`;
+                spans[2].innerHTML = `🧾 ${Number(dI).toLocaleString()} Inv`;
+            }
+        });
+    }
 
     const totalRecordsCopy2 = filteredZones.length;
     const totalPagesCopy2 = Math.ceil(totalRecordsCopy2 / STRATEGIC_PER_PAGE_SH) || 1;

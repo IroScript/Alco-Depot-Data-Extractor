@@ -238,8 +238,13 @@ async function loadDashboardData(forceRefresh = false) {
 
     const url = forceRefresh ? "/api/refresh" : "/api/all-dashboard-data";
     
+    // Abort controller to prevent 10 second delay if API hangs
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1000); // 1 second timeout
+    
     try {
-        const res = await fetch(url);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
         if (res.ok) {
             GLOBAL_DATA = await res.json();
             if (statusBadge && statusText) {
@@ -250,6 +255,7 @@ async function loadDashboardData(forceRefresh = false) {
             throw new Error("API server returned status " + res.status);
         }
     } catch (err) {
+        clearTimeout(timeoutId);
         console.warn("API server unreachable, falling back to data/api_data.json...", err);
         try {
             const resStatic = await fetch("data/api_data.json");

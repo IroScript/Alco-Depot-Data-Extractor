@@ -404,7 +404,7 @@
             <!-- Top 50 MPO Table for Selected Strategic Product & Month -->
             <div class="overflow-visible rounded-xl border border-cyan-500/30 bg-cyan-950/30 shadow-lg">
                 <table id="table-strategic-mpos" class="text-left border-collapse table-fixed w-max">
-                    <thead>
+                    <thead class="sticky top-[72px] z-40 bg-slate-950/90">
                         <tr class="bg-slate-900/90 text-cyan-300 font-cyber text-xs" style="height: 28px;">
                             <!-- Rank -->
                             <th class="w-[60px]" style="position: relative; height: 28px;" data-col-key="rank">
@@ -412,16 +412,16 @@
                                     <span class="excel-header-text" title="Rank">Rank</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'rank')">▼</button>
                                 </div>
-                                <div id="popover-rank" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'rank')" oninput="searchFilterOptions('rank', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-rank" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'rank')" oninput="searchFilterOptions('rank', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('rank', true)">Select All</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('rank')">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-rank"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-rank"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilter('rank')">Cancel</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('rank')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilter('rank')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -431,16 +431,16 @@
                                     <span class="excel-header-text" title="ZONE">ZONE</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'zone')">▼</button>
                                 </div>
-                                <div id="popover-zone" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'zone')" oninput="searchFilterOptions('zone', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-zone" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'zone')" oninput="searchFilterOptions('zone', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('zone', true)">Select All</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('zone')">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-zone"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-zone"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilter('zone')">Cancel</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('zone')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilter('zone')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -450,16 +450,16 @@
                                     <span class="excel-header-text" title="FIELD MANAGER">FIELD MANAGER</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'fm')">▼</button>
                                 </div>
-                                <div id="popover-fm" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'fm')" oninput="searchFilterOptions('fm', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-fm" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'fm')" oninput="searchFilterOptions('fm', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('fm', true)">Select All</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('fm')">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-fm"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-fm"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilter('fm')">Cancel</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('fm')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilter('fm')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -469,16 +469,16 @@
                                     <span class="excel-header-text" title="MPO CODE">MPO CODE 👤</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'code')">▼</button>
                                 </div>
-                                <div id="popover-code" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'code')" oninput="searchFilterOptions('code', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-code" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'code')" oninput="searchFilterOptions('code', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('code', true)">Select All</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('code')">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-code"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-code"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilter('code')">Cancel</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('code')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilter('code')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -488,16 +488,16 @@
                                     <span class="excel-header-text" title="MARKET NAME">MARKET NAME 📍</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'market')">▼</button>
                                 </div>
-                                <div id="popover-market" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'market')" oninput="searchFilterOptions('market', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-market" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'market')" oninput="searchFilterOptions('market', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('market', true)">Select All</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('market')">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-market"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-market"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilter('market')">Cancel</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('market')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilter('market')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -507,16 +507,16 @@
                                     <span class="excel-header-text" title="VACANT (JUN'26)?">VACANT (JUN'26)?</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'vacant')">▼</button>
                                 </div>
-                                <div id="popover-vacant" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'vacant')" oninput="searchFilterOptions('vacant', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-vacant" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'vacant')" oninput="searchFilterOptions('vacant', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('vacant', true)">Select All</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('vacant')">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-vacant"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-vacant"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilter('vacant')">Cancel</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('vacant')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilter('vacant')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -526,16 +526,16 @@
                                     <span class="excel-header-text" title="TOTAL UNITS">TOTAL UNITS 📦</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'units')">▼</button>
                                 </div>
-                                <div id="popover-units" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'units')" oninput="searchFilterOptions('units', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-units" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'units')" oninput="searchFilterOptions('units', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('units', true)">Select All</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('units')">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-units"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-units"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilter('units')">Cancel</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('units')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilter('units')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -545,16 +545,16 @@
                                     <span class="excel-header-text" title="PARTIES">PARTIES 👥</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'parties')">▼</button>
                                 </div>
-                                <div id="popover-parties" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'parties')" oninput="searchFilterOptions('parties', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-parties" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'parties')" oninput="searchFilterOptions('parties', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('parties', true)">Select All</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('parties')">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-parties"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-parties"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilter('parties')">Cancel</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('parties')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilter('parties')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -564,16 +564,16 @@
                                     <span class="excel-header-text" title="INVOICES">INVOICES 🧾</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'invoices')">▼</button>
                                 </div>
-                                <div id="popover-invoices" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'invoices')" oninput="searchFilterOptions('invoices', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-invoices" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'invoices')" oninput="searchFilterOptions('invoices', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('invoices', true)">Select All</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('invoices')">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-invoices"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-invoices"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilter('invoices')">Cancel</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('invoices')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilter('invoices')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -583,16 +583,16 @@
                                     <span class="excel-header-text" title="Value in Tk. (Incl. VAT)">Value in Tk. (Incl. VAT)</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopover(event, 'sales')">▼</button>
                                 </div>
-                                <div id="popover-sales" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'sales')" oninput="searchFilterOptions('sales', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-sales" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" onkeydown="handleFilterSearchKeydown(event, 'sales')" oninput="searchFilterOptions('sales', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('sales', true)">Select All</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilter('sales')">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-sales"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-sales"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilter('sales')">Cancel</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilter('sales')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilter('sales')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -686,7 +686,7 @@
                 <!-- Top 50 MPO Table (Field Manager) for Selected Strategic Product & Month -->
                 <div class="overflow-visible rounded-xl border border-purple-500/30 bg-purple-950/30 shadow-lg">
                     <table id="table-strategic-mpos-copy" class="text-left border-collapse table-fixed w-max">
-                        <thead>
+                        <thead class="sticky top-[72px] z-40 bg-slate-950/90">
                             <tr class="bg-slate-900/90 text-purple-300 font-cyber text-xs" style="height: 28px;">
                                 <!-- Rank -->
                                 <th class="w-[60px]" style="position: relative; height: 28px;">
@@ -694,17 +694,17 @@
                                         <span class="excel-header-text">RANK 🏆</span>
                                         <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'rank')">▼</button>
                                     </div>
-                                <div id="popover-rank-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy('rank', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-rank-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('rank', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('rank', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('rank', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-rank-copy"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-rank-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('rank')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('rank')">Clear</button>
-                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('rank')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy('rank')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -714,17 +714,17 @@
                                     <span class="excel-header-text" title="ZONE">ZONE</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'zone')">▼</button>
                                 </div>
-                                <div id="popover-zone-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy('zone', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-zone-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('zone', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('zone', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('zone', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-zone-copy"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-zone-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('zone')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('zone')">Clear</button>
-                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('zone')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy('zone')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -734,17 +734,17 @@
                                     <span class="excel-header-text" title="FIELD MANAGER">FIELD MANAGER</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'fm')">▼</button>
                                 </div>
-                                <div id="popover-fm-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy('fm', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-fm-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('fm', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('fm', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('fm', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-fm-copy"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-fm-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('fm')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('fm')">Clear</button>
-                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('fm')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy('fm')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -754,17 +754,17 @@
                                     <span class="excel-header-text">TOTAL MPOS</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'total_mpos')">▼</button>
                                 </div>
-                                <div id="popover-total_mpos-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy('total_mpos', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-total_mpos-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('total_mpos', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('total_mpos', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('total_mpos', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-total_mpos-copy"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-total_mpos-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('total_mpos')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('total_mpos')">Clear</button>
-                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('total_mpos')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy('total_mpos')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -774,17 +774,17 @@
                                     <span class="excel-header-text">VACANT COUNT</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'vacant_count')">▼</button>
                                 </div>
-                                <div id="popover-vacant_count-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy('vacant_count', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-vacant_count-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('vacant_count', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('vacant_count', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('vacant_count', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-vacant_count-copy"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-vacant_count-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('vacant_count')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('vacant_count')">Clear</button>
-                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('vacant_count')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy('vacant_count')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -794,17 +794,17 @@
                                     <span class="excel-header-text">ACTUAL MARKET</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'actual_market')">▼</button>
                                 </div>
-                                <div id="popover-actual_market-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy('actual_market', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-actual_market-copy" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('actual_market', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('actual_market', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('actual_market', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-actual_market-copy"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-actual_market-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('actual_market')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('actual_market')">Clear</button>
-                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('actual_market')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy('actual_market')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -814,17 +814,17 @@
                                     <span class="excel-header-text" title="TOTAL UNITS">TOTAL UNITS 📦</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'units')">▼</button>
                                 </div>
-                                <div id="popover-units-copy" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy('units', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-units-copy" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('units', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('units', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('units', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-units-copy"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-units-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('units')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('units')">Clear</button>
-                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('units')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy('units')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -840,17 +840,17 @@
                                     <span class="excel-header-text" title="PARTIES">PARTIES 👥</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'parties')">▼</button>
                                 </div>
-                                <div id="popover-parties-copy" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy('parties', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-parties-copy" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('parties', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy('parties', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('parties', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-parties-copy"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-parties-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('parties')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('parties')">Clear</button>
-                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('parties')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy('parties')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -866,17 +866,17 @@
                                     <span class="excel-header-text" title="INVOICES">INVOICES 🧾</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'invoices')">▼</button>
                                 </div>
-                                <div id="popover-invoices-copy" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy('invoices', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-invoices-copy" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('invoices', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('invoices', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('invoices', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-invoices-copy"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-invoices-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('invoices')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('invoices')">Clear</button>
-                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('invoices')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy('invoices')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -892,17 +892,17 @@
                                     <span class="excel-header-text" title="Value in Tk. (Incl. VAT)">Value in Tk. (Incl. VAT)</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy(event, 'sales')">▼</button>
                                 </div>
-                                <div id="popover-sales-copy" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy('sales', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-sales-copy" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy('sales', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('sales', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptions('sales', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-sales-copy"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-sales-copy"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy('sales')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy('sales')">Clear</button>
-                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy('sales')">OK</button>
+                                        <button class="bg-purple-600 hover:bg-purple-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy('sales')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -1001,7 +1001,7 @@
             <!-- Top 50 MPO Table (Copy 2) for Selected Strategic Product & Month -->
             <div class="overflow-visible rounded-xl border border-amber-500/30 bg-amber-950/30 shadow-lg">
                 <table id="table-strategic-mpos-copy2" class="text-left border-collapse table-fixed w-max">
-                    <thead>
+                    <thead class="sticky top-[72px] z-40 bg-slate-950/90">
                         <tr class="bg-slate-900/90 text-amber-300 font-cyber text-xs" style="height: 28px;">
                             <!-- Rank -->
                             <th class="w-[60px]" style="position: relative; height: 28px;">
@@ -1009,17 +1009,17 @@
                                     <span class="excel-header-text">RANK 🏆 (Sector Head)</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'rank')">▼</button>
                                 </div>
-                                <div id="popover-rank-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy2('rank', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-rank-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('rank', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('rank', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('rank', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-rank-copy2"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-rank-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('rank')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('rank')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('rank')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy2('rank')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -1029,17 +1029,17 @@
                                     <span class="excel-header-text" title="ZONE">ZONE</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'zone')">▼</button>
                                 </div>
-                                <div id="popover-zone-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy2('zone', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-zone-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('zone', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('zone', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('zone', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-zone-copy2"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-zone-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('zone')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('zone')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('zone')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy2('zone')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -1049,17 +1049,17 @@
                                     <span class="excel-header-text">TOTAL MPOS</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'total_mpos')">▼</button>
                                 </div>
-                                <div id="popover-total_mpos-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy2('total_mpos', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-total_mpos-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('total_mpos', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('total_mpos', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('total_mpos', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-total_mpos-copy2"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-total_mpos-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('total_mpos')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('total_mpos')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('total_mpos')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy2('total_mpos')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -1069,17 +1069,17 @@
                                     <span class="excel-header-text">VACANT COUNT</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'vacant_count')">▼</button>
                                 </div>
-                                <div id="popover-vacant_count-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy2('vacant_count', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-vacant_count-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('vacant_count', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('vacant_count', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('vacant_count', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-vacant_count-copy2"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-vacant_count-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('vacant_count')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('vacant_count')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('vacant_count')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy2('vacant_count')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -1089,17 +1089,17 @@
                                     <span class="excel-header-text">ACTUAL MARKET</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'actual_market')">▼</button>
                                 </div>
-                                <div id="popover-actual_market-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy2('actual_market', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-actual_market-copy2" class="hidden absolute top-full left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('actual_market', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('actual_market', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('actual_market', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-actual_market-copy2"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-actual_market-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('actual_market')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('actual_market')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('actual_market')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy2('actual_market')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -1109,17 +1109,17 @@
                                     <span class="excel-header-text" title="TOTAL UNITS">TOTAL UNITS 📦</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'units')">▼</button>
                                 </div>
-                                <div id="popover-units-copy2" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy2('units', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-units-copy2" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('units', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('units', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('units', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-units-copy2"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-units-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('units')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('units')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('units')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy2('units')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -1135,17 +1135,17 @@
                                     <span class="excel-header-text" title="PARTIES">PARTIES 👥</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'parties')">▼</button>
                                 </div>
-                                <div id="popover-parties-copy2" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy2('parties', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-parties-copy2" class="hidden absolute top-full right-0 lg:left-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('parties', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('parties', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('parties', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-parties-copy2"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-parties-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('parties')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('parties')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('parties')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy2('parties')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -1161,17 +1161,17 @@
                                     <span class="excel-header-text" title="INVOICES">INVOICES 🧾</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'invoices')">▼</button>
                                 </div>
-                                <div id="popover-invoices-copy2" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy2('invoices', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-invoices-copy2" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('invoices', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('invoices', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('invoices', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-invoices-copy2"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-invoices-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('invoices')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('invoices')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('invoices')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy2('invoices')">OK</button>
                                     </div>
                                 </div>
                             </th>
@@ -1187,17 +1187,17 @@
                                     <span class="excel-header-text" title="Value in Tk. (Incl. VAT)">Value in Tk. (Incl. VAT)</span>
                                     <button class="excel-filter-btn" onclick="toggleFilterPopoverCopy2(event, 'sales')">▼</button>
                                 </div>
-                                <div id="popover-sales-copy2" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 shadow-2xl z-50 min-w-[200px] text-slate-200">
-                                    <input type="text" oninput="searchFilterOptionsCopy2('sales', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none mb-2 font-tech">
-                                    <div class="flex justify-between items-center text-[10px] mb-2 text-slate-400">
+                                <div id="popover-sales-copy2" class="hidden absolute top-full right-0 mt-1 bg-slate-950 border border-slate-800 rounded-lg p-3 shadow-2xl z-50 min-w-[240px] text-slate-200">
+                                    <input type="text" oninput="searchFilterOptionsCopy2('sales', this.value)" placeholder="Search..." class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-[14px] text-white focus:outline-none mb-2 font-tech">
+                                    <div class="flex justify-between items-center text-[12px] mb-2 text-slate-400">
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('sales', true)">Select All</button>
                                         <button class="hover:text-white" onclick="selectAllFilterOptionsCopy2('sales', false)">Clear</button>
                                     </div>
-                                    <div class="popover-options max-h-[140px] overflow-y-auto space-y-1 text-xs font-tech text-left" id="options-sales-copy2"></div>
-                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2 mt-2 text-[10px]">
+                                    <div class="popover-options max-h-[170px] overflow-y-auto space-y-1 text-[14px] font-tech text-left" id="options-sales-copy2"></div>
+                                    <div class="flex justify-between items-center border-t border-slate-800 pt-2.5 mt-2.5 text-[12px]">
                                         <button class="text-slate-400 hover:text-white" onclick="cancelFilterCopy2('sales')">Cancel</button>
                                         <button class="text-rose-400 hover:text-rose-300 font-bold" onclick="clearColumnFilterCopy2('sales')">Clear</button>
-                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2 py-1 rounded font-bold" onclick="applyFilterCopy2('sales')">OK</button>
+                                        <button class="bg-cyan-600 hover:bg-cyan-500 text-white px-2.5 py-1.5 rounded font-bold" onclick="applyFilterCopy2('sales')">OK</button>
                                     </div>
                                 </div>
                             </th>

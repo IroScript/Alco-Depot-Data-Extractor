@@ -1035,8 +1035,10 @@ function setStrategicPageCopy2(page) {
     renderStrategicMPOTable();
 }
 
-// Global State for Exclude Vacants
-let EXCLUDE_VACANTS = false;
+let EXCLUDE_VACANTS = true;
+let EXCLUDE_VACANTS_COPY = true;
+let EXCLUDE_VACANTS_COPY2 = true;
+
 function toggleExcludeVacants() {
     EXCLUDE_VACANTS = !EXCLUDE_VACANTS;
     const btn = document.getElementById("btn-exclude-vacants");
@@ -1045,8 +1047,38 @@ function toggleExcludeVacants() {
             btn.className = "px-3.5 py-2 rounded bg-rose-600 border border-rose-400 text-white font-tech text-xs font-bold transition-all flex items-center gap-1.5 shadow-neon-rose ring-2 ring-rose-400";
             btn.innerHTML = "🚫 Vacants Excluded (ACTIVE)";
         } else {
-            btn.className = "px-3.5 py-2 rounded bg-rose-900/80 border border-rose-500/60 text-white font-tech text-xs font-bold hover:bg-rose-800 transition-all flex items-center gap-1.5 shadow-md";
-            btn.innerHTML = "🚫 Exclude Vacants";
+            btn.className = "px-3.5 py-2 rounded bg-slate-800/50 border border-slate-700/50 text-slate-400 font-tech text-xs font-bold hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-none";
+            btn.innerHTML = "🚫 Vacants Included (INACTIVE)";
+        }
+    }
+    renderStrategicMPOTable();
+}
+
+function toggleExcludeVacantsCopy() {
+    EXCLUDE_VACANTS_COPY = !EXCLUDE_VACANTS_COPY;
+    const btn = document.getElementById("btn-exclude-vacants-copy");
+    if (btn) {
+        if (EXCLUDE_VACANTS_COPY) {
+            btn.className = "px-3.5 py-2 rounded bg-rose-600 border border-rose-400 text-white font-tech text-xs font-bold transition-all flex items-center gap-1.5 shadow-neon-rose ring-2 ring-rose-400";
+            btn.innerHTML = "🚫 Vacants Excluded (ACTIVE)";
+        } else {
+            btn.className = "px-3.5 py-2 rounded bg-slate-800/50 border border-slate-700/50 text-slate-400 font-tech text-xs font-bold hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-none";
+            btn.innerHTML = "🚫 Vacants Included (INACTIVE)";
+        }
+    }
+    renderStrategicMPOTable();
+}
+
+function toggleExcludeVacantsCopy2() {
+    EXCLUDE_VACANTS_COPY2 = !EXCLUDE_VACANTS_COPY2;
+    const btn = document.getElementById("btn-exclude-vacants-copy2");
+    if (btn) {
+        if (EXCLUDE_VACANTS_COPY2) {
+            btn.className = "px-3.5 py-2 rounded bg-rose-600 border border-rose-400 text-white font-tech text-xs font-bold transition-all flex items-center gap-1.5 shadow-neon-rose ring-2 ring-rose-400";
+            btn.innerHTML = "🚫 Vacants Excluded (ACTIVE)";
+        } else {
+            btn.className = "px-3.5 py-2 rounded bg-slate-800/50 border border-slate-700/50 text-slate-400 font-tech text-xs font-bold hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-none";
+            btn.innerHTML = "🚫 Vacants Included (INACTIVE)";
         }
     }
     renderStrategicMPOTable();
@@ -1413,7 +1445,8 @@ function renderStrategicMPOTable() {
         fmsMap[f].total_mpos += 1;
         if (m.is_vacant) {
             fmsMap[f].vacant_count += 1;
-        } else {
+        }
+        if (!m.is_vacant || !EXCLUDE_VACANTS_COPY) {
             fmsMap[f].units += m.units || 0;
             fmsMap[f].parties += m.parties || 0;
             fmsMap[f].invoices += m.invoices || 0;
@@ -1423,11 +1456,11 @@ function renderStrategicMPOTable() {
 
     const fmsList = Object.values(fmsMap).map(f => {
         f.actual_market = f.total_mpos - f.vacant_count;
-        const divisor = f.actual_market > 0 ? f.actual_market : 1;
-        f.per_mpo_units = f.actual_market > 0 ? (f.units / divisor) : 0;
-        f.per_mpo_parties = f.actual_market > 0 ? (f.parties / divisor) : 0;
-        f.per_mpo_invoices = f.actual_market > 0 ? (f.invoices / divisor) : 0;
-        f.per_mpo_sales = f.actual_market > 0 ? (f.sales / divisor) : 0;
+        const divisor = EXCLUDE_VACANTS_COPY ? (f.actual_market > 0 ? f.actual_market : 1) : (f.total_mpos > 0 ? f.total_mpos : 1);
+        f.per_mpo_units = (f.total_mpos > 0 || f.actual_market > 0) ? (f.units / divisor) : 0;
+        f.per_mpo_parties = (f.total_mpos > 0 || f.actual_market > 0) ? (f.parties / divisor) : 0;
+        f.per_mpo_invoices = (f.total_mpos > 0 || f.actual_market > 0) ? (f.invoices / divisor) : 0;
+        f.per_mpo_sales = (f.total_mpos > 0 || f.actual_market > 0) ? (f.sales / divisor) : 0;
         return f;
     });
 
@@ -1536,7 +1569,8 @@ function renderStrategicMPOTable() {
         zonesMap[z].total_mpos += 1;
         if (m.is_vacant) {
             zonesMap[z].vacant_count += 1;
-        } else {
+        }
+        if (!m.is_vacant || !EXCLUDE_VACANTS_COPY2) {
             zonesMap[z].units += m.units || 0;
             zonesMap[z].parties += m.parties || 0;
             zonesMap[z].invoices += m.invoices || 0;
@@ -1546,11 +1580,11 @@ function renderStrategicMPOTable() {
 
     const zonesList = Object.values(zonesMap).map(z => {
         z.actual_market = z.total_mpos - z.vacant_count;
-        const divisor = z.actual_market > 0 ? z.actual_market : 1;
-        z.per_mpo_units = z.actual_market > 0 ? (z.units / divisor) : 0;
-        z.per_mpo_parties = z.actual_market > 0 ? (z.parties / divisor) : 0;
-        z.per_mpo_invoices = z.actual_market > 0 ? (z.invoices / divisor) : 0;
-        z.per_mpo_sales = z.actual_market > 0 ? (z.sales / divisor) : 0;
+        const divisor = EXCLUDE_VACANTS_COPY2 ? (z.actual_market > 0 ? z.actual_market : 1) : (z.total_mpos > 0 ? z.total_mpos : 1);
+        z.per_mpo_units = (z.total_mpos > 0 || z.actual_market > 0) ? (z.units / divisor) : 0;
+        z.per_mpo_parties = (z.total_mpos > 0 || z.actual_market > 0) ? (z.parties / divisor) : 0;
+        z.per_mpo_invoices = (z.total_mpos > 0 || z.actual_market > 0) ? (z.invoices / divisor) : 0;
+        z.per_mpo_sales = (z.total_mpos > 0 || z.actual_market > 0) ? (z.sales / divisor) : 0;
         return z;
     });
 

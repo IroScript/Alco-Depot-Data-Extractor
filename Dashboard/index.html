@@ -392,8 +392,8 @@
                 </div>
                 <!-- Action Buttons: Exclude Vacants & Column Lock -->
                 <div class="flex items-center gap-2">
-                    <button id="btn-exclude-vacants" class="px-3.5 py-2 rounded bg-rose-900/80 border border-rose-500/60 text-white font-tech text-xs font-bold hover:bg-rose-800 transition-all flex items-center gap-1.5 shadow-md" onclick="toggleExcludeVacants()">
-                        🚫 Exclude Vacants
+                    <button id="btn-exclude-vacants" class="px-3.5 py-2 rounded bg-rose-600 border border-rose-400 text-white font-tech text-xs font-bold transition-all flex items-center gap-1.5 shadow-neon-rose ring-2 ring-rose-400" onclick="toggleExcludeVacants()">
+                        🚫 Vacants Excluded (ACTIVE)
                     </button>
                     <button id="btn-lock-columns" class="px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5" onclick="toggleColumnLock()">
                         🔒 Columns Locked
@@ -672,6 +672,10 @@
                             <button class="strat-month-pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold shadow-neon-cyan" data-month="ALL">ALL MONTHS (JAN - JUN)</button>
                         </div>
                     </div>
+                    <!-- Action Buttons -->
+                    <button id="btn-exclude-vacants-copy" class="px-3.5 py-2 rounded bg-rose-600 border border-rose-400 text-white font-tech text-xs font-bold transition-all flex items-center gap-1.5 shadow-neon-rose ring-2 ring-rose-400" onclick="toggleExcludeVacantsCopy()">
+                        🚫 Vacants Excluded (ACTIVE)
+                    </button>
                     <!-- Column Locks Button -->
                     <button id="btn-lock-columns-copy" class="px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5" onclick="toggleColumnLockCopy()">
                         🔒 Columns Locked
@@ -983,6 +987,10 @@
                             <button class="strat-month-pill active px-3 py-1.5 rounded bg-cyan-600 text-white font-tech text-xs font-bold shadow-neon-cyan" data-month="ALL">ALL MONTHS (JAN - JUN)</button>
                         </div>
                     </div>
+                    <!-- Action Buttons -->
+                    <button id="btn-exclude-vacants-copy2" class="px-3.5 py-2 rounded bg-rose-600 border border-rose-400 text-white font-tech text-xs font-bold transition-all flex items-center gap-1.5 shadow-neon-rose ring-2 ring-rose-400" onclick="toggleExcludeVacantsCopy2()">
+                        🚫 Vacants Excluded (ACTIVE)
+                    </button>
                     <!-- Column Locks Button -->
                     <button id="btn-lock-columns-copy2" class="px-3.5 py-2 rounded bg-amber-600/80 border border-amber-500/50 text-white font-tech text-xs font-bold hover:bg-amber-700 transition-all flex items-center gap-1.5" onclick="toggleColumnLockCopy2()">
                         🔒 Columns Locked

@@ -8,7 +8,7 @@
     <!-- Google Fonts: Orbitron, Rajdhani, Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&family=Outfit:wght@400;600;700&family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&family=Roboto+Condensed:wght@300;400;700&display=swap" rel="stylesheet">
     
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -30,9 +30,11 @@
                         }
                     },
                     fontFamily: {
-                        cyber: ['Orbitron', 'sans-serif'],
-                        tech: ['Rajdhani', 'sans-serif'],
-                        body: ['Outfit', 'sans-serif']
+                        cyber: ['"Roboto Condensed"', 'sans-serif'],
+                        tech: ['"Roboto Condensed"', 'sans-serif'],
+                        body: ['"Roboto Condensed"', 'sans-serif'],
+                        sans: ['"Roboto Condensed"', 'sans-serif'],
+                        mono: ['"Roboto Condensed"', 'sans-serif']
                     },
                     boxShadow: {
                         'neon-cyan': '0 0 20px rgba(6, 182, 212, 0.5)',
@@ -55,7 +57,7 @@
         body {
             background-color: #02040a;
             color: #e2e8f0;
-            font-family: 'Outfit', sans-serif;
+            font-family: "Roboto Condensed", sans-serif;
             overflow-x: hidden;
         }
         .bg-grid-pattern {
@@ -99,7 +101,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen bg-quantum-void bg-grid-pattern relative selection:bg-cyan-500 selection:text-black">
+<body class="min-h-screen bg-quantum-void bg-grid-pattern relative selection:bg-cyan-500 selection:text-black font-thin">
 
     <!-- Top Advanced HUD Navbar (With Top-Left Small 3D Network Globe!) -->
     <header class="sticky top-0 z-50 backdrop-blur-2xl bg-black/80 border-b border-cyan-500/30 px-6 py-3 shadow-neon-indigo flex flex-col md:flex-row justify-between items-center gap-4">

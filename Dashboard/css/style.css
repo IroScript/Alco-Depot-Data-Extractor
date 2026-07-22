@@ -35,9 +35,9 @@
     --radius-md: 10px;
     --radius-sm: 6px;
     
-    --font-heading: 'Orbitron', sans-serif;
-    --font-tech: 'Rajdhani', sans-serif;
-    --font-body: 'Outfit', sans-serif;
+    --font-heading: "Roboto Condensed", sans-serif;
+    --font-tech: "Roboto Condensed", sans-serif;
+    --font-body: "Roboto Condensed", sans-serif;
 }
 
 * {
@@ -49,7 +49,7 @@
 body {
     background-color: var(--bg-main);
     color: var(--text-primary);
-    font-family: var(--font-body);
+    font-family: var(--font-body) !important;
     font-size: 14px;
     line-height: 1.6;
     min-height: 100vh;
@@ -472,8 +472,9 @@ td {
     padding: 1rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     font-family: var(--font-tech);
-    font-size: 0.95rem;
-    font-weight: 600;
+    font-size: 0.8rem;
+    font-weight: 200;
+    letter-spacing: -0.5px;
     color: #e2e8f0;
     transition: background-color 0.2s ease, color 0.2s ease;
 }
@@ -1006,4 +1007,7 @@ body.light-theme ::-webkit-scrollbar-thumb {
     background: #cbd5e1 !important;
     border-color: #cbd5e1 !important;
 }
+
+
+
 

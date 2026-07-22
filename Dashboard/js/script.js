@@ -508,8 +508,8 @@ function renderProductsTable(products) {
 
         return `
             <tr data-prod-code="${p.product_code.toLowerCase()}" data-prod-name="${p.product_name.toLowerCase()}" data-rank="${p.rank}">
-                <td><strong class="font-cyber text-amber-400">#${p.rank}</strong></td>
-                <td><strong class="text-white text-base font-bold">${p.product_name}</strong> ${getProductPackTagsHTML(p.product_name, p.product_code)}</td>
+                <td><strong class="font-cyber text-amber-400">#${p.rank}</span></td>
+                <td><span class="text-white text-base">${p.product_name}</span> ${getProductPackTagsHTML(p.product_name, p.product_code)}</td>
                 <td class="font-mono text-cyan-200">${Number(displayQty).toLocaleString()}</td>
                 <td><span class="badge-invoice">${Number(displayInvoices).toLocaleString()} Invoices</span></td>
                 <td><span class="badge-party">${Number(displayParties).toLocaleString()} Parties</span></td>
@@ -518,7 +518,7 @@ function renderProductsTable(products) {
                         <div class="w-16 bg-slate-900 rounded-full h-2 border border-cyan-500/30 overflow-hidden hidden md:block">
                             <div class="bg-gradient-to-r from-cyan-400 to-purple-500 h-full rounded-full shadow-neon-cyan" style="width: ${Math.min(100, displayPct * 5)}%"></div>
                         </div>
-                        <strong class="font-cyber text-cyan-300 text-xs">${displayPct}%</strong>
+                        <strong class="font-cyber text-cyan-300 text-xs">${displayPct}%</span>
                     </div>
                 </td>
                 <td class="val-highlight font-cyber text-base">${formatBDT(displaySales)}</td>
@@ -595,18 +595,18 @@ function renderMPOsTable(mpos) {
 
     tbody.innerHTML = mpos.map(m => `
         <tr data-mpo-code="${m.mpo_code.toLowerCase()}" data-mpo-zone="${(m.zone||'').toLowerCase()}" data-mpo-depot="${(m.depot||'').toLowerCase()}">
-            <td><strong class="font-cyber text-purple-400">#${m.rank}</strong></td>
+            <td><strong class="font-cyber text-purple-400">#${m.rank}</span></td>
             <td>
                 <span class="code-badge" style="background: rgba(168, 85, 247, 0.25); border-color: #a855f7; color: #f3e8ff;">
                     👤 ${m.mpo_code}
                 </span>
             </td>
             <td>
-                <strong class="text-white font-bold text-sm bg-purple-950/60 px-2.5 py-1 rounded border border-purple-500/30">📍 ${m.market||'Unknown'}</strong>
+                <span class="text-white text-sm bg-purple-950/60 px-2.5 py-1 rounded border border-purple-500/30">📍 ${m.market||'Unknown'}</span>
                 ${m.is_vacant ? '<span class="bg-amber-900/80 text-amber-300 text-xs px-1.5 py-0.5 rounded border border-amber-500/40 ml-1 font-mono">VACANT</span>' : ''}
             </td>
             <td><span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-cyan-300 font-mono text-xs">${m.zone}</span></td>
-            <td><span class="text-slate-300 font-tech font-bold">${m.depot}</span></td>
+            <td><span class="text-slate-300 font-tech">${m.depot}</span></td>
             <td class="val-highlight font-cyber text-base">${formatBDT(m.total_sales)}</td>
             <td class="font-mono text-purple-200">${Number(m.total_quantity).toLocaleString()}</td>
             <td><span class="badge-party">${Number(m.total_parties).toLocaleString()} Parties 👥</span></td>
@@ -642,8 +642,8 @@ function renderFMsTable(fms) {
     if (!tbody || !fms) return;
     tbody.innerHTML = fms.map(f => `
         <tr class="hover:bg-amber-950/20 transition-colors">
-            <td><strong class="font-cyber text-amber-400">#${f.rank}</strong></td>
-            <td><strong class="text-white font-bold text-base">${f.fm_name}</strong></td>
+            <td><strong class="font-cyber text-amber-400">#${f.rank}</span></td>
+            <td><span class="text-white text-base">${f.fm_name}</span></td>
             <td><span class="px-2 py-0.5 rounded bg-amber-950/50 border border-amber-500/40 text-amber-300 font-mono text-xs">${f.active_mpos} MPOs</span></td>
             <td class="val-highlight font-cyber">${formatBDT(f.total_sales)}</td>
             <td><span class="badge-party text-xs">${Number(f.total_parties).toLocaleString()}</span></td>
@@ -657,8 +657,8 @@ function renderSectorsTable(sectors) {
     if (!tbody || !sectors) return;
     tbody.innerHTML = sectors.map(s => `
         <tr class="hover:bg-emerald-950/20 transition-colors">
-            <td><strong class="font-cyber text-emerald-400">#${s.rank}</strong></td>
-            <td><strong class="text-cyan-300 font-bold text-base uppercase tracking-wider">${s.sector_name}</strong></td>
+            <td><strong class="font-cyber text-emerald-400">#${s.rank}</span></td>
+            <td><span class="text-cyan-300 text-base uppercase tracking-wider">${s.sector_name}</span></td>
             <td><span class="px-2 py-0.5 rounded bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 font-mono text-xs">${s.active_mpos} MPOs</span></td>
             <td class="val-highlight font-cyber">${formatBDT(s.total_sales)}</td>
             <td><span class="badge-party text-xs">${Number(s.total_parties).toLocaleString()}</span></td>
@@ -674,12 +674,12 @@ function renderMonthlyTable(trends) {
         const aov = t.invoices > 0 ? (t.sales / t.invoices) : 0;
         return `
             <tr>
-                <td><strong class="font-cyber text-cyan-300 text-base">[ ${t.month} ]</strong></td>
+                <td><span class="font-cyber text-cyan-300 text-base">[ ${t.month} ]</span></td>
                 <td class="val-highlight font-cyber text-base">${formatBDT(t.sales)}</td>
                 <td class="font-mono text-cyan-100">${Number(t.quantity).toLocaleString()}</td>
                 <td><span class="badge-invoice">${Number(t.invoices).toLocaleString()} Invoices</span></td>
                 <td><span class="badge-party">${Number(t.parties).toLocaleString()} Parties</span></td>
-                <td class="font-mono text-purple-300 font-bold">${formatBDT(aov)}</td>
+                <td class="font-mono text-purple-300">${formatBDT(aov)}</td>
             </tr>
         `;
     }).join('');
@@ -1452,7 +1452,7 @@ function renderStrategicMPOTable() {
                     <td><div class="cell-clip" title="${m.fm_name || 'Unknown'}">${m.fm_name || 'Unknown'}</div></td>
                     <td><div class="cell-clip" title="${m.mpo_code}">👤 ${m.mpo_code}</div></td>
                     <td><div class="cell-clip" title="${m.market}">📍 ${m.market}${m.is_vacant ? ' (VACANT)' : ''}</div></td>
-                    <td><div class="cell-clip font-mono text-center font-bold ${m.is_vacant ? 'text-rose-400' : 'text-emerald-400'}">${m.vacant_status || (m.is_vacant ? 'Y' : 'N')}</div></td>
+                    <td><div class="cell-clip font-mono text-center ${m.is_vacant ? 'text-rose-400' : 'text-emerald-400'}">${m.vacant_status || (m.is_vacant ? 'Y' : 'N')}</div></td>
                     <td><div class="cell-clip">📦 ${Number(m.units).toLocaleString()} U</div></td>
                     <td><div class="cell-clip">${Number(m.parties).toLocaleString()} Parties 👥</div></td>
                     <td><div class="cell-clip">${Number(m.invoices).toLocaleString()} Inv 🧾</div></td>
@@ -2159,7 +2159,7 @@ function openDrillModal(type, code, depot = '') {
         const sales = mb.sales || 0;
         return `
         <tr class="hover:bg-cyan-950/30 transition-colors border-b border-slate-800/40">
-            <td><strong class="font-cyber text-cyan-300">${fmtMonth(mb.month)}</strong></td>
+            <td><strong class="font-cyber text-cyan-300">${fmtMonth(mb.month)}</span></td>
             <td class="font-cyber text-emerald-300"><span class="inline-block px-2 py-0.5 rounded font-bold text-emerald-300 bg-emerald-950/60 border-l-4 border-emerald-500">📦 ${Number(units).toLocaleString()} U</span></td>
             <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-cyan-300 bg-cyan-950/60 border-l-4 border-cyan-500">${Number(mb.invoices).toLocaleString()} Inv 🧾</span></td>
             <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-purple-300 bg-purple-950/60 border-l-4 border-purple-500">${Number(mb.parties).toLocaleString()} Parties 👥</span></td>
@@ -2366,7 +2366,7 @@ function openZoneDrillModal(zoneName) {
     tbody.innerHTML = reversed.map(mb => {
         return `
         <tr class="hover:bg-cyan-950/30 transition-colors border-b border-slate-800/40">
-            <td><strong class="font-cyber text-cyan-300">${fmtMonth(mb.month)}</strong></td>
+            <td><strong class="font-cyber text-cyan-300">${fmtMonth(mb.month)}</span></td>
             <td class="font-cyber text-emerald-300"><span class="inline-block px-2 py-0.5 rounded font-bold text-emerald-300 bg-emerald-950/60 border-l-4 border-emerald-500">📦 ${Math.round(mb.units).toLocaleString()} U</span></td>
             <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-cyan-300 bg-cyan-950/60 border-l-4 border-cyan-500">${Math.round(mb.invoices).toLocaleString()} Inv 🧾</span></td>
             <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-purple-300 bg-purple-950/60 border-l-4 border-purple-500">${Math.round(mb.parties).toLocaleString()} Parties 👥</span></td>
@@ -2571,7 +2571,7 @@ function openFMDrillModal(fmName) {
     tbody.innerHTML = reversed.map(mb => {
         return `
         <tr class="hover:bg-cyan-950/30 transition-colors border-b border-slate-800/40">
-            <td><strong class="font-cyber text-cyan-300">${fmtMonth(mb.month)}</strong></td>
+            <td><strong class="font-cyber text-cyan-300">${fmtMonth(mb.month)}</span></td>
             <td class="font-cyber text-emerald-300"><span class="inline-block px-2 py-0.5 rounded font-bold text-emerald-300 bg-emerald-950/60 border-l-4 border-emerald-500">📦 ${Math.round(mb.units).toLocaleString()} U</span></td>
             <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-cyan-300 bg-cyan-950/60 border-l-4 border-cyan-500">${Math.round(mb.invoices).toLocaleString()} Inv 🧾</span></td>
             <td><span class="inline-block px-2 py-0.5 rounded text-xs font-bold text-purple-300 bg-purple-950/60 border-l-4 border-purple-500">${Math.round(mb.parties).toLocaleString()} Parties 👥</span></td>
@@ -3468,7 +3468,7 @@ function printProductsTable() {
                         return `
                             <tr>
                                 <td>#${p.rank}</td>
-                                <td><strong>${p.product_name}</strong> ${tagsStr}</td>
+                                <td><strong>${p.product_name}</span> ${tagsStr}</td>
                                 <td class="text-right">${Number(p.total_quantity).toLocaleString()}</td>
                                 <td class="text-right">${Number(p.total_invoices).toLocaleString()}</td>
                                 <td class="text-right">${Number(p.total_parties).toLocaleString()}</td>

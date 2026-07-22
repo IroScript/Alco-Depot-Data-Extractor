@@ -1,0 +1,123 @@
+diff --git a/Dashboard/index.html b/Dashboard/index.html
+index 685cb14..6337f13 100644
+--- a/Dashboard/index.html
++++ b/Dashboard/index.html
+@@ -144,7 +144,7 @@
+         <div class="flex justify-between items-center bg-slate-900/60 backdrop-blur border border-slate-800/80 rounded-xl px-5 py-4 cursor-pointer select-none hover:bg-slate-900/90 transition-all hover:border-cyan-500/40 group shadow-neon-cyan/5" id="toggle-top-section-btn">
+             <div class="flex items-center gap-3">
+                 <span class="text-cyan-400 font-tech animate-pulse">◉</span>
+-                <span class="text-sm font-cyber font-bold tracking-widest text-cyan-300 group-hover:text-cyan-200 uppercase">📊 EXECUTIVE OVERVIEW & LOGISTICS METRICS</span>
++                <span class="text-sm font-cyber font-bold tracking-widest text-cyan-300 group-hover:text-cyan-200 uppercase">📊 THIS SECTION HIDDEN WILL BE DEVELOPED OR EDITED LATER.......</span>
+                 <span class="text-xs font-tech text-slate-500 hidden sm:inline">(Click to expand/collapse)</span>
+             </div>
+             <div class="w-8 h-8 rounded-full border border-slate-700 group-hover:border-cyan-400 flex items-center justify-center text-cyan-400 font-tech text-lg transition-all" id="toggle-icon">
+@@ -594,6 +594,9 @@
+                 </table>
+             </div>
+             
++            <!-- Strategic MPO Pagination -->
++            <div id="strategic-mpo-pagination" class="flex flex-wrap justify-center gap-1.5 mt-4"></div>
++            
+             </div> <!-- Close MPO Level Performance Section Container -->
+ 
+             <!-- ==========================================
+@@ -1264,7 +1267,7 @@
+         <div class="flex justify-between items-center bg-slate-900/60 backdrop-blur border border-slate-800/80 rounded-xl px-5 py-4 cursor-pointer select-none hover:bg-slate-900/90 transition-all hover:border-purple-500/40 group shadow-neon-purple/5" id="toggle-mpo-section-btn">
+             <div class="flex items-center gap-3">
+                 <span class="text-purple-400 font-tech animate-pulse">◉</span>
+-                <span class="text-sm font-cyber font-bold tracking-widest text-purple-300 group-hover:text-purple-200 uppercase">👔 MPO PERFORMANCE & REGIONAL FIELD LEADERBOARDS</span>
++                <span class="text-sm font-cyber font-bold tracking-widest text-purple-300 group-hover:text-purple-200 uppercase">👔 THIS SECTION HIDDEN WILL BE DEVELOPED OR EDITED LATER.......</span>
+                 <span class="text-xs font-tech text-slate-500 hidden sm:inline">(Click to expand/collapse)</span>
+             </div>
+             <div class="w-8 h-8 rounded-full border border-slate-700 group-hover:border-purple-400 flex items-center justify-center text-purple-400 font-tech text-lg transition-all" id="toggle-mpo-icon">
+@@ -1421,89 +1424,10 @@
+     </div>
+ 
+     <!-- Custom Logic Scripts -->
+-    <script src="js/script.js?v=2.3.2"></script>
++    <script src="js/script.js?v=2.4.0"></script>
+     <script src="js/quantum_3d.js?v=2.1.7"></script>
+     <script src="js/dijkstra_network.js?v=2.1.7"></script>
+-    <script>
+-        (() => {
+-            const initToggles = () => {
+-                // 1. Top Section Toggle
+-                const toggleTopBtn = document.getElementById("toggle-top-section-btn");
+-                const collapsibleTop = document.getElementById("collapsible-top-section");
+-                const toggleTopIcon = document.getElementById("toggle-icon");
+-                
+-                if (toggleTopBtn && collapsibleTop && toggleTopIcon) {
+-                    toggleTopBtn.onclick = () => {
+-                        const isHidden = collapsibleTop.classList.contains("hidden") || collapsibleTop.style.display === "none";
+-                        if (isHidden) {
+-                            collapsibleTop.classList.remove("hidden");
+-                            collapsibleTop.style.display = "block";
+-                            toggleTopIcon.textContent = "−";
+-                            if (typeof renderCharts === "function") {
+-                                renderCharts();
+-                            }
+-                            window.dispatchEvent(new Event('resize'));
+-                        } else {
+-                            collapsibleTop.style.display = "none";
+-                            collapsibleTop.classList.add("hidden");
+-                            toggleTopIcon.textContent = "+";
+-                        }
+-                    };
+-                }
+-
+-                // 2. MPO Section Toggle
+-                const toggleMpoBtn = document.getElementById("toggle-mpo-section-btn");
+-                const collapsibleMpo = document.getElementById("collapsible-mpo-section");
+-                const toggleMpoIcon = document.getElementById("toggle-mpo-icon");
+-                
+-                if (toggleMpoBtn && collapsibleMpo && toggleMpoIcon) {
+-                    toggleMpoBtn.onclick = () => {
+-                        const isHidden = collapsibleMpo.classList.contains("hidden") || collapsibleMpo.style.display === "none";
+-                        if (isHidden) {
+-                            collapsibleMpo.classList.remove("hidden");
+-                            collapsibleMpo.style.display = "block";
+-                            toggleMpoIcon.textContent = "−";
+-                        } else {
+-                            collapsibleMpo.style.display = "none";
+-                            collapsibleMpo.classList.add("hidden");
+-                            toggleMpoIcon.textContent = "+";
+-                        }
+-                    };
+-                }
+ 
+-                // 3. Tab switching auto-expands corresponding collapsible section
+-                const tabLinks = document.querySelectorAll(".tab-link");
+-                tabLinks.forEach(link => {
+-                    link.addEventListener("click", () => {
+-                        const targetId = link.getAttribute("data-target");
+-                        if (["tab-top50-mpos", "tab-top20-fms", "tab-monthly-trends"].includes(targetId)) {
+-                            if (collapsibleMpo && (collapsibleMpo.classList.contains("hidden") || collapsibleMpo.style.display === "none")) {
+-                                collapsibleMpo.classList.remove("hidden");
+-                                collapsibleMpo.style.display = "block";
+-                                if (toggleMpoIcon) toggleMpoIcon.textContent = "−";
+-                            }
+-                        } else if (["tab-overview"].includes(targetId)) {
+-                            if (collapsibleTop && (collapsibleTop.classList.contains("hidden") || collapsibleTop.style.display === "none")) {
+-                                collapsibleTop.classList.remove("hidden");
+-                                collapsibleTop.style.display = "block";
+-                                if (toggleTopIcon) toggleTopIcon.textContent = "−";
+-                                if (typeof renderCharts === "function") {
+-                                    renderCharts();
+-                                }
+-                                window.dispatchEvent(new Event('resize'));
+-                            }
+-                        }
+-                    });
+-                });
+-            };
+ 
+-            if (document.readyState === "loading") {
+-                document.addEventListener("DOMContentLoaded", initToggles);
+-            } else {
+-                initToggles();
+-            }
+-            window.addEventListener("load", initToggles);
+-        })();
+-    </script>
+ </body>
+ </html>

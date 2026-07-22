@@ -115,7 +115,7 @@ def load_mpo_market_lookup():
         raise RuntimeError(f"Public Google Sheet market lookup failed: {e}")
 
 def load_vacant_mpos():
-    vacant_codes = set()
+    vacant_map = {}
     try:
         url = 'https://docs.google.com/spreadsheets/d/1Q4utivZ5OpgDznqlqElYU-HWNnZYI71YYpcZKcSM3xY/export?format=csv&gid=1918615875'
         import pandas as pd
@@ -124,16 +124,20 @@ def load_vacant_mpos():
         
         for _, row in df.iterrows():
             vac_val = _clean_cell(row.get("VACANT (JUN'26)?"))
-            if vac_val in ('Y', 'YES', 'TRUE', '1'):
-                code = _clean_cell(row.get('DEPOTMPO CODE')) or _clean_cell(row.get('DREAM APPS MPO CODE'))
-                if code:
-                    vacant_codes.add(code)
+            depot = _clean_cell(row.get('DREAM APPS DEPOT')) or _clean_cell(row.get('DEPOT'))
+            code = _clean_cell(row.get('DREAM APPS MPO CODE')) or _clean_cell(row.get('DEPOTMPO CODE'))
+            if code:
+                vac_status = vac_val if vac_val else 'NO'
+                vacant_map[code.upper()] = vac_status
+                if depot:
+                    composite_key = f"{depot.upper()}_{code.upper()}"
+                    vacant_map[composite_key] = vac_status
     except Exception as e:
         print(f"Note: Could not load vacant MPOs from Google Sheet: {e}")
-    return vacant_codes
+    return vacant_map
 
 def load_valid_master_filters(mpo_market_map):
-    valid_mpos = set(mpo_market_map.keys())
+    valid_mpos = set()
     valid_fms = set()
     valid_zones = set()
 
@@ -146,9 +150,9 @@ def load_valid_master_filters(mpo_market_map):
         for _, row in df.iterrows():
             c13 = _clean_cell(row.get('DREAM APPS MPO CODE'))
             if c13:
-                valid_mpos.add(c13)
+                valid_mpos.add(c13.strip().upper())
             c7 = _clean_cell(row.get('FM (FINAL NAME)')) or _clean_cell(row.get('FM/AM'))
-            if c7 and "VACANT" not in c7.upper():
+            if c7:
                 valid_fms.add(c7)
             c2 = _clean_cell(row.get('DREAM APPS ZONE')) or _clean_cell(row.get('ZONE'))
             if c2:
@@ -192,6 +196,7 @@ class DataEngine:
                 "note": "Product calculations are anchored on product_code and grouped by SUB_GROUP_STANDARD."
             },
             "kpis": {},
+            "master_mpo_codes": valid_mpos,
             "top_50_products": [],
             "top_5_products_deep": [],
             "top_50_mpos": [],
@@ -385,13 +390,17 @@ class DataEngine:
                 if idx % 50 == 0 or idx == 1:
                     print(f"  ➜ Processing MPO [{idx}/{total_mpo_count}]: {m_code} | Market: {raw_mkt} | Units: {m_qty:,.0f}", flush=True)
 
+                t50_comp_key = f"{_clean_cell(r['depot']).upper()}_{m_code.upper()}"
+                t50_vac = vacant_mpo_codes.get(t50_comp_key) or vacant_mpo_codes.get(m_code.upper()) or 'NO'
+                t50_is_vac = t50_vac in ('Y', 'YES', 'TRUE', '1')
                 data["top_50_mpos"].append({
                     "rank": idx,
                     "mpo_code": m_code,
                     "market": raw_mkt,
                     "zone": r["zone"] or "Unknown",
                     "depot": r["depot"] or "Unknown",
-                    "is_vacant": m_code in vacant_mpo_codes,
+                    "is_vacant": t50_is_vac,
+                    "vacant_status": "Y" if t50_is_vac else "N",
                     "total_sales": round(m_sales, 2),
                     "total_quantity": round(m_qty, 2),
                     "total_invoices": int(r["total_invoices"] or 0),
@@ -537,6 +546,10 @@ class DataEngine:
                     if not raw_mkt or str(raw_mkt).strip() in ['', 'None', 'Unknown'] or str(raw_mkt).strip().startswith('DK.'):
                         raw_mkt = mpo_market_map.get(m_code) or _clean_cell(mr["depot"]) or "Unknown"
 
+                    m_comp_key = f"{_clean_cell(mr['depot']).upper()}_{m_code.upper()}"
+                    vac_status = vacant_mpo_codes.get(m_comp_key) or vacant_mpo_codes.get(m_code.upper()) or 'NO'
+                    is_vac_bool = vac_status in ('Y', 'YES', 'TRUE', '1')
+
                     mpo_list_all.append({
                         "rank": idx,
                         "mpo_code": m_code,
@@ -544,7 +557,8 @@ class DataEngine:
                         "zone": mr["zone"] or "Unknown",
                         "depot": mr["depot"] or "Unknown",
                         "fm_name": mr["fm_name"] or "Unknown",
-                        "is_vacant": m_code in vacant_mpo_codes,
+                        "is_vacant": is_vac_bool,
+                        "vacant_status": "Y" if is_vac_bool else "N",
                         "units": round(float(mr["units"] or 0), 2),
                         "parties": int(mr["parties"] or 0),
                         "invoices": int(mr["invoices"] or 0),
@@ -577,6 +591,10 @@ class DataEngine:
                         if not raw_mkt or str(raw_mkt).strip() in ['', 'None', 'Unknown'] or str(raw_mkt).strip().startswith('DK.'):
                             raw_mkt = mpo_market_map.get(mr["mpo_code"]) or _clean_cell(mr["depot"]) or "Unknown"
 
+                        m_comp_key = f"{_clean_cell(mr['depot']).upper()}_{mr['mpo_code'].upper()}"
+                        vac_status = vacant_mpo_codes.get(m_comp_key) or vacant_mpo_codes.get(mr["mpo_code"].upper()) or 'NO'
+                        is_vac_bool = vac_status in ('Y', 'YES', 'TRUE', '1')
+
                         mpo_list_month.append({
                             "rank": idx,
                             "mpo_code": mr["mpo_code"],
@@ -584,7 +602,8 @@ class DataEngine:
                             "zone": mr["zone"] or "Unknown",
                             "depot": mr["depot"] or "Unknown",
                             "fm_name": mr["fm_name"] or "Unknown",
-                            "is_vacant": mr["mpo_code"] in vacant_mpo_codes,
+                            "is_vacant": is_vac_bool,
+                            "vacant_status": "Y" if is_vac_bool else "N",
                             "units": round(float(mr["units"] or 0), 2),
                             "parties": int(mr["parties"] or 0),
                             "invoices": int(mr["invoices"] or 0),
@@ -674,6 +693,9 @@ class DataEngine:
                     if not raw_mkt or str(raw_mkt).strip() in ['', 'None', 'Unknown'] or str(raw_mkt).strip().startswith('DK.'):
                         raw_mkt = mpo_market_map.get(m_code) or _clean_cell(mr["depot"]) or "Unknown"
 
+                    rem_comp_key = f"{_clean_cell(mr['depot']).upper()}_{m_code.upper()}"
+                    rem_vac = vacant_mpo_codes.get(rem_comp_key) or vacant_mpo_codes.get(m_code.upper()) or 'NO'
+                    rem_is_vac = rem_vac in ('Y', 'YES', 'TRUE', '1')
                     mpo_list_all.append({
                         "rank": idx,
                         "mpo_code": m_code,
@@ -681,7 +703,8 @@ class DataEngine:
                         "zone": mr["zone"] or "Unknown",
                         "depot": mr["depot"] or "Unknown",
                         "fm_name": mr["fm_name"] or "Unknown",
-                        "is_vacant": m_code in vacant_mpo_codes,
+                        "is_vacant": rem_is_vac,
+                        "vacant_status": "Y" if rem_is_vac else "N",
                         "units": round(float(mr["units"] or 0), 2),
                         "parties": int(mr["parties"] or 0),
                         "invoices": int(mr["invoices"] or 0),
@@ -714,6 +737,9 @@ class DataEngine:
                         if not raw_mkt or str(raw_mkt).strip() in ['', 'None', 'Unknown'] or str(raw_mkt).strip().startswith('DK.'):
                             raw_mkt = mpo_market_map.get(mr["mpo_code"]) or _clean_cell(mr["depot"]) or "Unknown"
 
+                        remm_comp_key = f"{_clean_cell(mr['depot']).upper()}_{mr['mpo_code'].upper()}"
+                        remm_vac = vacant_mpo_codes.get(remm_comp_key) or vacant_mpo_codes.get(mr['mpo_code'].upper()) or 'NO'
+                        remm_is_vac = remm_vac in ('Y', 'YES', 'TRUE', '1')
                         mpo_list_month.append({
                             "rank": idx,
                             "mpo_code": mr["mpo_code"],
@@ -721,7 +747,8 @@ class DataEngine:
                             "zone": mr["zone"] or "Unknown",
                             "depot": mr["depot"] or "Unknown",
                             "fm_name": mr["fm_name"] or "Unknown",
-                            "is_vacant": mr["mpo_code"] in vacant_mpo_codes,
+                            "is_vacant": remm_is_vac,
+                            "vacant_status": "Y" if remm_is_vac else "N",
                             "units": round(float(mr["units"] or 0), 2),
                             "parties": int(mr["parties"] or 0),
                             "invoices": int(mr["invoices"] or 0),

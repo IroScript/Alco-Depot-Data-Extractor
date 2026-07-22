@@ -19,6 +19,7 @@ let STRATEGIC_FILTERS_SELECTIONS = {
     fm: null,
     code: null,
     market: null,
+    vacant: null,
     units: null,
     parties: null,
     invoices: null,
@@ -36,6 +37,7 @@ let STRATEGIC_FILTERS_SELECTIONS_COPY = {
     fm: null,
     code: null,
     market: null,
+    vacant: null,
     units: null,
     parties: null,
     invoices: null,
@@ -52,6 +54,7 @@ let STRATEGIC_FILTERS_SELECTIONS_COPY2 = {
     fm: null,
     code: null,
     market: null,
+    vacant: null,
     units: null,
     parties: null,
     invoices: null,
@@ -1032,6 +1035,23 @@ function setStrategicPageCopy2(page) {
     renderStrategicMPOTable();
 }
 
+// Global State for Exclude Vacants
+let EXCLUDE_VACANTS = false;
+function toggleExcludeVacants() {
+    EXCLUDE_VACANTS = !EXCLUDE_VACANTS;
+    const btn = document.getElementById("btn-exclude-vacants");
+    if (btn) {
+        if (EXCLUDE_VACANTS) {
+            btn.className = "px-3.5 py-2 rounded bg-rose-600 border border-rose-400 text-white font-tech text-xs font-bold transition-all flex items-center gap-1.5 shadow-neon-rose ring-2 ring-rose-400";
+            btn.innerHTML = "🚫 Vacants Excluded (ACTIVE)";
+        } else {
+            btn.className = "px-3.5 py-2 rounded bg-rose-900/80 border border-rose-500/60 text-white font-tech text-xs font-bold hover:bg-rose-800 transition-all flex items-center gap-1.5 shadow-md";
+            btn.innerHTML = "🚫 Exclude Vacants";
+        }
+    }
+    renderStrategicMPOTable();
+}
+
 function renderStrategicMPOTable() {
     if (!GLOBAL_DATA || !GLOBAL_DATA.strategic_6_products) return;
     const stratData = GLOBAL_DATA.strategic_6_products;
@@ -1103,6 +1123,7 @@ function renderStrategicMPOTable() {
             const code = m.mpo_code;
             const uniqueKey = depot + '_' + code;
             if (!mpoMap[uniqueKey]) {
+                const vStatus = m.vacant_status ? m.vacant_status : (m.is_vacant ? 'Y' : 'N');
                 mpoMap[uniqueKey] = {
                     mpo_code: code,
                     depot: depot,
@@ -1113,7 +1134,8 @@ function renderStrategicMPOTable() {
                     parties: 0,
                     invoices: 0,
                     sales: 0,
-                    is_vacant: m.is_vacant,
+                    is_vacant: m.is_vacant || false,
+                    vacant_status: (vStatus === 'YES' || vStatus === 'Y') ? 'Y' : 'N',
                     monthly_breakdown: {}
                 };
             }
@@ -1121,8 +1143,9 @@ function renderStrategicMPOTable() {
             mpoMap[uniqueKey].parties += m.parties || 0;
             mpoMap[uniqueKey].invoices += m.invoices || 0;
             mpoMap[uniqueKey].sales += m.sales || 0;
-            if (!m.is_vacant) {
-                mpoMap[uniqueKey].is_vacant = false;
+            if (m.is_vacant) {
+                mpoMap[uniqueKey].is_vacant = true;
+                mpoMap[uniqueKey].vacant_status = 'Y';
             }
             
             let mbSource = m.monthly_breakdown;
@@ -1261,13 +1284,27 @@ function renderStrategicMPOTable() {
     }
     CURRENT_AGGREGATED_MPOS_SH = mposSH;
 
+    let displayMpos = mpos;
+    if (EXCLUDE_VACANTS) {
+        displayMpos = displayMpos.filter(m => !m.is_vacant);
+    }
+
     // Apply Excel-like column filters for original table
-    const filteredMpos = mpos.filter(m => {
+    const filteredMpos = displayMpos.filter(m => {
         if (STRATEGIC_FILTERS_SELECTIONS.rank && !STRATEGIC_FILTERS_SELECTIONS.rank.includes(String(m.rank))) return false;
         if (STRATEGIC_FILTERS_SELECTIONS.zone && !STRATEGIC_FILTERS_SELECTIONS.zone.includes(m.zone)) return false;
         if (STRATEGIC_FILTERS_SELECTIONS.fm && !STRATEGIC_FILTERS_SELECTIONS.fm.includes(m.fm_name || 'Unknown')) return false;
         if (STRATEGIC_FILTERS_SELECTIONS.code && !STRATEGIC_FILTERS_SELECTIONS.code.includes(m.mpo_code)) return false;
         if (STRATEGIC_FILTERS_SELECTIONS.market && !STRATEGIC_FILTERS_SELECTIONS.market.includes(m.market)) return false;
+        if (STRATEGIC_FILTERS_SELECTIONS.vacant) {
+            const vVal = m.vacant_status || (m.is_vacant ? 'Y' : 'N');
+            const hasMatch = STRATEGIC_FILTERS_SELECTIONS.vacant.some(sel => {
+                if (sel === 'Y' || sel === 'YES') return vVal === 'Y' || vVal === 'YES';
+                if (sel === 'N' || sel === 'NO') return vVal === 'N' || vVal === 'NO';
+                return sel === vVal;
+            });
+            if (!hasMatch) return false;
+        }
         if (STRATEGIC_FILTERS_SELECTIONS.units) {
             const unitsLabel = `${m.units} U`;
             if (!STRATEGIC_FILTERS_SELECTIONS.units.includes(unitsLabel)) return false;
@@ -1312,7 +1349,7 @@ function renderStrategicMPOTable() {
     const tbody = document.getElementById("tbody-strategic-mpos");
     if (tbody) {
         if (!paginatedMpos || paginatedMpos.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding: 20px;">No MPO records found for this selection.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding: 20px;">No MPO records found for this selection.</td></tr>`;
         } else {
             tbody.innerHTML = paginatedMpos.map(m => `
                 <tr class="hover:bg-cyan-950/20 transition-colors">
@@ -1321,6 +1358,7 @@ function renderStrategicMPOTable() {
                     <td><div class="cell-clip" title="${m.fm_name || 'Unknown'}">${m.fm_name || 'Unknown'}</div></td>
                     <td><div class="cell-clip" title="${m.mpo_code}">👤 ${m.mpo_code}</div></td>
                     <td><div class="cell-clip" title="${m.market}">📍 ${m.market}${m.is_vacant ? ' (VACANT)' : ''}</div></td>
+                    <td><div class="cell-clip font-mono text-center font-bold ${m.is_vacant ? 'text-rose-400' : 'text-emerald-400'}">${m.vacant_status || (m.is_vacant ? 'Y' : 'N')}</div></td>
                     <td><div class="cell-clip">📦 ${Number(m.units).toLocaleString()} U</div></td>
                     <td><div class="cell-clip">${Number(m.parties).toLocaleString()} Parties 👥</div></td>
                     <td><div class="cell-clip">${Number(m.invoices).toLocaleString()} Inv 🧾</div></td>
@@ -2542,15 +2580,21 @@ function toggleFilterPopover(event, colName) {
     if (popover) {
         const isHidden = popover.classList.contains("hidden");
         if (isHidden) {
-            // Reset temp selections to current actual selections
-            if (STRATEGIC_FILTERS_SELECTIONS[colName]) {
+            // Requirement: Filter click kora matroi by default ALL Unselect thakbe
+            if (STRATEGIC_FILTERS_SELECTIONS[colName] && STRATEGIC_FILTERS_SELECTIONS[colName].length > 0) {
                 TEMP_FILTERS_SELECTIONS[colName] = new Set(STRATEGIC_FILTERS_SELECTIONS[colName]);
             } else {
-                TEMP_FILTERS_SELECTIONS[colName] = null; // means all selected initially
+                TEMP_FILTERS_SELECTIONS[colName] = new Set(); // Default empty/unselected
             }
             populateFilterOptions(colName);
+            // Clear input field on open
+            const searchInput = popover.querySelector('input[type="text"]');
+            if (searchInput) searchInput.value = '';
+            
             // Portal: move popover to body and position fixed
             _portalPopover(popover, event.currentTarget);
+            
+            if (searchInput) searchInput.focus();
         } else {
             popover.classList.add("hidden");
         }
@@ -2559,18 +2603,20 @@ function toggleFilterPopover(event, colName) {
 
 /** Portal helper: moves a popover to document.body with fixed positioning */
 function _portalPopover(popover, triggerBtn) {
-    // Move to body if not already there
     if (popover.parentElement !== document.body) {
         document.body.appendChild(popover);
     }
-    // Store reference to trigger for click-outside detection
     popover._triggerBtn = triggerBtn;
-    // Position relative to trigger button
     const rect = triggerBtn.getBoundingClientRect();
+    
+    // 20% Increase width and styling
     popover.style.position = 'fixed';
     popover.style.top = (rect.bottom + 4) + 'px';
     popover.style.left = rect.left + 'px';
     popover.style.zIndex = '99999';
+    popover.style.minWidth = '240px'; // 200px + 20%
+    popover.style.width = '240px';
+    popover.style.fontSize = '14px'; // Increased font size
     popover.classList.remove('absolute');
     popover.classList.remove('hidden');
 }
@@ -2585,7 +2631,9 @@ function populateFilterOptions(colName) {
     if (!prodItem) return;
 
     let mpos = [];
-    if (ACTIVE_STRATEGIC_MONTH === "ALL") {
+    if (CURRENT_AGGREGATED_MPOS && CURRENT_AGGREGATED_MPOS.length > 0) {
+        mpos = CURRENT_AGGREGATED_MPOS;
+    } else if (ACTIVE_STRATEGIC_MONTH === "ALL") {
         mpos = prodItem.mpo_top50_all || [];
     } else {
         mpos = (prodItem.mpo_top50_by_month && prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH]) ? prodItem.mpo_top50_by_month[ACTIVE_STRATEGIC_MONTH] : [];
@@ -2593,20 +2641,27 @@ function populateFilterOptions(colName) {
 
     // Get all unique values for this column from mpos
     const uniqueValues = new Set();
-    mpos.forEach(m => {
-        let val = "";
-        if (colName === "rank") val = String(m.rank);
-        else if (colName === "zone") val = m.zone;
-        else if (colName === "fm") val = m.fm_name || 'Unknown';
-        else if (colName === "code") val = m.mpo_code;
-        else if (colName === "market") val = m.market;
-        else if (colName === "units") val = `${m.units} U`;
-        else if (colName === "parties") val = `${m.parties}`;
-        else if (colName === "invoices") val = `${m.invoices}`;
-        else if (colName === "sales") val = formatBDT(m.sales);
-        
-        if (val) uniqueValues.add(val);
-    });
+    if (colName === "code" && GLOBAL_DATA && GLOBAL_DATA.master_mpo_codes) {
+        GLOBAL_DATA.master_mpo_codes.forEach(c => {
+            if (c) uniqueValues.add(c);
+        });
+    } else {
+        mpos.forEach(m => {
+            let val = "";
+            if (colName === "rank") val = String(m.rank);
+            else if (colName === "zone") val = m.zone;
+            else if (colName === "fm") val = m.fm_name || 'Unknown';
+            else if (colName === "code") val = m.mpo_code;
+            else if (colName === "market") val = m.market;
+            else if (colName === "vacant") val = (m.vacant_status === 'YES' || m.vacant_status === 'Y' || m.is_vacant) ? 'Y' : 'N';
+            else if (colName === "units") val = `${m.units} U`;
+            else if (colName === "parties") val = `${m.parties}`;
+            else if (colName === "invoices") val = `${m.invoices}`;
+            else if (colName === "sales") val = formatBDT(m.sales);
+            
+            if (val) uniqueValues.add(val);
+        });
+    }
 
     const valuesArray = Array.from(uniqueValues).sort((a, b) => {
         const numA = parseFloat(a.replace(/[^0-9.]/g, ''));
@@ -2620,16 +2675,16 @@ function populateFilterOptions(colName) {
         if (STRATEGIC_FILTERS_SELECTIONS[colName]) {
             TEMP_FILTERS_SELECTIONS[colName] = new Set(STRATEGIC_FILTERS_SELECTIONS[colName]);
         } else {
-            TEMP_FILTERS_SELECTIONS[colName] = new Set(valuesArray);
+            TEMP_FILTERS_SELECTIONS[colName] = new Set(); // By default unselected
         }
     }
 
-    // Render checkbox list
+    // Render checkbox list with enlarged text
     optionsDiv.innerHTML = valuesArray.map(val => {
         const isChecked = TEMP_FILTERS_SELECTIONS[colName].has(val);
         return `
-            <label class="flex items-center gap-2 cursor-pointer py-0.5 hover:bg-slate-900 rounded px-1 w-full text-slate-300 hover:text-white">
-                <input type="checkbox" class="option-chk-item" value="${val}" ${isChecked ? 'checked' : ''} onchange="handleOptionCheckboxChange('${colName}', '${val}', this.checked)">
+            <label class="flex items-center gap-2 cursor-pointer py-1 hover:bg-slate-900 rounded px-1.5 w-full text-slate-200 hover:text-white text-xs font-bold">
+                <input type="checkbox" class="option-chk-item accent-cyan-500 w-3.5 h-3.5" value="${val}" ${isChecked ? 'checked' : ''} onchange="handleOptionCheckboxChange('${colName}', '${val}', this.checked)">
                 <span class="truncate" title="${val}">${val}</span>
             </label>
         `;
@@ -2652,14 +2707,39 @@ function searchFilterOptions(colName, searchVal) {
     if (!optionsDiv) return;
     const items = optionsDiv.querySelectorAll('label');
     const query = searchVal.trim().toLowerCase();
+    
+    // Search query typed: auto select matched items and unselect non-matched items if typing query
+    if (!TEMP_FILTERS_SELECTIONS[colName]) {
+        TEMP_FILTERS_SELECTIONS[colName] = new Set();
+    }
+    
+    if (query !== "") {
+        TEMP_FILTERS_SELECTIONS[colName].clear();
+    }
+
     items.forEach(item => {
         const txt = item.textContent.toLowerCase();
+        const chk = item.querySelector('input[type="checkbox"]');
         if (query === "" || txt.includes(query)) {
             item.style.display = "flex";
+            if (query !== "" && chk) {
+                chk.checked = true;
+                TEMP_FILTERS_SELECTIONS[colName].add(chk.value);
+            }
         } else {
             item.style.display = "none";
+            if (query !== "" && chk) {
+                chk.checked = false;
+            }
         }
     });
+}
+
+function handleFilterSearchKeydown(event, colName) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        applyFilter(colName);
+    }
 }
 
 function selectAllFilterOptions(colName, selectAll) {
@@ -2677,7 +2757,12 @@ function selectAllFilterOptions(colName, selectAll) {
 }
 
 function applyFilter(colName) {
-    STRATEGIC_FILTERS_SELECTIONS[colName] = TEMP_FILTERS_SELECTIONS[colName] ? Array.from(TEMP_FILTERS_SELECTIONS[colName]) : null;
+    const selSet = TEMP_FILTERS_SELECTIONS[colName];
+    if (selSet && selSet.size > 0) {
+        STRATEGIC_FILTERS_SELECTIONS[colName] = Array.from(selSet);
+    } else {
+        STRATEGIC_FILTERS_SELECTIONS[colName] = null;
+    }
     
     // Hide popover
     const popover = document.getElementById(`popover-${colName}`);
@@ -2695,7 +2780,7 @@ function cancelFilter(colName) {
 
 function clearColumnFilter(colName) {
     STRATEGIC_FILTERS_SELECTIONS[colName] = null;
-    TEMP_FILTERS_SELECTIONS[colName] = null;
+    TEMP_FILTERS_SELECTIONS[colName] = new Set();
     const optionsDiv = document.getElementById(`options-${colName}`);
     if (optionsDiv) {
         const checkboxes = optionsDiv.querySelectorAll('input[type="checkbox"]');
